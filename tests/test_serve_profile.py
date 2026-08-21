@@ -315,3 +315,78 @@ def test_documented_generator_runs_from_clean_checkout_without_pythonpath(tmp_pa
     assert result.returncode == 0, result.stderr
     rendered = checkout / "containers/serve/darkstar-qwen38-abliterated-nvfp4.yml"
     assert rendered.read_text(encoding="utf-8") == render_compose(_product4_profile())
+
+
+def _dflash_profile(tmp_path: Path, **overrides) -> ServeProfile:
+    """Build a minimal valid profile with a matching local artifact manifest."""
+    identity = "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8"
+    artifact = tmp_path / "artifact"
+    artifact.mkdir(parents=True)
+    base_marker = {
+        "schema_version": "1.0",
+        "stage": "finalized",
+        "config_sha": "a" * 64,
+    }
+    marker_bytes = json.dumps(base_marker).encode()
+    success_sha = hashlib.sha256(marker_bytes).hexdigest()
+    (artifact / "_SUCCESS.json").write_bytes(marker_bytes)
+    manifest = artifact / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "artifact_path": str(artifact),
+                "candidate_id": identity,
+                "precision_class": "W4A16-NVFP4-Mixed-FP8",
+                "success_marker_sha256": success_sha,
+            }
+        )
+    )
+
+    base = dict(
+        family="qwen38",
+        behavior="base",
+        format="nvfp4",
+        repository_id="HangGlidersRule/"
+        "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+        model_path=str(artifact),
+        artifact_identity=identity,
+        artifact_precision_class="W4A16-NVFP4-Mixed-FP8",
+        artifact_success_sha256=success_sha,
+        artifact_manifest=manifest,
+        artifact_validation="local",
+        container_name="vllm-darkstar-qwen38-base-modelopt",
+        mtp_depth=1,
+        scheduler_tokens=32768,
+    )
+    base.update(overrides)
+    return ServeProfile(**base)
+
+
+def test_dflash2_profile_renders_drafter_spec(tmp_path: Path) -> None:
+    """DFlash2 profiles must emit a drafter-based speculative-config."""
+    profile = _dflash_profile(
+        tmp_path,
+        spec_decode="dflash2",
+        drafter_model="incoai/Qwen3.8-27B-DFlash2",
+        drafter_tokens=5,
+    )
+    profile.validate()
+    rendered = render_compose(profile)
+    # DFlash2 rides the "dflash" method name; the drafter architecture marks it.
+    assert '"method":"dflash"' in rendered
+    assert '"model":"incoai/Qwen3.8-27B-DFlash2"' in rendered
+    assert '"num_speculative_tokens":5' not in rendered or True  # tokens key present below
+    assert '"num_speculative_tokens":5' in rendered
+
+
+def test_dflash_requires_drafter_model(tmp_path: Path) -> None:
+    """dflash/dflash2 without a drafter must fail validation."""
+    profile = _dflash_profile(tmp_path, spec_decode="dflash2", drafter_model=None, drafter_tokens=5)
+    with pytest.raises(ServeProfileError, match="drafter model"):
+        profile.validate()
+
+
+def test_unsupported_spec_decode_rejected(tmp_path: Path) -> None:
+    profile = _dflash_profile(tmp_path, spec_decode="eagle3")
+    with pytest.raises(ServeProfileError, match="unsupported spec_decode"):
+        profile.validate()
