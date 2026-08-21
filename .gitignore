@@ -366,6 +366,7 @@ build/
 !/recipes/qwen3.8-27b/
 !/recipes/qwen3.8-27b/base-nvfp4.yaml
 !/recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-bf16.yaml
+!/recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4-dflash2.yaml
 !/recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml
 !/recipes/qwen3.8-27b/darkstar-qwen3.8-27b-base-bf16.yaml
 !/recipes/qwen3.8-27b/darkstar-qwen3.8-27b-base-modelopt-nvfp4.yaml

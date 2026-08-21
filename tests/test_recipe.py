@@ -47,6 +47,92 @@ def test_recipe_config_sha_stable() -> None:
     assert len(recipe.config_sha()) == 64
 
 
+def test_recipe_runtime_defaults_to_mtp(tmp_path: Path) -> None:
+    path = tmp_path / "mtp.yaml"
+    path.write_text(
+        """
+schema_version: "2.0"
+name: mtp-default
+family: demo
+source:
+  model_id: org/model
+  revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+transforms: []
+validation:
+  max_refusal_leakage: 0.01
+runtime:
+  kv_dtype: bf16
+  context_length: 8192
+outputs:
+  artifact_kind: bf16
+  publication:
+    github: HangGlidersRule/model-forge
+"""
+    )
+    recipe = load_recipe(path)
+    assert recipe.runtime.spec_decode == "mtp"
+    assert recipe.runtime.drafter_model is None
+    assert recipe.runtime.drafter_tokens is None
+
+
+def test_recipe_runtime_reads_dflash2_drafter(tmp_path: Path) -> None:
+    path = tmp_path / "dflash2.yaml"
+    path.write_text(
+        """
+schema_version: "2.0"
+name: dflash2-demo
+family: demo
+source:
+  model_id: org/model
+  revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+transforms: []
+validation:
+  max_refusal_leakage: 0.01
+runtime:
+  kv_dtype: bf16
+  context_length: 8192
+  spec_decode: dflash2
+  drafter_model: incoai/Qwen3.8-27B-DFlash2
+  drafter_tokens: 7
+outputs:
+  artifact_kind: bf16
+  publication:
+    github: HangGlidersRule/model-forge
+"""
+    )
+    recipe = load_recipe(path)
+    assert recipe.runtime.spec_decode == "dflash2"
+    assert recipe.runtime.drafter_model == "incoai/Qwen3.8-27B-DFlash2"
+    assert recipe.runtime.drafter_tokens == 7
+
+
+def test_recipe_rejects_invalid_spec_decode(tmp_path: Path) -> None:
+    path = tmp_path / "bad-spec.yaml"
+    path.write_text(
+        """
+schema_version: "2.0"
+name: bad-spec
+family: demo
+source:
+  model_id: org/model
+  revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+transforms: []
+validation:
+  max_refusal_leakage: 0.01
+runtime:
+  kv_dtype: bf16
+  context_length: 8192
+  spec_decode: nope
+outputs:
+  artifact_kind: bf16
+  publication:
+    github: HangGlidersRule/model-forge
+"""
+    )
+    with pytest.raises(RecipeError, match="spec_decode"):
+        load_recipe(path)
+
+
 def test_rejects_floating_source_revision(tmp_path: Path) -> None:
     path = tmp_path / "bad.yaml"
     path.write_text(

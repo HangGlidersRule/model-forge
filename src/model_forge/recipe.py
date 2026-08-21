@@ -137,6 +137,9 @@ class RuntimeSpec:
     flash_attention: bool = True
     mtp_depth_initial: int | None = None
     mtp_sweep_range: tuple[int, ...] = ()
+    spec_decode: str = "mtp"
+    drafter_model: str | None = None
+    drafter_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -240,6 +243,9 @@ class Recipe:
                 "flash_attention": self.runtime.flash_attention,
                 "mtp_depth_initial": self.runtime.mtp_depth_initial,
                 "mtp_sweep_range": list(self.runtime.mtp_sweep_range),
+                "spec_decode": self.runtime.spec_decode,
+                "drafter_model": self.runtime.drafter_model,
+                "drafter_tokens": self.runtime.drafter_tokens,
             },
             "performance": None
             if self.performance is None
@@ -512,6 +518,19 @@ def _parse_validation(value: Any, label: str = "validation") -> ValidationSpec:
 
 def _parse_runtime(value: Any, label: str = "runtime") -> RuntimeSpec:
     raw = _mapping(value, label)
+    spec_decode_value = raw.get("spec_decode", "mtp")
+    if not isinstance(spec_decode_value, str):
+        raise RecipeError(f"{label}.spec_decode must be a string, got {_kind(spec_decode_value)}")
+    if spec_decode_value not in {"mtp", "dflash", "dflash2"}:
+        raise RecipeError(
+            f"{label}.spec_decode must be one of mtp, dflash, dflash2; got {spec_decode_value!r}"
+        )
+    drafter_model = raw.get("drafter_model")
+    if drafter_model is not None and not isinstance(drafter_model, str):
+        raise RecipeError(f"{label}.drafter_model must be a string, got {_kind(drafter_model)}")
+    drafter_tokens = raw.get("drafter_tokens")
+    if drafter_tokens is not None and (isinstance(drafter_tokens, bool) or not isinstance(drafter_tokens, int)):
+        raise RecipeError(f"{label}.drafter_tokens must be an integer, got {_kind(drafter_tokens)}")
     return RuntimeSpec(
         kv_dtype=_required_str(raw, "kv_dtype", label),
         context_length=_required_int(raw, "context_length", label),
@@ -519,6 +538,9 @@ def _parse_runtime(value: Any, label: str = "runtime") -> RuntimeSpec:
         flash_attention=_bool_field(raw, "flash_attention", label, True),
         mtp_depth_initial=raw.get("mtp_depth_initial"),
         mtp_sweep_range=_int_tuple(raw.get("mtp_sweep_range"), f"{label}.mtp_sweep_range"),
+        spec_decode=spec_decode_value,
+        drafter_model=drafter_model,
+        drafter_tokens=drafter_tokens,
     )
 
 
