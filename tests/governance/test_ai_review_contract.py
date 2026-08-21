@@ -145,7 +145,10 @@ def test_public_ci_has_no_ai_trigger_or_secret_boundary() -> None:
     workflow = yaml.load(workflow_path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     text = workflow_path.read_text(encoding="utf-8").casefold()
 
-    assert set(workflow["on"]) == {"push", "pull_request"}
+    # Deterministic jobs on push/pull_request plus Phase H1 weekly scheduled
+    # security sweep. Paid AI review must never be triggered by these events.
+    assert set(workflow["on"]) >= {"push", "pull_request"}
+    assert set(workflow["on"]) <= {"push", "pull_request", "schedule"}
     assert workflow["permissions"] == {"contents": "read"}
     for forbidden in (
         "pull_request_target",

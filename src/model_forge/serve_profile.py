@@ -94,6 +94,11 @@ class ServeProfile:
     kv_cache_dtype: str = "bf16"
     attention_backend: str = "FLASH_ATTN"
     image: str = "vllm/vllm-openai:v0.27.1"
+    # Speculative decoding axis. "mtp" (default, in-model head), "dflash",
+    # or "dflash2" (separate drafter). drafter_model is required for dflash/dflash2.
+    spec_decode: str = "mtp"
+    drafter_model: str | None = None
+    drafter_tokens: int | None = None
 
     @property
     def alias(self) -> str:
@@ -227,11 +232,31 @@ class ServeProfile:
         if self.attention_backend != "FLASH_ATTN":
             raise ServeProfileError("this frozen profile requires FLASH_ATTN")
         if self.mtp_depth < 1 or self.scheduler_tokens < 1:
-            raise ServeProfileError("MTP depth and scheduler budget must be positive")
+            raise ServeProfileError("scheduler budget and speculative depth must be positive")
+        if self.spec_decode not in {"mtp", "dflash", "dflash2"}:
+            raise ServeProfileError(f"unsupported spec_decode method: {self.spec_decode}")
+        if self.spec_decode in {"dflash", "dflash2"}:
+            if not self.drafter_model:
+                raise ServeProfileError(
+                    f"{self.spec_decode} requires a drafter model (drafter_model)"
+                )
+            if not self.drafter_tokens or self.drafter_tokens < 1:
+                raise ServeProfileError(
+                    f"{self.spec_decode} requires drafter_tokens >= 1"
+                )
 
     def compose(self) -> dict[str, object]:
         self.validate()
-        command = [
+        service = self._service_config(self._command())
+        return {
+            "name": self.alias,
+            "services": {
+                "vllm": service,
+            },
+        }
+
+    def _command(self) -> list[str]:
+        return [
             "--model",
             self.model_path,
             "--served-model-name",
@@ -249,8 +274,23 @@ class ServeProfile:
             "--compilation-config",
             "2",
             "--speculative-config",
-            f'{{"method":"mtp","num_speculative_tokens":{self.mtp_depth}}}',
+            self._speculative_config_json(),
         ]
+
+    def _speculative_config_json(self) -> str:
+        if self.spec_decode == "mtp":
+            return f'{{"method":"mtp","num_speculative_tokens":{self.mtp_depth}}}'
+        # DFlash and DFlash2 share the "dflash" vLLM method name; DFlash2 is
+        # auto-detected from the drafter checkpoint architecture (DFlash2DraftModel).
+        method = "dflash"
+        kwargs: dict[str, object] = {
+            "method": method,
+            "model": self.drafter_model,
+            "num_speculative_tokens": self.drafter_tokens,
+        }
+        return json.dumps(kwargs, sort_keys=True, separators=(",", ":"))
+
+    def _service_config(self, command: list[str]) -> dict[str, object]:
         service: dict[str, object] = {
             "image": self.image,
             "container_name": self.container_name,
@@ -282,12 +322,7 @@ class ServeProfile:
                 },
             }
         )
-        return {
-            "name": self.alias,
-            "services": {
-                "vllm": service,
-            },
-        }
+        return service
 
 
 def render_compose(profile: ServeProfile) -> str:

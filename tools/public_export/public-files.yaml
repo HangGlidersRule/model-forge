@@ -93,10 +93,10 @@ rules:
     source: ".gitignore"
     disposition: transform
     public_destination: "{source}"
-    reason: Preserve useful ignores while removing private-only layout assumptions.
+    reason: Preserve useful ignores while removing private-only layout assumptions. Public metadata hygiene block plus generated negation lines can exceed a 16KB cap.
     transformation: sanitize_public_gitignore
     owner: release-engineering
-    max_size_bytes: 16384
+    max_size_bytes: 32768
     generated: false
     precedence: 100
 
@@ -308,6 +308,53 @@ rules:
     max_size_bytes: 131072
     generated: false
     precedence: 100
+
+  - id: roadmap-doc
+    source: "ROADMAP.md"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the public roadmap after removing private operator details.
+    transformation: sanitize_public_markdown
+    owner: project-governance
+    max_size_bytes: 32768
+    generated: false
+    precedence: 100
+
+  - id: nemotron-lightning-recon
+    source: "models/nemotron-3.5-lightning-r1/recon.json"
+    disposition: exclude
+    public_destination: null
+    reason: Internal Nemotron campaign recon (tensor inventory, abliteration targets, spec-decode notes). Excluded until the family's public onboarding completes.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: nemotron-nano-omni-recon
+    source: "models/nemotron-3-nano-omni-r1/recon.json"
+    disposition: exclude
+    public_destination: null
+    reason: Internal Nemotron campaign recon (tensor inventory, abliteration targets, spec-decode notes). Excluded until the family's public onboarding completes.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: nemotron-campaign-plan
+    source: "plans/nemotron-campaign.md"
+    disposition: exclude
+    public_destination: null
+    reason: Internal campaign plan with private host/tooling references. Excluded until the family's public onboarding completes.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
 
   - id: models-index
     source: "models/README.md"

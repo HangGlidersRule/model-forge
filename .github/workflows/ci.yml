@@ -3,6 +3,9 @@ name: ci
 on:
   push:
   pull_request:
+  # Phase H1: weekly integrity and security sweep (deterministic, secretless).
+  schedule:
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: read

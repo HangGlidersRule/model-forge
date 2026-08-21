@@ -65,7 +65,10 @@ def _steps(workflow: dict[str, Any]) -> list[dict[str, Any]]:
 def test_workflow_is_valid_bounded_yaml_with_safe_events_and_permissions() -> None:
     workflow = _workflow()
 
-    assert set(workflow["on"]) == {"push", "pull_request"}
+    # Deterministic PR/push jobs plus Phase H1 weekly scheduled sweep
+    # (deterministic, secretless, maintainer-visible).
+    assert set(workflow["on"]) >= {"push", "pull_request"}
+    assert set(workflow["on"]) <= {"push", "pull_request", "schedule"}
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"
     assert "self-hosted" not in WORKFLOW_PATH.read_text(encoding="utf-8")
