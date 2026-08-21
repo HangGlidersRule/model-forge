@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private vulnerability report
+    url: https://github.com/HangGlidersRule/model-forge/security/advisories/new
+    about: Report suspected vulnerabilities privately; never open a public security issue.
+  - name: Support policy
+    url: https://github.com/HangGlidersRule/model-forge/blob/main/SUPPORT.md
+    about: Read the support scope and public-data safety rules before filing.

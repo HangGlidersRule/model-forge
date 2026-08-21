@@ -1,0 +1,14 @@
+# Verified repository owner. Keep this file synchronized with GOVERNANCE.md.
+* @HangGlidersRule
+
+/.github/ @HangGlidersRule
+/.gitleaks.toml @HangGlidersRule
+/SECURITY.md @HangGlidersRule
+/GOVERNANCE.md @HangGlidersRule
+/contracts/ @HangGlidersRule
+/containers/ @HangGlidersRule
+/docs/decisions/ @HangGlidersRule
+/scripts/ @HangGlidersRule
+/src/model_forge/public_export/ @HangGlidersRule
+/tools/public_export/ @HangGlidersRule
+/models/*/results/publication-readiness-ledger.json @HangGlidersRule

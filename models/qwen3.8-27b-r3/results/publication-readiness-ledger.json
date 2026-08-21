@@ -1,0 +1,710 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "contracts/darkstar-release/v1/contract.json",
+  "contract_version": "1.0.0",
+  "family": "qwen3.8-27b",
+  "family_display": "Darkstar Qwen3.8-27B",
+  "source_revision": "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "note": "Machine-readable source of truth for the Darkstar four-cell release process. Base BF16 is the unchanged upstream Qwen/Qwen3.8-27B reference only, so owned-publication and clean-download gates are not applicable. The three owned artifacts are public on Hugging Face at pinned revisions and have verified clean download, boot, and models/text/strict-JSON/tool/vision smoke evidence. GHCR is not required because the final cards provide reproducible vLLM commands against the pinned upstream/local environment. The cards are final and reference planned immutable tag darkstar-qwen3.8-27b-v1.0.0. Tag darkstar-qwen3.8-27b-v1.0.0 has been cut; every applicable gate is verified and every product is published.",
+  "any_publication_claim": true,
+  "products": [
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Base-BF16",
+      "role": "base-bf16",
+      "lifecycle": "published",
+      "target_repository": "Qwen/Qwen3.8-27B",
+      "target_repository_status": "resolved",
+      "target_repository_note": "Upstream reference only. Qwen/Qwen3.8-27B at revision 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0 supplies the unchanged BF16 control; HangGlidersRule does not own or republish these weights and has no Base-BF16 repository.",
+      "served_model_alias": "darkstar-qwen38-base-bf16",
+      "runtime_container_name": "vllm-darkstar-qwen38-base-bf16",
+      "model_card": "models/qwen3.8-27b-r3/model-card/base-bf16.md",
+      "recipe": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-base-bf16.yaml",
+      "publication_claim": true,
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Source pinned to Qwen/Qwen3.8-27B@1d4bf0f...; upstream ownership and unchanged-reference status recorded; no HangGlidersRule weight repository exists or is planned",
+          "evidence_path": "models/qwen3.8-27b-r3/artifact-lineage.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "verified",
+          "evidence": "Exact per-file SHA-256 manifest committed for the local artifact",
+          "evidence_path": "models/qwen3.8-27b-r3/results/manifests/base-bf16-manifest.sha256",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Pinned Base BF16 recipe present and hashable (clean source, no transform, no quantization)",
+          "evidence_path": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-base-bf16.yaml",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Structural validation passed; tokenizer/processor/chat/generation config preserved; 333 vision and 15 MTP tensors intact; recorded in the runtime snapshot",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-runtime-snapshots.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "abliteration_pass",
+          "status": "not_applicable",
+          "evidence": "Clean base, no refusal-direction edit",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "not_applicable",
+          "evidence": "BF16 product, not quantized",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "not_applicable",
+          "evidence": "BF16 product, no NVFP4 scales",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "Independent single-stream sweep: winner 130.158 tok/s at MTP8, FlashAttention, 64K scheduler budget, max-num-seqs 16, context 126144, BF16 KV",
+          "evidence_path": "models/qwen3.8-27b-r3/results/performance-base-bf16.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "verified",
+          "evidence": "Measured matched serving-capacity profile committed with concurrency-separated aggregate throughput and zero fatal markers",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-capacity-profiles.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "157/198 = 79.29% full denominator, 198/198 terminal parseable, 0 timeouts, 0 parse errors, 0 errors, thinking off",
+          "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-base-bf16.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "behavior_refusal_eval",
+          "status": "not_applicable",
+          "evidence": "Clean product; fresh abliteration behavior evaluation applies only to abliterated products",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Frozen serve profile: vLLM compiled mode, FlashAttention, BF16 KV, context 126144, MTP depth 8, 64K scheduler budget, max-num-seqs 16",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/base-bf16.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Final model card is complete and references planned immutable release tag darkstar-qwen3.8-27b-v1.0.0; no placeholders remain",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/base-bf16.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "not_applicable",
+          "evidence": "Unchanged upstream-only control: no owned Hugging Face or GHCR publication target exists",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "not_applicable",
+          "evidence": "No owned checkpoint is published or re-downloaded for the upstream-only control",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "Immutable Git release tag darkstar-qwen3.8-27b-v1.0.0 exists and is referenced from the final model card",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/base-bf16.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "GPQA and throughput are exact-artifact evidence; no behavior result is inherited from another artifact",
+          "evidence_path": null,
+          "next_missing_proof": "none \u2014 gate satisfied"
+        }
+      ]
+    },
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Base-ModelOpt-NVFP4",
+      "role": "base-modelopt-nvfp4",
+      "lifecycle": "published",
+      "target_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+      "target_repository_status": "resolved",
+      "target_repository_note": "Resolved to the selected mixed W4A16-NVFP4+FP8 candidate, whose id encodes its real precision class (W4A16 NVFP4 on language MLP + lm_head, FP8 on self-attention and GDN projections). The mixed candidate is the promoted Base ModelOpt release product; the uniform W4A4 candidate was built, measured, and rejected on throughput.",
+      "served_model_alias": "darkstar-qwen38-base-nvfp4",
+      "runtime_container_name": "vllm-darkstar-qwen38-base-modelopt",
+      "model_card": "models/qwen3.8-27b-r3/model-card/base-nvfp4.md",
+      "recipe": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-base-modelopt-nvfp4.yaml",
+      "publication_claim": true,
+      "candidates": [
+        {
+          "candidate_id": "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+          "precision_class": "W4A16-NVFP4-Mixed-FP8",
+          "target_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+          "selection": "selected",
+          "promotion_status": "promoted",
+          "promotion_note": "Selected as the Base ModelOpt release product. It is the single-stream throughput winner at 203.636 tok/s (MTP4, 32K scheduler budget) and its GPQA (153/198 = 77.27%) is within about 2.02 percentage points / 4 questions of the Base BF16 baseline (157/198 = 79.29%). The uniform W4A4 candidate was built and rejected at 129.441 tok/s. Quantizes lm_head in W4A16 NVFP4.",
+          "recipe": "configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml",
+          "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-base-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "immutable_hashes": {
+            "summary_sha256": "fcff97b37e79cc12d71c9f4ddf0d9b6d4c54e57cb5434451243a432fb5630f65",
+            "journal_sha256": "a436ce07f121d5fccceadddf217a5f3a8d5009d82f6b357be3b3eb3c1b017beb",
+            "artifact_success_sha256": "1ad8da721a95e3f12428a22b3f91f67f213dfc197724dcf21630fbb82a8fb8a9",
+            "recipe_sha256": "90fc6b37c00334debd49f1975ab406b5e20667f07e4be0be3e463a648abac642",
+            "operator_snapshot_compose_sha256": "935f3b3d2350669e4b44a746a088b760328697184aae56b1ef6602f401b79031",
+            "vllm_image": "sha256:a066d0015d13de791b2149c90643ea6dc4e7b0c121317a649ee9c161d6afda22"
+          },
+          "gpqa": {
+            "correct": 153,
+            "denominator": 198,
+            "accuracy_full_denominator": 0.7727272727,
+            "terminal_parseable": 198,
+            "timeouts": 0,
+            "parse_errors": 0,
+            "errors": 0,
+            "thinking": false,
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20,
+            "workers": 4,
+            "output_cap": null
+          },
+          "precision_map": {
+            "language_mlp": "W4A16-NVFP4-g16",
+            "lm_head": "W4A16-NVFP4-g16",
+            "self_attention": "FP8-e4m3",
+            "gdn_projections": "FP8-e4m3",
+            "kv_cache": "BF16",
+            "protected": "BF16"
+          }
+        },
+        {
+          "candidate_id": "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A4-NVFP4",
+          "precision_class": "W4A4-NVFP4",
+          "target_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A4-NVFP4",
+          "selection": "rejected",
+          "promotion_status": "none",
+          "promotion_note": "Uniform W4A4 NVFP4 candidate built and measured for the W4A16-vs-W4A4 comparison, then rejected: 129.441 tok/s single-stream, far below the mixed W4A16 winner's 203.636 tok/s. Retained for lineage; never the release product.",
+          "recipe": null,
+          "evidence_path": "models/qwen3.8-27b-r3/results/performance-nvfp4.json",
+          "precision_map": {
+            "language_mlp": "W4A4-NVFP4-g16",
+            "lm_head": "BF16",
+            "self_attention": "W4A4-NVFP4-g16",
+            "gdn_projections": "W4A4-NVFP4-g16",
+            "kv_cache": "BF16",
+            "protected": "BF16"
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Source pinned to Qwen/Qwen3.8-27B@1d4bf0f...; Darkstar-owned ModelOpt NVFP4 quantization",
+          "evidence_path": "models/qwen3.8-27b-r3/artifact-lineage.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "verified",
+          "evidence": "Exact per-file SHA-256 manifest committed for the local artifact",
+          "evidence_path": "models/qwen3.8-27b-r3/results/manifests/base-modelopt-mixed-manifest.sha256",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Pinned ModelOpt recipe present and hashable; selected recipe quantizes lm_head in W4A16 NVFP4 (recipe_sha256 90fc6b37...)",
+          "evidence_path": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-base-modelopt-nvfp4.yaml",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Fail-closed validators passed on the export: no NaN/Inf/zero scales, no quantized vision, 15 BF16 MTP tensors, no FP8 KV metadata, no mixed fused groups; snapshot captured",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-runtime-snapshots.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "abliteration_pass",
+          "status": "not_applicable",
+          "evidence": "Clean base, no refusal-direction edit",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "verified",
+          "evidence": "W4A16-vs-W4A4 comparison complete: mixed W4A16-NVFP4+FP8 selected (203.636 tok/s, GPQA 153/198); uniform W4A4 built and rejected (129.441 tok/s); winning recipe recorded",
+          "evidence_path": "models/qwen3.8-27b-r3/results/performance-nvfp4.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "verified",
+          "evidence": "Tensor/scale integrity validated on the mixed candidate: finite NVFP4 scales, BF16 MTP preserved, no quantized vision, no mixed fused groups, no FP8 KV metadata",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-runtime-snapshots.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "Independent single-stream MTP sweep on the mixed W4A16-NVFP4+FP8 candidate: winner 203.636 tok/s at MTP4, 32K scheduler budget, max-num-seqs 16, context 126144, BF16 KV, FlashAttention",
+          "evidence_path": "models/qwen3.8-27b-r3/results/performance-nvfp4.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "verified",
+          "evidence": "Measured matched serving-capacity profile committed with concurrency-separated aggregate throughput and zero fatal markers",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-capacity-profiles.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "Mixed W4A16-NVFP4+FP8 candidate: 153/198 = 77.27% full denominator, 198/198 terminal parseable, 0 timeout/parse/error, thinking off, temp 1.0 top_p 0.95 top_k 20; external operator evidence with immutable hashes",
+          "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-base-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "behavior_refusal_eval",
+          "status": "not_applicable",
+          "evidence": "Clean product; fresh abliteration behavior evaluation applies only to abliterated products",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Frozen serve profile: vLLM compiled mode, FlashAttention, BF16 KV, context 126144, MTP depth 4, 32K scheduler budget, max-num-seqs 16",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/base-nvfp4.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Final model card is complete and references planned immutable release tag darkstar-qwen3.8-27b-v1.0.0; no placeholders remain",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/base-nvfp4.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "Anonymous Hugging Face API and config.json checks verify the repository is public, ungated, enabled, and at revision c3f03c5bf5a28a636d72cd979323ff2f80668fb0; GHCR is explicitly not required for this release",
+          "evidence_path": "models/qwen3.8-27b-r3/results/release-gate-20260821/release-gate-summary.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "verified",
+          "evidence": "Fresh-target download verified with zero failures; vLLM boot and models/text/strict JSON/tool/vision smoke passed with zero failures and an empty fatal log; public revision c3f03c5bf5a28a636d72cd979323ff2f80668fb0",
+          "evidence_path": "models/qwen3.8-27b-r3/results/release-gate-20260821/release-gate-summary.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "Immutable Git release tag darkstar-qwen3.8-27b-v1.0.0 exists and is referenced from the final model card",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/base-nvfp4.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "GPQA and throughput are exact-artifact evidence; no behavior result is inherited from another artifact",
+          "evidence_path": null,
+          "next_missing_proof": "none \u2014 gate satisfied"
+        }
+      ]
+    },
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Abliterated-BF16",
+      "role": "abliterated-bf16",
+      "lifecycle": "published",
+      "target_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-BF16",
+      "target_repository_status": "resolved",
+      "target_repository_note": "BF16 role: the format is unambiguous, so the id needs no activation-precision qualifier. Built locally and fully evaluated; only public release remains.",
+      "served_model_alias": "darkstar-qwen38-abliterated-bf16",
+      "runtime_container_name": "vllm-darkstar-qwen38-abliterated-bf16",
+      "model_card": "models/qwen3.8-27b-r3/model-card/bf16.md",
+      "recipe": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-bf16.yaml",
+      "publication_claim": true,
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Source pinned; R3 refusal-direction edit lineage documented",
+          "evidence_path": "models/qwen3.8-27b-r3/artifact-lineage.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "verified",
+          "evidence": "Exact per-file SHA-256 manifest committed for the local artifact",
+          "evidence_path": "models/qwen3.8-27b-r3/results/manifests/abliterated-bf16-manifest.sha256",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Pinned edit recipe and 131-tensor target inventory documented",
+          "evidence_path": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-bf16.yaml",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Structural validation passed: 131 edited tensors accounted for, 333 vision and 15 BF16 MTP tensors preserved, tokenizer/processor/chat/generation config unchanged",
+          "evidence_path": "models/qwen3.8-27b-r3/artifact-lineage.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "abliteration_pass",
+          "status": "verified",
+          "evidence": "Reproducible projection (layer 38, seed 42, leakage ~0.000195); fresh abliteration eval on this exact artifact: 200/200 harmful compliance (0/200 refusals), 0/83 over-refusals, 0 errors; summary SHA c2ad..., journal SHA a20c...",
+          "evidence_path": "models/qwen3.8-27b-r3/results/abliteration-eval-abliterated-bf16.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "not_applicable",
+          "evidence": "BF16 product, not quantized",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "not_applicable",
+          "evidence": "BF16 product, no NVFP4 scales",
+          "evidence_path": null,
+          "next_missing_proof": "none"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "Independent single-stream sweep: winner 144.502 tok/s at MTP11, FlashAttention, 16K scheduler budget, max-num-seqs 16, context 126144, BF16 KV",
+          "evidence_path": "models/qwen3.8-27b-r3/results/performance-abliterated-bf16.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "verified",
+          "evidence": "Measured matched serving-capacity profile committed with concurrency-separated aggregate throughput and zero fatal markers",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-capacity-profiles.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "146/198 = 73.74% full denominator, 198/198 terminal parseable, 0 timeouts, 0 parse errors, 0 errors, thinking off; summary SHA 85c542..., journal SHA 0169...",
+          "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-abliterated-bf16.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "behavior_refusal_eval",
+          "status": "verified",
+          "evidence": "Fresh abliteration eval on this exact BF16 artifact: 200/200 harmful compliance (0/200 refusals), 0/83 safe over-refusals, 0 errors",
+          "evidence_path": "models/qwen3.8-27b-r3/results/abliteration-eval-abliterated-bf16.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Frozen serve profile: vLLM compiled mode, FlashAttention, BF16 KV, context 126144, MTP depth 11, 16K scheduler budget, max-num-seqs 16",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/bf16.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Final model card is complete and references planned immutable release tag darkstar-qwen3.8-27b-v1.0.0; no placeholders remain",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/bf16.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "Anonymous Hugging Face API and config.json checks verify the repository is public, ungated, enabled, and at revision 0181d5d178a15c694b1d6708d3ee3d08d2d9db5e; GHCR is explicitly not required for this release",
+          "evidence_path": "models/qwen3.8-27b-r3/results/release-gate-20260821/release-gate-summary.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "verified",
+          "evidence": "Fresh-target download verified with zero failures; vLLM boot and models/text/strict JSON/tool/vision smoke passed with zero failures and an empty fatal log; public revision 0181d5d178a15c694b1d6708d3ee3d08d2d9db5e",
+          "evidence_path": "models/qwen3.8-27b-r3/results/release-gate-20260821/release-gate-summary.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "Immutable Git release tag darkstar-qwen3.8-27b-v1.0.0 exists and is referenced from the final model card",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/bf16.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "GPQA, throughput, and the fresh abliteration eval all measured directly on this exact BF16 artifact",
+          "evidence_path": null,
+          "next_missing_proof": "none \u2014 gate satisfied"
+        }
+      ]
+    },
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-NVFP4",
+      "role": "abliterated-modelopt-nvfp4",
+      "lifecycle": "published",
+      "target_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+      "target_repository_status": "resolved",
+      "target_repository_note": "Resolved to the abliterated mixed W4A16-NVFP4+FP8 candidate, the selected/promoted Abliterated ModelOpt release product. It is a finished local build (every applicable build gate verified) that reused the selected clean-base recipe (recipe_sha256 90fc6b37...); only publication-only gates remain open. The uniform W4A4 abliterated candidate was never built (the clean-base W4A4 comparison already rejected uniform W4A4 on throughput) and keeps its own reserved repository id for lineage.",
+      "served_model_alias": "darkstar-qwen38-abliterated-nvfp4",
+      "runtime_container_name": "vllm-darkstar-qwen38-abliterated-modelopt",
+      "serve_compose": "containers/serve/darkstar-qwen38-abliterated-nvfp4.yml",
+      "model_card": "models/qwen3.8-27b-r3/model-card/nvfp4.md",
+      "recipe": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml",
+      "publication_claim": true,
+      "candidates": [
+        {
+          "candidate_id": "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+          "precision_class": "W4A16-NVFP4-Mixed-FP8",
+          "target_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+          "selection": "selected",
+          "promotion_status": "promoted",
+          "promotion_note": "Selected/promoted as the Abliterated ModelOpt release product. It is the finished local build, reusing the selected clean Base mixed W4A16-NVFP4+FP8 recipe (quantizes lm_head in W4A16 NVFP4). Independent single-stream MTP1-12 sweep: headline peak MTP8 251.316 tok/s, but the sweep was non-monotonic, so a confirmation sequence (10->8->8->10) selected MTP10 on a higher mean throughput (MTP10 mean 251.889 tok/s vs MTP8 mean 250.862 tok/s). GPQA 148/198 = 74.75%. The uniform W4A4 abliterated candidate was never built (the clean-base W4A4 comparison already rejected uniform W4A4 on throughput).",
+          "recipe": "configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml",
+          "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-abliterated-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "immutable_hashes": {
+            "summary_sha256": "d8d0b5c0de686846338ce89e9a55456baec0550bbad765ccc65e9fa57380b818",
+            "journal_sha256": "9bb4913202977bad204ebde8d2e31e8357a3308f3b77c44539ef3977a2c6e813",
+            "artifact_success_sha256": "3d89ec57c1371e142adc2584de079b54a0e1d8c12dc9550118d0a851da020a79",
+            "manifest_sha256": "642dbbe89b085a2daf5119c37c0496576a475ed64c36653fc993c04abaf2ca9f",
+            "recipe_sha256": "90fc6b37c00334debd49f1975ab406b5e20667f07e4be0be3e463a648abac642",
+            "operator_snapshot_compose_sha256": "85ba68155418dad7387219f62889def88c62a0e2ca35d15e3f83d62879077088",
+            "tracked_serve_compose_sha256": "5434c2a99bdadce512bd87b65c30f830c21fc2eae647182ffa89e77b174833cc",
+            "serve_correctness_sha256": "4c88632efcfc736518a66351c95735eb2f9ff7ce79496d050a53d171beaf4613",
+            "performance_confirmation_sha256": "6e52a5ad4f87a8b12866e0939c2d2024701172d8b5a56a7839ce00738f1a3ac9",
+            "vllm_image": "sha256:a066d0015d13de791b2149c90643ea6dc4e7b0c121317a649ee9c161d6afda22"
+          },
+          "gpqa": {
+            "correct": 148,
+            "denominator": 198,
+            "accuracy_full_denominator": 0.7474747474747475,
+            "terminal_parseable": 198,
+            "timeouts": 0,
+            "parse_errors": 0,
+            "errors": 0,
+            "thinking": false,
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20,
+            "workers": 4,
+            "output_cap": null
+          },
+          "precision_map": {
+            "language_mlp": "W4A16-NVFP4-g16",
+            "lm_head": "W4A16-NVFP4-g16",
+            "self_attention": "FP8-e4m3",
+            "gdn_projections": "FP8-e4m3",
+            "kv_cache": "BF16",
+            "protected": "BF16"
+          }
+        },
+        {
+          "candidate_id": "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A4-NVFP4",
+          "precision_class": "W4A4-NVFP4",
+          "target_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A4-NVFP4",
+          "selection": "not_built",
+          "promotion_status": "none",
+          "promotion_note": "Uniform W4A4 NVFP4 abliterated candidate not built; the clean-base W4A4 comparison already rejected uniform W4A4 on throughput.",
+          "recipe": null,
+          "evidence_path": null,
+          "precision_map": {
+            "language_mlp": "W4A4-NVFP4-g16",
+            "lm_head": "BF16",
+            "self_attention": "W4A4-NVFP4-g16",
+            "gdn_projections": "W4A4-NVFP4-g16",
+            "kv_cache": "BF16",
+            "protected": "BF16"
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Source pinned to Qwen/Qwen3.8-27B@1d4bf0f...; R3 refusal-direction edit lineage documented; Darkstar-owned ModelOpt NVFP4 quantization",
+          "evidence_path": "models/qwen3.8-27b-r3/artifact-lineage.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "verified",
+          "evidence": "Local build frozen at /d/model-forge/artifacts/Qwen3.8-27B-abliterated-performance-mixed-modelopt: _SUCCESS SHA-256 3d89ec57..., manifest.sha256 SHA-256 642dbbe8...; runtime snapshot inspect prefix f1e94a76, logs 4ffe8666, operator snapshot compose 85ba6815 recorded; tracked serve compose 5434c2a9 rendered from the frozen profile",
+          "evidence_path": "models/qwen3.8-27b-r3/results/manifests/abliterated-modelopt-mixed-manifest.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Pinned recipe present; reuses the selected clean mixed W4A16-NVFP4+FP8 recipe (recipe_sha256 90fc6b37...) plus the 131-tensor R3 edit inventory",
+          "evidence_path": "recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Fail-closed validators passed on the export: no NaN/Inf/zero scales, no quantized vision, 15 BF16 MTP tensors, no FP8 KV metadata, no mixed fused groups, 131 R3-edited tensors preserved through quantization; snapshot captured",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-runtime-snapshots.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "abliteration_pass",
+          "status": "verified",
+          "evidence": "Reproducible projection (layer 38, seed 42, leakage ~0.000195); fresh abliteration eval on this exact ModelOpt build: 200/200 harmful compliance (0/200 refusals), 0/83 over-refusals, 0 errors; summary SHA d814ea..., journal SHA 7b6dd...",
+          "evidence_path": "models/qwen3.8-27b-r3/results/abliteration-eval-abliterated-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "verified",
+          "evidence": "Reuses the selected clean-base W4A16-vs-W4A4 comparison; the abliterated mixed W4A16-NVFP4+FP8 candidate is built and measured (single-stream winner MTP10 251.889 tok/s); uniform W4A4 abliterated not built (clean-base W4A4 already rejected on throughput); winning recipe recorded",
+          "evidence_path": "models/qwen3.8-27b-r3/results/performance-abliterated-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "verified",
+          "evidence": "Tensor/scale integrity validated on the abliterated mixed build: finite NVFP4 scales, BF16 MTP preserved, no quantized vision, no mixed fused groups, no FP8 KV metadata",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-runtime-snapshots.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "Independent single-stream MTP1-12 sweep on the abliterated mixed candidate: headline peak MTP8 251.316 tok/s, but non-monotonic; confirmation 10->8->8->10 selected MTP10 (mean 251.889 tok/s vs MTP8 mean 250.862 tok/s), 32K scheduler budget, max-num-seqs 16, context 126144, BF16 KV, FlashAttention",
+          "evidence_path": "models/qwen3.8-27b-r3/results/performance-abliterated-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "verified",
+          "evidence": "Matched per-concurrency cells measured on this exact build at the selected MTP10 profile: 4K/16K/48K prompts at concurrency 1 and 2, 512 generated tokens, 2 repeats per cell, 0 failed requests, zero fatal markers (source SHA 6e52a5ad...); semantic serving gates (tools, strict JSON, vision, prefix cache, 20-request sustained load) all pass, evidence SHA 4c8863...",
+          "evidence_path": "models/qwen3.8-27b-r3/results/serving-capacity-profiles.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "Abliterated mixed W4A16-NVFP4+FP8 candidate: 148/198 = 74.75% full denominator, 198/198 terminal parseable, 0 timeout/parse/error, thinking off, temp 1.0 top_p 0.95 top_k 20; external operator evidence with immutable hashes (summary d8d0b5c0..., journal 9bb49132...)",
+          "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-abliterated-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "behavior_refusal_eval",
+          "status": "verified",
+          "evidence": "Fresh abliteration eval on this exact ModelOpt build: 283/283 terminal (200 harmful + 83 safe), 200/200 harmful compliance (0/200 refusals), 0/83 safe over-refusals, 0 errors",
+          "evidence_path": "models/qwen3.8-27b-r3/results/abliteration-eval-abliterated-modelopt-w4a16-nvfp4-mixed-fp8.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Frozen serve profile: vLLM compiled mode, FlashAttention, BF16 KV, context 126144, MTP depth 10, 32K scheduler budget, max-num-seqs 16, prefix caching + chunked prefill",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/nvfp4.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Final model card is complete and references planned immutable release tag darkstar-qwen3.8-27b-v1.0.0; no placeholders remain",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/nvfp4.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "Anonymous Hugging Face API and config.json checks verify the repository is public, ungated, enabled, and at revision 2e25bd97fd1b6e6c7989e74c261d93a8702496e8; GHCR is explicitly not required for this release",
+          "evidence_path": "models/qwen3.8-27b-r3/results/release-gate-20260821/release-gate-summary.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "verified",
+          "evidence": "Fresh-target download verified with zero failures; vLLM boot and models/text/strict JSON/tool/vision smoke passed with zero failures and an empty fatal log; public revision 2e25bd97fd1b6e6c7989e74c261d93a8702496e8",
+          "evidence_path": "models/qwen3.8-27b-r3/results/release-gate-20260821/release-gate-summary.json",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "Immutable Git release tag darkstar-qwen3.8-27b-v1.0.0 exists and is referenced from the final model card",
+          "evidence_path": "models/qwen3.8-27b-r3/model-card/nvfp4.md",
+          "next_missing_proof": "none \u2014 gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "GPQA, throughput, serving correctness, and the fresh abliteration eval all measured directly on this exact abliterated ModelOpt build; compressed-tensors GPQA/perf/behavior numbers rejected, never inherited",
+          "evidence_path": null,
+          "next_missing_proof": "none \u2014 gate satisfied"
+        }
+      ]
+    }
+  ],
+  "rejected_historical": [
+    {
+      "item": "llm-compressor compressed-tensors NVFP4 (Base)",
+      "reason": "Superseded by the NVIDIA ModelOpt path; kept for lineage only, never republished as current",
+      "evidence_path": null
+    },
+    {
+      "item": "llm-compressor compressed-tensors NVFP4 (R3 Abliterated)",
+      "reason": "Superseded by the NVIDIA ModelOpt path; kept for lineage only, never republished as current",
+      "evidence_path": null
+    },
+    {
+      "item": "R3 NVFP4 GPQA thinking-on 164/198",
+      "reason": "Mixed protocol (thinking enabled) on the rejected compressed-tensors artifact; not matched-matrix eligible",
+      "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-matrix.json"
+    },
+    {
+      "item": "Official/R3 BF16 GPQA partials (159/198 and 162/198 completed with client timeouts)",
+      "reason": "Non-frozen protocol partials, superseded by the frozen full-denominator runs on the Darkstar Base BF16 (157/198) and Abliterated BF16 (146/198) products",
+      "evidence_path": "models/qwen3.8-27b-r3/results/gpqa-matrix.json"
+    }
+  ],
+  "related_issues": [
+    "#4",
+    "#5",
+    "#6",
+    "#7",
+    "#8",
+    "#9",
+    "#10",
+    "#11",
+    "#12",
+    "#13",
+    "#14"
+  ]
+}

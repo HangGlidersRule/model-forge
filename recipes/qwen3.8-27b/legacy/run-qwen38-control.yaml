@@ -1,0 +1,20 @@
+schema_version: "1.0"
+name: Qwen3.8 control
+models:
+  - id: qwen38-control-sakamakismile-nvfp4
+    endpoint: ${QWEN38_CONTROL_ENDPOINT:-http://127.0.0.1:8101/v1}
+    model: qwen38-control
+    family: qwen3.8
+    precision: nvfp4
+    runtime: vllm-0.27.1-mtp3
+    revision: 6d98dc1f1d5259c9582794014b73852baf20f805
+tracks:
+  - {name: no-think, reasoning: false, temperature: 0, top_p: 1, seed: 42}
+  - {name: think-medium, reasoning: true, reasoning_effort: medium, temperature: 1, top_p: 0.95, seed: 42}
+suites: [smoke, core, instruction, overrefusal]
+repeats: 3
+max_parallel: 1
+output:
+  retain_prompts: false
+  retain_responses: true
+  redact_patterns: []

@@ -1,0 +1,41 @@
+services:
+  build-runner:
+    image: ${BUILD_IMAGE:-nvidia/cuda:12.8.0-devel-ubuntu22.04}
+    runtime: nvidia
+    volumes:
+      - work-state:/work
+      - model-data:/models
+      - ${REPO_ROOT:-.}:/repo:ro
+    working_dir: /repo
+    environment:
+      - RUN_ROOT=${RUN_ROOT:-/work/runs/current}
+      # Fail closed: callers must deliberately select a current recipe. Never fall
+      # back to the rejected historical r3-nvfp4 compressed-tensors workflow.
+      - CONFIG=${CONFIG:?Set CONFIG explicitly to a supported current recipe}
+      - DRY_RUN=${DRY_RUN:-1}
+      - HF_HOME=${HF_HOME:-/work/hf_cache}
+      # Repo-relative launcher for the mounted repo. Defaults to the Qwen3.8 pipeline;
+      # another family selects its own launcher (e.g. scripts/<family>/build.sh) without
+      # editing this file. The container shell reads it from the environment below.
+      - BUILD_SCRIPT=${BUILD_SCRIPT:-scripts/qwen3_8/run_qwen38_build_mcprue.sh}
+    command: >-
+      bash -c '
+        pip install -e /repo[dev] &&
+        pip install torch transformers safetensors huggingface-hub datasets llmcompressor compressed-tensors &&
+        bash "/repo/$$BUILD_SCRIPT"
+      '
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  model-data:
+    external: true
+    name: ${MODEL_DATA_VOLUME:-model-forge-model-data}
+  work-state:
+    external: true
+    name: ${WORK_STATE_VOLUME:-model-forge-work-state}
