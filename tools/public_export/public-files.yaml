@@ -466,6 +466,17 @@ rules:
     generated: false
     precedence: 100
 
+  - id: hf-card-lightning-base-modelopt
+    source: "publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Lightning base ModelOpt artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
   - id: hf-card-lightning-abliterated-bf16
     source: "publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16/README.md"
     disposition: copy
