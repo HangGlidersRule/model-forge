@@ -32,14 +32,14 @@ pinned to `d468880b6ad3c6e0d21377ce7242adaea4cc884d` under OpenMDW-1.1.
 
 ## Hugging Face repositories
 
-Exactly two public HangGlidersRule repositories contain complete, hash-verified checkpoints and
+Exactly three public HangGlidersRule repositories contain complete, hash-verified checkpoints and
 final cards:
 
+- `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4`
 - `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16`
 - `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4`
 
-No HangGlidersRule repository exists or is planned for the unchanged BF16 control or the Base NVFP4
-cell unless explicitly requested.
+No HangGlidersRule repository exists or is planned for the unchanged BF16 control.
 
 ## Current status
 
