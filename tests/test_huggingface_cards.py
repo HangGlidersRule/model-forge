@@ -27,7 +27,7 @@ EXPECTED_METADATA = {
     ),
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16": (
         "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
-        "edited",
+        "finetune",
     ),
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": (
         "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",

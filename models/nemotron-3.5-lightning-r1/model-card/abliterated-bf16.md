@@ -11,7 +11,7 @@ tags:
   - hybrid-mamba-moe
 pipeline_tag: text-generation
 base_model: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
-base_model_relation: edited
+base_model_relation: finetune
 extra_gated_heading: Darkstar Nemotron-3.5-Lightning 30B-A3B Abliterated BF16
 ---
 
