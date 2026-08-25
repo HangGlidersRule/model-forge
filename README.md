@@ -97,7 +97,30 @@ W4A16-NVFP4+FP8 `153/198 = 77.27%`, Abliterated BF16 `146/198 = 73.74%`, and Abl
 mixed W4A16-NVFP4+FP8 `148/198 = 74.75%`. A secondary thinking-enabled run scored
 `164/198`, but that number comes from the rejected historical R3 compressed-tensors NVFP4 artifact —
 not this ModelOpt build — and is neither matched-matrix eligible nor attributable to quantization
-alone. Full caveats live in the [benchmark matrix](models/qwen3.8-27b-r3/benchmark-matrix.md).
+| Full caveats live in the [benchmark matrix](models/qwen3.8-27b-r3/benchmark-matrix.md).
+
+### Nemotron-3.5-Lightning 30B-A3B
+
+Record: [`models/nemotron-3.5-lightning-r1/`](models/nemotron-3.5-lightning-r1/). Shared source
+revision: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16@d468880b6ad3c6e0d21377ce7242adaea4cc884d`
+(OpenMDW-1.1). Hybrid Mamba2 + MoE + sparse attention, 52 layers, 262,144-token context.
+Abliteration internal lineage id: **R1** (canonical layer-34, chat-templated, 320/320, 3,126
+residual-writing targets).
+
+| Lineage | Edit | Format | Target repository | Local card | Status |
+|---|---|---|---|---|---|
+| Upstream BF16 control | Clean | BF16 | [`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) (external) | — | Upstream weights; evaluated at pinned revision |
+| Darkstar Base | Clean | ModelOpt NVFP4 (W4A16 experts, BF16 protected) | (sibling cell; not republished) | — | Evaluated |
+| Darkstar Abliterated (R1) | Abliterated | BF16 | `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16` (planned) | [`abliterated-bf16.md`](models/nemotron-3.5-lightning-r1/model-card/abliterated-bf16.md) | Staged — gates passing |
+| Darkstar Abliterated (R1) | Abliterated | ModelOpt NVFP4 (W4A16 experts, BF16 protected) | `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4` (planned) | [`abliterated-nvfp4.md`](models/nemotron-3.5-lightning-r1/model-card/abliterated-nvfp4.md) | Staged — gates passing |
+
+Docs: [`benchmark-matrix.md`](models/nemotron-3.5-lightning-r1/benchmark-matrix.md),
+[`gpqa-protocol.md`](models/nemotron-3.5-lightning-r1/gpqa-protocol.md),
+[`artifact-lineage.md`](models/nemotron-3.5-lightning-r1/artifact-lineage.md),
+[`publication-plan.md`](models/nemotron-3.5-lightning-r1/publication-plan.md),
+results: [`gpqa-matrix.json`](models/nemotron-3.5-lightning-r1/results/gpqa-matrix.json),
+[`publication-readiness-ledger.json`](models/nemotron-3.5-lightning-r1/results/publication-readiness-ledger.json).
+Recipes: [`recipes/nemotron-3.5-lightning/`](recipes/nemotron-3.5-lightning/).
 
 ## What each model record contains
 

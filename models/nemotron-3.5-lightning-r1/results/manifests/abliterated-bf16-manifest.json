@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "evidence_kind": "external_artifact_manifest_attestation",
+  "product_id": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated",
+  "candidate_id": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
+  "precision_class": "BF16",
+  "artifact_path": "${PUBLIC_ARTIFACT_PATH}",
+  "success_marker": "_SUCCESS.json",
+  "success_marker_sha256": "f72b5561e7e67b10b5767a965937ed77d4e001c6963156e1c291d1b4b588823e",
+  "manifest": "abliterated-bf16-manifest.sha256",
+  "manifest_sha256": "c0adef70cc01aa3dfbf3deac4c35b7dcf722524c82c59d0f3508c78876a695bc",
+  "file_count": 31
+}

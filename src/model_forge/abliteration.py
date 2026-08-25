@@ -110,7 +110,11 @@ def project_weight(
     w = weight.float()
     r = direction.float()
 
-    if w.shape[0] == r.shape[0]:
+    if w.ndim == 1:
+        # 1-D parameter (e.g. norm_f gain): w' = w - (w . r) r
+        proj = (w @ r) * r
+        w = w - proj
+    elif w.shape[0] == r.shape[0]:
         # [out, in] with direction along output dim: W' = W - r @ (r^T @ W)
         proj = torch.outer(r, r @ w)
         w = w - proj

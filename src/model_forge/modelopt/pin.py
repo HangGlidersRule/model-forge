@@ -17,6 +17,10 @@ RECIPES_DIR = REPO_ROOT / "configs" / "modelopt" / "recipes"
 PRIMARY_RECIPE = RECIPES_DIR / "nvfp4_mlp_only_mse-kv_bf16.yaml"
 OMLP_RECIPE = RECIPES_DIR / "nvfp4_omlp_only_mse-kv_bf16.yaml"
 MIXED_W4A16_RECIPE = RECIPES_DIR / "w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml"
+# Nemotron-3.5-Lightning-30B-A3B (nemotron_h, hybrid Mamba2+MoE+Attention):
+# W4A16 NVFP4 on MLP/MoE projections, FP8 attention, Mamba2/SSM + MTP protected,
+# BF16 KV. See recipe file for full protections.
+LIGHTNING_W4A16_RECIPE = RECIPES_DIR / "w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h.yaml"
 # Compatibility alias for callers written before the mixed recipe was selected.
 OPTIONAL_W4A16_RECIPE = MIXED_W4A16_RECIPE
 

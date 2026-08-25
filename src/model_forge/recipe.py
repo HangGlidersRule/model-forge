@@ -521,9 +521,10 @@ def _parse_runtime(value: Any, label: str = "runtime") -> RuntimeSpec:
     spec_decode_value = raw.get("spec_decode", "mtp")
     if not isinstance(spec_decode_value, str):
         raise RecipeError(f"{label}.spec_decode must be a string, got {_kind(spec_decode_value)}")
-    if spec_decode_value not in {"mtp", "dflash", "dflash2"}:
+    if spec_decode_value not in {"mtp", "dflash", "dflash2", "dspark"}:
         raise RecipeError(
-            f"{label}.spec_decode must be one of mtp, dflash, dflash2; got {spec_decode_value!r}"
+            f"{label}.spec_decode must be one of mtp, dflash, dflash2, dspark; "
+            f"got {spec_decode_value!r}"
         )
     drafter_model = raw.get("drafter_model")
     if drafter_model is not None and not isinstance(drafter_model, str):
@@ -531,6 +532,13 @@ def _parse_runtime(value: Any, label: str = "runtime") -> RuntimeSpec:
     drafter_tokens = raw.get("drafter_tokens")
     if drafter_tokens is not None and (isinstance(drafter_tokens, bool) or not isinstance(drafter_tokens, int)):
         raise RecipeError(f"{label}.drafter_tokens must be an integer, got {_kind(drafter_tokens)}")
+    if spec_decode_value in {"dflash", "dflash2", "dspark"}:
+        if not drafter_model:
+            raise RecipeError(f"{label}.drafter_model is required for {spec_decode_value}")
+        if drafter_tokens is None or drafter_tokens <= 0:
+            raise RecipeError(
+                f"{label}.drafter_tokens must be a positive integer for {spec_decode_value}"
+            )
     return RuntimeSpec(
         kv_dtype=_required_str(raw, "kv_dtype", label),
         context_length=_required_int(raw, "context_length", label),

@@ -37,6 +37,7 @@ from model_forge.modelopt.identity import (
     normalize_source_kind,
 )
 from model_forge.modelopt.pin import (
+    LIGHTNING_W4A16_RECIPE,
     MIXED_W4A16_RECIPE,
     OMLP_RECIPE,
     PRIMARY_RECIPE,
@@ -49,6 +50,7 @@ CANDIDATES = {
     "mixed_w4a16": MIXED_W4A16_RECIPE,
     "mlp_only": PRIMARY_RECIPE,
     "omlp": OMLP_RECIPE,
+    "lightning_w4a16": LIGHTNING_W4A16_RECIPE,
     # Compatibility alias retained for old command lines and build identities.
     "w4a16_optional": MIXED_W4A16_RECIPE,
 }

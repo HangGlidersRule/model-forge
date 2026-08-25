@@ -11,6 +11,7 @@ from typing import Any
 
 from model_forge.modelopt.policy import (
     FINAL_EXCLUSION_GLOBS,
+    REPRESENTATIVE_NEMOTRON_MODULES,
     REPRESENTATIVE_QWEN_MODULES,
     assert_final_exclusions_present,
     assert_no_mixed_fused_groups,
@@ -53,7 +54,11 @@ def validate_recipe_file(path: Path) -> ValidationReport:
         kv_hits = detect_fp8_kv_rules(rules)
         if kv_hits:
             errors.append(f"FP8 KV rules present (must keep BF16 KV): {kv_hits}")
-        resolved = resolve_module_policy(REPRESENTATIVE_QWEN_MODULES, rules)
+        is_nemotron = "nemotron_h" in path.name
+        representative = (
+            REPRESENTATIVE_NEMOTRON_MODULES if is_nemotron else REPRESENTATIVE_QWEN_MODULES
+        )
+        resolved = resolve_module_policy(representative, rules)
         assert_no_mixed_fused_groups(resolved)
         report = coverage_report(resolved)
         details["coverage"] = report
@@ -63,15 +68,26 @@ def validate_recipe_file(path: Path) -> ValidationReport:
             errors.append(f"MTP modules would be quantized: {report['mtp_quantized']}")
         if report["nvfp4_count"] == 0 and path.name.startswith("nvfp4_"):
             errors.append("Expected non-zero NVFP4 coverage on representative Qwen modules")
-        mixed_w4a16 = path.name == "w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml"
-        # Embeddings always stay disabled. The exact selected mixed operator
-        # recipe intentionally quantizes lm_head in W4A16 NVFP4.
+        mixed_w4a16 = path.name in (
+            "w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml",
+            "w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h.yaml",
+        )
+        # Embeddings always stay disabled. The Qwen mixed operator recipe
+        # intentionally quantizes lm_head in W4A16 NVFP4, but the
+        # nemotron_h variant keeps lm_head BF16: vLLM cu130-nightly (SM120
+        # Blackwell) loads lm_head via the raw vocab-parallel path and
+        # cannot decode packed ModelOpt U8 weights.
+        if path.name.startswith("w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h"):
+            mixed_w4a16_lm_head = False
+        else:
+            mixed_w4a16_lm_head = True
         for key, item in resolved.items():
             if item.enabled and (
-                "embed_tokens" in key or ("lm_head" in key and not mixed_w4a16)
+                "embed_tokens" in key
+                or ("lm_head" in key and not mixed_w4a16_lm_head)
             ):
                 errors.append(f"Protected module quantized: {key}")
-        if mixed_w4a16:
+        if mixed_w4a16 and mixed_w4a16_lm_head:
             lm_head = resolved["lm_head.weight_quantizer"]
             if not lm_head.enabled or lm_head.precision != "nvfp4":
                 errors.append("Selected mixed recipe must quantize lm_head in W4A16 NVFP4")

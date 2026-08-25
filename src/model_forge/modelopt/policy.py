@@ -66,6 +66,36 @@ REPRESENTATIVE_QWEN_MODULES: tuple[str, ...] = (
     "model.language_model.embed_tokens",
 )
 
+REPRESENTATIVE_NEMOTRON_MODULES: tuple[str, ...] = (
+    # MoE expert projections (fused per-expert quantizers + shared experts).
+    "model.layers.1.mixer.experts.up_proj_weight_quantizers.0",
+    "model.layers.1.mixer.experts.down_proj_weight_quantizers.0",
+    "model.layers.1.mixer.shared_experts.up_proj",
+    "model.layers.1.mixer.shared_experts.down_proj",
+    # Softmax attention projections.
+    "model.layers.5.mixer.q_proj",
+    "model.layers.5.mixer.k_proj",
+    "model.layers.5.mixer.v_proj",
+    "model.layers.5.mixer.o_proj",
+    # Attention BMM (must stay BF16).
+    "model.layers.5.mixer.q_bmm_quantizer",
+    "model.layers.5.mixer.k_bmm_quantizer",
+    "model.layers.5.mixer.v_bmm_quantizer",
+    "model.layers.5.mixer.p_bmm_quantizer",
+    # Mamba2/SSM path (must stay BF16).
+    "model.layers.0.mixer.conv1d",
+    "model.layers.0.mixer.in_proj",
+    "model.layers.0.mixer.out_proj",
+    "model.layers.2.mixer.x_proj",
+    "model.layers.2.mixer.A_log",
+    "model.layers.2.norm",
+    "mtp.layers.0.mlp.down_proj",
+    "mtp.layers.0.self_attn.o_proj",
+    "lm_head",
+    "model.embeddings",
+    "model.final_layernorm",
+)
+
 
 @dataclass(frozen=True)
 class QuantizerRule:
@@ -171,9 +201,22 @@ def load_quant_cfg(path: Path) -> list[QuantizerRule]:
     return rules
 
 
+# Numerics aliases that ModelOpt's recipe loader resolves from $import inside a
+# rule cfg. The offline validator mirrors those resolutions so precision checks
+# work without the ModelOpt package installed.
+_IMPORT_NUMERICS: dict[str, dict[str, Any]] = {
+    "nvfp4": {"num_bits": "e2m1", "block_sizes": {-1: 16, "type": "static"}, "scale_bits": "e4m3"},
+    "nvfp4_static": {"num_bits": "e2m1", "block_sizes": {-1: 16, "type": "static"}, "scale_bits": "e4m3"},
+    "fp8": {"num_bits": "e4m3"},
+}
+
+
 def _precision_from_cfg(cfg: dict[str, Any] | None) -> Precision:
     if not cfg:
         return "disabled"
+    imported_name = cfg.get("$import")
+    if isinstance(imported_name, str) and imported_name in _IMPORT_NUMERICS:
+        cfg = _IMPORT_NUMERICS[imported_name]
     num_bits = cfg.get("num_bits")
     if num_bits == "e2m1":
         return "nvfp4"

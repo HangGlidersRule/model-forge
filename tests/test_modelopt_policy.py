@@ -33,6 +33,7 @@ from model_forge.modelopt.validate import (
 )
 
 REPO = Path(__file__).resolve().parent.parent
+MODEL_OPT_RECIPES = tuple(sorted((REPO / "configs/modelopt/recipes").glob("*.yaml")))
 
 
 def test_pin_matches_release() -> None:
@@ -81,6 +82,12 @@ def test_primary_recipe_validates() -> None:
         "model.language_model.layers.2.linear_attn.in_proj_a", "weight_quantizer", rules
     )
     assert not gdn_a.enabled
+
+
+@pytest.mark.parametrize("recipe_path", MODEL_OPT_RECIPES, ids=lambda path: path.name)
+def test_all_modelopt_recipes_validate(recipe_path: Path) -> None:
+    report = validate_recipe_file(recipe_path)
+    assert report.ok, report.errors
 
 
 def test_omlp_quantizes_o_proj_keeps_qkv_bf16() -> None:
