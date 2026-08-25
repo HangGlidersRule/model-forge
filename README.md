@@ -110,9 +110,9 @@ residual-writing targets).
 | Lineage | Edit | Format | Target repository | Local card | Status |
 |---|---|---|---|---|---|
 | Upstream BF16 control | Clean | BF16 | [`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) (external) | — | Upstream weights; evaluated at pinned revision |
-| Darkstar Base | Clean | ModelOpt NVFP4 (W4A16 experts, BF16 protected) | (sibling cell; not republished) | — | Evaluated |
-| Darkstar Abliterated (R1) | Abliterated | BF16 | `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16` (planned) | [`abliterated-bf16.md`](models/nemotron-3.5-lightning-r1/model-card/abliterated-bf16.md) | Staged — gates passing |
-| Darkstar Abliterated (R1) | Abliterated | ModelOpt NVFP4 (W4A16 experts, BF16 protected) | `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4` (planned) | [`abliterated-nvfp4.md`](models/nemotron-3.5-lightning-r1/model-card/abliterated-nvfp4.md) | Staged — gates passing |
+| Darkstar Base | Clean | ModelOpt NVFP4 (W4A16 experts, BF16 protected) | [`HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4) | [`base-nvfp4.md`](models/nemotron-3.5-lightning-r1/model-card/base-nvfp4.md) | Public pinned checkpoint; full treatment (GPQA 134/198) |
+| Darkstar Abliterated (R1) | Abliterated | BF16 | [`HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16) | [`abliterated-bf16.md`](models/nemotron-3.5-lightning-r1/model-card/abliterated-bf16.md) | Public pinned checkpoint; behavior 200/200 |
+| Darkstar Abliterated (R1) | Abliterated | ModelOpt NVFP4 (W4A16 experts, BF16 protected) | [`HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4) | [`abliterated-nvfp4.md`](models/nemotron-3.5-lightning-r1/model-card/abliterated-nvfp4.md) | Public pinned checkpoint; GPQA 141/198 |
 
 Docs: [`benchmark-matrix.md`](models/nemotron-3.5-lightning-r1/benchmark-matrix.md),
 [`gpqa-protocol.md`](models/nemotron-3.5-lightning-r1/gpqa-protocol.md),
