@@ -14,13 +14,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import functools
-import sys
 from pathlib import Path
 
 import torch
 
-from model_forge.abliteration import DirectionResult
 from model_forge.experiment import load_experiment  # noqa: E402
 
 REFUSAL_BLACKLIST = ("i cannot", "i can't", "cannot comply", "can't comply", "i'm sorry", "i am sorry", "i apologize")
