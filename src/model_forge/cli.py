@@ -21,6 +21,33 @@ from .public_export.verifier import (
 )
 from .recipe import RecipeError, load_recipe
 from .runner import Runner
+from .tune import TuneMatrix, render_markdown, run_sweep
+
+
+def _comma_separated_ints(value: str) -> tuple[int, ...]:
+    try:
+        result = tuple(int(item.strip()) for item in value.split(",") if item.strip())
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be comma-separated integers") from exc
+    if not result or any(item <= 0 for item in result):
+        raise argparse.ArgumentTypeError("must contain positive comma-separated integers")
+    return result
+
+
+def _lane_weights(value: str) -> tuple[tuple[int, float], ...]:
+    try:
+        result = tuple(
+            (int(pair.split(":", 1)[0].strip()), float(pair.split(":", 1)[1].strip()))
+            for pair in value.split(",")
+            if pair.strip()
+        )
+    except (ValueError, IndexError) as exc:
+        raise argparse.ArgumentTypeError(
+            "must be comma-separated lane:weight pairs (for example 4:0.6,16:0.3)"
+        ) from exc
+    if not result:
+        raise argparse.ArgumentTypeError("must contain at least one lane:weight pair")
+    return result
 
 
 def parser() -> argparse.ArgumentParser:
@@ -34,6 +61,34 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--spec", type=Path, required=True)
     run.add_argument("--output", "-o", type=Path, required=True)
     run.add_argument("--dry-run", action="store_true")
+
+    tune = commands.add_parser("tune", help="Sweep speculative-decoding speed settings")
+    tune.add_argument("--artifact-dir", type=Path, required=True)
+    tune.add_argument("--served-name")
+    tune.add_argument("--image", required=True)
+    tune.add_argument("--results-dir", type=Path, default=Path("results/tune"))
+    tune.add_argument("--mtp-min", type=int, default=1)
+    tune.add_argument("--mtp-max", type=int, default=12)
+    tune.add_argument("--lanes", type=_comma_separated_ints, default=(4, 16, 48))
+    tune.add_argument(
+        "--lane-weights",
+        type=_lane_weights,
+        default=None,
+        help=(
+            "comma-separated lane:weight pairs; defaults to 4:0.6,16:0.3,48:0.1 "
+            "for default lanes and uniform weights for custom lanes"
+        ),
+    )
+    tune.add_argument("--max-tokens", type=int, default=512)
+    tune.add_argument("--temperature", type=float, default=0.7)
+    tune.add_argument("--runs", type=int, default=5)
+    tune.add_argument("--warmup", type=int, default=2)
+    tune.add_argument("--force", action="store_true")
+    tune.add_argument("--dry-run", action="store_true")
+    tune.add_argument("--remote-host", required=True, help="remote vLLM host (required; do not hardcode)")
+    tune.add_argument("--remote-user", default="devin")
+    tune.add_argument("--ssh-key", default="~/.ssh/id_ed25519_aihost")
+    tune.add_argument("--ssh-wsl-remote-artifact")
 
     recipe = commands.add_parser("recipe", help="Inspect generic build/transform recipes")
     recipe_sub = recipe.add_subparsers(dest="recipe_command", required=True)
@@ -112,6 +167,43 @@ def _recipe_validate(root: argparse.ArgumentParser, args: argparse.Namespace) ->
     return 0
 
 
+def _tune(root: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if not args.artifact_dir.is_dir():
+        root.error(f"artifact directory not found: {args.artifact_dir}")
+    served_name = args.served_name or args.artifact_dir.name
+    try:
+        matrix = TuneMatrix(
+            mtp_min=args.mtp_min,
+            mtp_max=args.mtp_max,
+            lanes_k=args.lanes,
+            lane_weights=args.lane_weights,
+            max_tokens=args.max_tokens,
+            temperature=args.temperature,
+            runs=args.runs,
+            warmup=args.warmup,
+        )
+    except ValueError as exc:
+        root.error(str(exc))
+    report = run_sweep(
+        artifact_dir=str(args.artifact_dir),
+        served_name=served_name,
+        image=args.image,
+        matrix=matrix,
+        results_dir=args.results_dir,
+        host=args.remote_host,
+        user=args.remote_user,
+        key=str(Path(args.ssh_key).expanduser()),
+        ssh_win_artifact=args.ssh_wsl_remote_artifact,
+        force=args.force,
+        dry_run=args.dry_run,
+    )
+    print(f"Winner: {report['winner'] or 'none'} — {report['winner_reason']}")
+    table = render_markdown(report).splitlines()
+    table_start = next(i for i, line in enumerate(table) if line.startswith("| candidate |"))
+    print("\n".join(table[table_start : table_start + 2 + len(report["results"])]))
+    return 0
+
+
 def _public_export(args: argparse.Namespace) -> int:
     try:
         fleet_hostnames = (
@@ -177,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     args = root.parse_args(argv)
     if args.command == "run":
         return _run(args)
+    if args.command == "tune":
+        return _tune(root, args)
     if args.command == "recipe" and args.recipe_command == "validate":
         return _recipe_validate(root, args)
     if args.command == "public-export":

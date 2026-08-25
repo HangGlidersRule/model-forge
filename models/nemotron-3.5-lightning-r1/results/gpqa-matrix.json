@@ -1,0 +1,56 @@
+{
+  "protocol": "llm-inference-bench gpqa-diamond (chat template + thinking ON, temp 0, deterministic letter shuffle, exact-match, Wilson CI)",
+  "serving": "vllm-dflash2 build, --reasoning-parser nemotron_v3, BF16 KV",
+  "products": [
+    {
+      "product": "Base-BF16 (control)",
+      "decoder": "plain",
+      "file": "gpqa-diamond-base-bf16-llmbench.json",
+      "attempted": 198,
+      "correct": 136,
+      "accuracy": 0.6868686868686869,
+      "wilson95_low": 0.6192335979331182,
+      "wilson95_high": 0.7473907834508856,
+      "unparseable": 11,
+      "truncated": 7,
+      "errors": 0
+    },
+    {
+      "product": "Abliterated-ModelOpt-NVFP4",
+      "decoder": "mtp10",
+      "file": "gpqa-diamond-abliterated-nvfp4-mtp10-llmbench.json",
+      "attempted": 198,
+      "correct": 141,
+      "accuracy": 0.7121212121212122,
+      "wilson95_low": 0.6454905142928702,
+      "wilson95_high": 0.7706777024132965,
+      "unparseable": 1,
+      "truncated": 2,
+      "errors": 0,
+      "note": "final servable result \u2014 best measured config"
+    },
+    {
+      "product": "Abliterated-ModelOpt-NVFP4 (plain reference)",
+      "decoder": "plain",
+      "file": "gpqa-diamond-abliterated-nvfp4-llmbench.json",
+      "attempted": 198,
+      "correct": 137,
+      "accuracy": 0.6919191919191919,
+      "wilson95_low": 0.6244672847696229,
+      "wilson95_high": 0.7520658636788136,
+      "unparseable": 9,
+      "truncated": 5,
+      "errors": 0
+    }
+  ],
+  "nvidia_published": {
+    "bf16": 0.7544,
+    "nvfp4": 0.7557,
+    "source": "official NVIDIA HF README, GPQA Diamond no tools"
+  },
+  "caveats": [
+    "GPQA runs on the FINAL SERVABLE RESULT only (campaign policy); other products/configs are recorded as evidence, not benchmarked.",
+    "Gap to NVIDIA (~6pt) attributed to serving stack (their vLLM 0.26 + FP8 KV + TP2 + temp 1.0 x8 repeats vs our dflash2 build + BF16 KV + single GPU + temp 0), not abliteration damage.",
+    "lm-eval local-completions adapter and legacy boxed{} harness are DEAD for claims (see gpqa-protocol.md)."
+  ]
+}

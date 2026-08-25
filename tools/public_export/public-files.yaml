@@ -466,6 +466,28 @@ rules:
     generated: false
     precedence: 100
 
+  - id: hf-card-lightning-abliterated-bf16
+    source: "publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Lightning abliterated BF16 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: hf-card-lightning-abliterated-modelopt
+    source: "publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Lightning abliterated ModelOpt artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
   - id: modelopt-model-notes
     source: "models/*/modelopt/README.md"
     disposition: transform
@@ -684,6 +706,79 @@ rules:
     max_size_bytes: 131072
     generated: false
     precedence: 100
+
+  - id: gpqa-lmeval-operator-script
+    source: "scripts/gpqa_lmeval.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Legacy lm-eval GPQA runner retained as operator tooling; historical/dead-end protocol documented in gpqa-protocol.md.
+    transformation: sanitize_container_script
+    owner: model-runtime
+    max_size_bytes: 131072
+    generated: false
+    precedence: 100
+
+  - id: gpqa-llmbench-operator-scripts
+    source: "scripts/run_llmbench_gpqa.sh"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Accepted llm-inference-bench GPQA runner wrapper; generic args, no private hosts.
+    transformation: sanitize_container_script
+    owner: model-runtime
+    max_size_bytes: 131072
+    generated: false
+    precedence: 100
+
+  - id: nemotron-lightning-operator-scripts
+    source: "scripts/nemotron-3.5_lightning/**"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Require generic arguments and remove private paths, hosts, and defaults.
+    transformation: sanitize_container_script
+    owner: model-runtime
+    max_size_bytes: 131072
+    generated: false
+    precedence: 100
+
+  - id: nemotron-lightning-eval-scripts-private
+    source: "scripts/nemotron-3.5_lightning/eval_lightning_abliteration.py"
+    disposition: exclude
+    public_destination: null
+    reason: Operator behavior-eval evidence harness speaking raw API payload keys (prompt/response); private operator tooling parallel to qwen's excluded eval scripts.
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 131072
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 110
+    resolves:
+      - nemotron-lightning-operator-scripts
+
+  - id: nemotron-lightning-legacy-gpqa-private
+    source: "scripts/nemotron-3.5_lightning/run_lightning_gpqa.py"
+    disposition: exclude
+    public_destination: null
+    reason: Legacy GPQA harness speaking raw answer/prompt keys; superseded by gpqa_round.sh/run_llmbench_gpqa.sh, kept as private operator tooling.
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 131072
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 110
+    resolves:
+      - nemotron-lightning-operator-scripts
+
+  - id: nemotron-lightning-ledger
+    source: "models/nemotron-3.5-lightning-r1/campaign-ledger.md"
+    disposition: exclude
+    public_destination: null
+    reason: Internal campaign ledger with live in-progress evidence. Excluded until the family's public onboarding completes.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
 
   - id: serve-profile-renderer
     source: "scripts/render_darkstar_serve_profile.py"

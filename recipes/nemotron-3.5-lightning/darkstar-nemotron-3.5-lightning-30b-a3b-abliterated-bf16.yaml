@@ -1,21 +1,37 @@
 schema_version: "2.0"
-name: darkstar-nemotron3.5-lightning-30b-a3b-base-modelopt-w4a16-nvfp4
+name: darkstar-nemotron-3.5-lightning-30b-a3b-abliterated-bf16
 family: nemotron-3.5-lightning
 
 source:
   model_id: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
   revision: d468880b6ad3c6e0d21377ce7242adaea4cc884d
 
-transforms: []
+transforms:
+  - type: abliteration
+    layer: 34
+    seed: 42
+    harmful_prompts: 320
+    harmless_prompts: 320
+    orthogonalize_harmless: false
+    target_selectors:
+      - "re:backbone\\.layers\\.\\d+\\.mixer\\.o_proj\\.weight"
+      - "re:backbone\\.layers\\.\\d+\\.mixer\\.out_proj\\.weight"
+      - "re:backbone\\.layers\\.\\d+\\.mixer\\.experts\\.\\d+\\.down_proj\\.weight"
+      - "re:backbone\\.layers\\.\\d+\\.mixer\\.shared_experts\\.down_proj\\.weight"
+      - "mtp.layers.0.mixer.o_proj.weight"
+      - "re:mtp\\.layers\\.1\\.mixer\\.experts\\.\\d+\\.down_proj\\.weight"
+      - "backbone.embeddings.weight"
+    expected_target_count: 3126
+    reject_visual_selectors: true
 
 datasets:
-  cnn_dailymail:
-    source: abisee/cnn_dailymail
-    revision: 96df5e686bee6baa90b8bee7c28b81fa3fa6223d
+  harmful:
+    source: mlabonne/harmful_behaviors
+    revision: 01cead01398926d81f7c52bdb790ee8cf77ebba7
     sha256: null
-  nemotron_post_training:
-    source: nvidia/Nemotron-Post-Training-Dataset-v2
-    revision: 5c89e01dd720ae0f4058445ed49c5fb68a03c76e
+  harmless:
+    source: mlabonne/harmless_alpaca
+    revision: 02c6a92cfcf11bb0c387334f8146d149d65b587f
     sha256: null
 
 quantization:
@@ -60,21 +76,20 @@ runtime:
   context_length: 262144
   compiled_mode: true
   flash_attention: true
-  mtp_depth_initial: 1
-  mtp_sweep_range: [1, 2, 3, 4, 5, 6]
+  mtp_depth_initial: 7
+  mtp_sweep_range: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 performance:
-  target_tok_s: 200
-  minimum_tok_s: 180
+  target_tok_s: 240
+  minimum_tok_s: 200
   warmup_repeats: 2
   measure_repeats: 5
   prompt_lengths: [4096, 16384, 49152]
 
 outputs:
-  artifact_kind: nvfp4
+  artifact_kind: bf16
   publication:
     github: HangGlidersRule/model-forge
-    # Unresolved: candidate-specific precision-encoded target will live in the ledger.
-    huggingface_nvfp4: null
+    huggingface_bf16: HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16
     ghcr_serve: ghcr.io/hangglidersrule/model-forge-serve
     ghcr_build: ghcr.io/hangglidersrule/model-forge-build

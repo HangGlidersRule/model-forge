@@ -9,6 +9,8 @@ TARGETS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
     "Darkstar-Qwen3.8-27B-Abliterated-BF16",
     "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -23,6 +25,14 @@ EXPECTED_METADATA = {
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-BF16",
         "quantized",
     ),
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16": (
+        "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+        "finetune",
+    ),
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": (
+        "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
+        "quantized",
+    ),
 }
 SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -34,6 +44,19 @@ SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
         REPO_ROOT / "models/qwen3.8-27b-r3/model-card/nvfp4.md"
     ),
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16": (
+        REPO_ROOT / "models/nemotron-3.5-lightning-r1/model-card/abliterated-bf16.md"
+    ),
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": (
+        REPO_ROOT / "models/nemotron-3.5-lightning-r1/model-card/abliterated-nvfp4.md"
+    ),
+}
+EXPECTED_LICENSE = {
+    "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
+    "Darkstar-Qwen3.8-27B-Abliterated-BF16": "apache-2.0",
+    "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16": "other",
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": "other",
 }
 EXPECTED_PUBLIC_REVISIONS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8":
@@ -57,7 +80,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 3
+    assert len(cards) == 5
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
@@ -73,13 +96,16 @@ def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
         metadata = yaml.safe_load(front_matter)
         expected_base, expected_relation = EXPECTED_METADATA[card.parent.name]
 
-        assert metadata["license"] == "apache-2.0"
+        assert metadata["license"] == EXPECTED_LICENSE[card.parent.name]
         assert metadata["base_model"] == expected_base
         assert metadata["base_model_relation"] == expected_relation
         assert f"# {card.parent.name}" in text
         assert "**Private checkpoint repository.**" not in text
-        assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
-        assert "--max-num-seqs 16" in text
+        if "Qwen" in card.parent.name:
+            assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
+            assert "--max-num-seqs 16" in text
+        else:
+            assert "--max-model-len" in text
         assert not any(value in text.lower() for value in STALE_UPLOAD_WORDING)
         assert re.search(r"\d+\.\d{4,}%", text) is None
         assert re.search(r"\d+\.\d{4,}\s+tok/s", text) is None
@@ -97,9 +123,13 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
         assert metadata["base_model_relation"] == expected_relation
         assert "**Private checkpoint repository.**" not in text
         assert "public on Hugging Face" in text
-        assert "darkstar-qwen3.8-27b-v1.0.0" in text
-        assert f"vllm serve HangGlidersRule/{target}" in text
-        assert "--max-num-seqs 16" in text
+        if "Qwen" in target:
+            assert "darkstar-qwen3.8-27b-v1.0.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "--max-num-seqs 16" in text
+        else:
+            assert "darkstar-nemotron-3.5-lightning-v1.0.0" in text
+            assert "--max-model-len" in text
         assert not any(value in text.lower() for value in STALE_UPLOAD_WORDING)
         assert re.search(r"\d+\.\d{4,}%", text) is None
         assert re.search(r"\d+\.\d{4,}\s+tok/s", text) is None
