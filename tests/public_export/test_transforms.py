@@ -137,6 +137,46 @@ def test_public_urls_are_not_mistaken_for_operator_paths() -> None:
     assert result.data == source
 
 
+def test_public_gitignore_skips_placeholder_paths() -> None:
+    source = (
+        b".hermes/\n.env\n"
+        b"!/README.md\n"
+        b"!/configs/modelopt/pin.json\n"
+        b"!/models/family/README.md\n"
+        b"/models/nemotron-3.5-lightning-r1/results/*.DEADEND-*.json\n"
+    )
+    result = apply_transform(
+        "sanitize_public_gitignore",
+        source,
+        TransformContext(
+            source_path=".gitignore",
+            source_sha="a" * 40,
+            public_contact="security@example.com",
+            fleet_hostnames=frozenset(),
+            public_paths=frozenset({
+                "README.md",
+                "models/family/README.md",
+                "${PUBLIC_WORKSPACE}",
+                "${PUBLIC_ARTIFACT_PATH}/README.md",
+            }),
+        ),
+    )
+
+    # Private anchored whitelists are regenerated from the manifest; the
+    # generic sanitizer must never see them as paths and mangle them into
+    # literal placeholders.
+    assert b"!${PUBLIC_WORKSPACE}" not in result.data
+    assert b"!${PUBLIC_ARTIFACT_PATH}" not in result.data
+    assert b"${PUBLIC_WORKSPACE}" not in result.data
+    assert b"${PUBLIC_ARTIFACT_PATH}" not in result.data
+    assert b"!/configs/modelopt/pin.json" not in result.data
+    # Metadata hygiene block survives; real payload paths are regenerated.
+    assert b".hermes/" in result.data
+    assert b".env" in result.data
+    assert b"!/README.md" in result.data
+    assert b"!/models/family/README.md" in result.data
+
+
 def test_repository_relative_markdown_links_are_preserved() -> None:
     source = (
         b"[card](models/qwen3.8-27b-r3/model-card/base-bf16.md)\n"

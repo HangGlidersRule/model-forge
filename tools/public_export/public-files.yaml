@@ -791,6 +791,18 @@ rules:
     precedence: 1000
     allow_empty: true
 
+  - id: nemotron-nano-omni-operator-scripts-private
+    source: "scripts/nemotron-3-nano-omni/**"
+    disposition: exclude
+    public_destination: null
+    reason: Nano-Omni operator-only abliteration harnesses carry in-progress experimental controls and raw behavior-eval affordances; public family onboarding will export curated recipes/results only after gates pass.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
   - id: serve-profile-renderer
     source: "scripts/render_darkstar_serve_profile.py"
     disposition: transform
