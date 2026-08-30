@@ -41,19 +41,6 @@
       "unparseable": 9,
       "truncated": 5,
       "errors": 0
-    },
-    {
-      "product": "Base-ModelOpt-NVFP4",
-      "decoder": "plain",
-      "attempted": 198,
-      "correct": 134,
-      "accuracy": 0.6767676767676768,
-      "wilson95_low": 0.6087919529520749,
-      "wilson95_high": 0.738014894303064,
-      "unparseable": 6,
-      "truncated": 15,
-      "errors": 0,
-      "note": "full-treatment eval row (base quant)"
     }
   ],
   "nvidia_published": {

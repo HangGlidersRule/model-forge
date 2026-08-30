@@ -12,12 +12,13 @@ tags:
   - modelopt
   - hybrid-mamba-moe
 pipeline_tag: text-generation
-base_model: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+base_model: HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16
+base_model_relation: quantized
 quantization: nvidia-modelopt
 extra_gated_heading: Darkstar Nemotron-3.5-Lightning 30B-A3B Abliterated ModelOpt NVFP4
 ---
 
-# Darkstar Nemotron-3.5-Lightning 30B-A3B Abliterated ModelOpt NVFP4
+# Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4
 
 > **Safety notice:** This checkpoint is an **edited (abliterated) derivative**
 > served in **NVFP4**: the refusal direction measured at layer 34 was
@@ -68,6 +69,19 @@ OpenMDW-1.1 license. This is the fourth product in the Darkstar family matrix.
 - NVIDIA publishes GPQA Diamond 75.44 (BF16) / 75.57 (NVFP4) on the same task; the delta is
   serving-stack config (their vLLM 0.26 + FP8 KV + TP2 + temp 1.0 averaged over 8 repeats), not
   abliteration or quantization damage. Full protocol: `models/nemotron-3.5-lightning-r1/gpqa-protocol.md`.
+
+## Publication
+
+This checkpoint is **public on Hugging Face** at the pinned milestone tag
+`darkstar-nemotron-3.5-lightning-v1.0.0`. Weights are hash-verified (sha256
+manifest in the source repo) and serve with vLLM (the measured shipping
+config — MTP10):
+
+```bash
+vllm serve HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4 \
+  --max-model-len 131072 --kv-cache-dtype bfloat16 --reasoning-parser nemotron_v3 \
+  --speculative-config '{"method":"mtp","num_speculative_tokens":10}'
+```
 
 ## License
 
