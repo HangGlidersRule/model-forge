@@ -39,8 +39,6 @@ or weight target. Its weights remain solely at
 
 ## Hugging Face repositories
 
-Family collection: [Darkstar Qwen3.8-27B](https://huggingface.co/collections/HangGlidersRule/darkstar-qwen38-27b-6a8dfe77e150d32d21a8a876).
-
 Exactly three public HangGlidersRule repositories contain complete, hash-verified checkpoints and
 final cards:
 

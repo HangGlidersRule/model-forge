@@ -19,8 +19,8 @@
       "build": "PASS",
       "tune": "PASS MTP7 541.7",
       "behavior": "N/A",
-      "gpqa": "recorded-evidence",
-      "publication": "sibling-cell"
+      "gpqa": "PASS 134/198=67.7% (plain)",
+      "publication": "LIVE https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4 (9eb829f)"
     },
     {
       "product": "Abliterated-BF16",

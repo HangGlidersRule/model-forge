@@ -32,8 +32,6 @@ pinned to `d468880b6ad3c6e0d21377ce7242adaea4cc884d` under OpenMDW-1.1.
 
 ## Hugging Face repositories
 
-Family collection: [Darkstar Nemotron-3.5-Lightning 30B-A3B](https://huggingface.co/collections/HangGlidersRule/darkstar-nemotron-35-lightning-30b-a3b-6a8dfe8c5ec5db63d6a031d0).
-
 Exactly three public HangGlidersRule repositories contain complete, hash-verified checkpoints and
 final cards:
 

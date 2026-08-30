@@ -139,9 +139,27 @@ def _plain(name: str) -> Transform:
 def _gitignore(data: bytes, context: TransformContext) -> TransformResult:
     """Keep every planned payload path stageable in a fresh public repository."""
 
-    output = _sanitize_text(data, context)
+    text = _decode(data).replace("\r\n", "\n")
+    # Anchored gitignore patterns (`!/path` negations and `/path` ignores)
+    # reference the PRIVATE operator layout. The generic sanitizer would read
+    # their leading `/` as an absolute filesystem path and mangle each line
+    # into a ${PUBLIC_WORKSPACE}/${PUBLIC_ARTIFACT_PATH} placeholder. Every
+    # public payload negation is regenerated deterministically from the
+    # manifest below, so drop the private anchored lines at the source.
+    kept = [
+        line
+        for line in text.splitlines()
+        if not (line.startswith("!/") or line.startswith("/"))
+    ]
+    output = _sanitize_text("\n".join(kept).encode("utf-8"), context)
     exceptions: set[str] = set()
     for public_path in context.public_paths:
+        if "${" in public_path:
+            # Placeholder-only paths are scrubbed operator metadata from transformed
+            # content, not real files in the generated public tree. Adding gitignore
+            # negations for them pollutes the public root with literal
+            # ${PUBLIC_WORKSPACE}/${PUBLIC_ARTIFACT_PATH} entries.
+            continue
         parts = public_path.split("/")
         for end in range(1, len(parts)):
             exceptions.add(f"!/{'/'.join(parts[:end])}/")

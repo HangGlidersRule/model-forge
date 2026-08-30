@@ -11,11 +11,10 @@ tags:
   - hybrid-mamba-moe
 pipeline_tag: text-generation
 base_model: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
-base_model_relation: finetune
 extra_gated_heading: Darkstar Nemotron-3.5-Lightning 30B-A3B Abliterated BF16
 ---
 
-# Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16
+# Darkstar Nemotron-3.5-Lightning 30B-A3B Abliterated BF16
 
 > **Safety notice:** This checkpoint is an **edited (abliterated) derivative**: the
 > refusal direction measured at layer 34 was deliberately projected out of 3,126
@@ -59,18 +58,6 @@ harmful-minus-harmless direction removed in float32; everything outside the
   (refusal-form marker set, temp 0, max_tokens 100)
 - Recipe: `recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-abliterated-bf16.yaml`
   in [HangGlidersRule/model-forge](https://github.com/HangGlidersRule/model-forge)
-
-## Publication
-
-This checkpoint is **public on Hugging Face** at the pinned milestone tag
-`darkstar-nemotron-3.5-lightning-v1.0.0`. Weights are hash-verified (sha256
-manifest in the source repo) and serve with vLLM:
-
-```bash
-vllm serve HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16 \
-  --max-model-len 131072 --kv-cache-dtype bfloat16 --reasoning-parser nemotron_v3 \
-  --speculative-config '{"method":"mtp","num_speculative_tokens":12}'
-```
 
 ## License
 
