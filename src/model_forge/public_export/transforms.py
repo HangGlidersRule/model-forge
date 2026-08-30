@@ -150,6 +150,11 @@ def _gitignore(data: bytes, context: TransformContext) -> TransformResult:
         line
         for line in text.splitlines()
         if not (line.startswith("!/") or line.startswith("/"))
+        # The attestation is export OUTPUT, not classified source: the private
+        # ignore entry must not leak into the public root, where it would make
+        # `git add -A` skip the freshly written attestation and fail the
+        # tracked-inventory governance check.
+        and "PUBLIC_EXPORT_MANIFEST.json" not in line
     ]
     output = _sanitize_text("\n".join(kept).encode("utf-8"), context)
     exceptions: set[str] = set()

@@ -29,7 +29,6 @@ build/
 *.egg-info/
 
 # Canonical public-export payload; keep these attested paths stageable.
-PUBLIC_EXPORT_MANIFEST.json
 
 # Local raw benchmark payloads; curated aggregates live under models/*/results/.
 
