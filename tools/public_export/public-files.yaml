@@ -652,6 +652,19 @@ rules:
     resolves:
       - public-recipes
 
+  - id: nano-omni-serve-profile
+    source: "containers/serve/darkstar-nemotron-3-nano-omni-abliterated-nvfp4.yml"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the vLLM serve profile for the Nano-Omni Ablit-NVFP4 product.
+    transformation: sanitize_and_validate_serve_profile
+    owner: container-runtime
+    max_size_bytes: 32768
+    generated: false
+    precedence: 200
+    resolves:
+      - serve-profile
+
   - id: hf-card-nano-omni-ablit-bf16
     source: "publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16/README.md"
     disposition: copy
