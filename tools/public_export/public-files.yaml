@@ -652,6 +652,17 @@ rules:
     resolves:
       - public-recipes
 
+  - id: release-verify-script
+    source: "scripts/verify_family_release.sh"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the four-surface release close-out verifier after script sanitization.
+    transformation: sanitize_qwen_script
+    owner: release-engineering
+    max_size_bytes: 32768
+    generated: false
+    precedence: 100
+
   - id: nano-omni-serve-profile
     source: "containers/serve/darkstar-nemotron-3-nano-omni-abliterated-nvfp4.yml"
     disposition: transform
