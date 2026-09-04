@@ -69,6 +69,7 @@ build/
 !/containers/modelopt/Dockerfile
 !/containers/modelopt/build.sh
 !/containers/serve/
+!/containers/serve/darkstar-nemotron-3-nano-omni-abliterated-nvfp4.yml
 !/containers/serve/darkstar-qwen38-abliterated-nvfp4.yml
 !/containers/serve/docker-compose.yml
 !/contracts/
@@ -187,6 +188,12 @@ build/
 !/models/qwen3.8-27b-r3/validation-inventory.md
 !/publication/
 !/publication/huggingface/
+!/publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16/
+!/publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16/README.md
+!/publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4/
+!/publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4/README.md
+!/publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4/
+!/publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4/README.md
 !/publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16/
 !/publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16/README.md
 !/publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4/
@@ -204,6 +211,8 @@ build/
 !/recipes/README.md
 !/recipes/nemotron-3-nano-omni/
 !/recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml
+!/recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4.yaml
+!/recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-base-modelopt-w4a16-nvfp4.yaml
 !/recipes/nemotron-3.5-lightning/
 !/recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-abliterated-bf16.yaml
 !/recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-abliterated-modelopt-nvfp4.yaml
@@ -248,6 +257,7 @@ build/
 !/scripts/run_llmbench_gpqa.sh
 !/scripts/serve_darkstar_qwen38_abliterated_nvfp4.sh
 !/scripts/stage_public_root.sh
+!/scripts/verify_family_release.sh
 !/scripts/verify_public_export.sh
 !/src/
 !/src/model_forge/
