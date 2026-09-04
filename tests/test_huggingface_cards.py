@@ -12,6 +12,9 @@ TARGETS = {
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -38,6 +41,18 @@ EXPECTED_METADATA = {
         "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
         "quantized",
     ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4": (
+        "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
+        "quantized",
+    ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16": (
+        "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        "finetune",
+    ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4": (
+        "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        "quantized",
+    ),
 }
 SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -58,6 +73,15 @@ SOURCE_CARDS = {
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": (
         REPO_ROOT / "models/nemotron-3.5-lightning-r1/model-card/abliterated-nvfp4.md"
     ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4": (
+        REPO_ROOT / "models" / "nemotron-3-nano-omni-r1" / "model-card" / "base-nvfp4.md"
+    ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16": (
+        REPO_ROOT / "models" / "nemotron-3-nano-omni-r1" / "model-card" / "abliterated-bf16.md"
+    ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4": (
+        REPO_ROOT / "models" / "nemotron-3-nano-omni-r1" / "model-card" / "abliterated-nvfp4.md"
+    ),
 }
 EXPECTED_LICENSE = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
@@ -66,6 +90,9 @@ EXPECTED_LICENSE = {
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4": "other",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16": "other",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": "other",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4": "other",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16": "other",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4": "other",
 }
 EXPECTED_PUBLIC_REVISIONS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8":
@@ -74,6 +101,13 @@ EXPECTED_PUBLIC_REVISIONS = {
         "0181d5d178a15c694b1d6708d3ee3d08d2d9db5e",
     "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8":
         "2e25bd97fd1b6e6c7989e74c261d93a8702496e8",
+
+    "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4":
+        "7c67d5ca5731d690ab0950773a0a625cf5bb0231",
+    "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16":
+        "db2ea4ae7563b78ac29953dae6358982a272a4c8",
+    "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4":
+        "06c7cc43f7f640e929c91df8a77f418d4eba5f99",
 }
 STALE_UPLOAD_WORDING = (
     "card staged",
@@ -89,7 +123,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 6
+    assert len(cards) == 9
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
@@ -141,9 +175,13 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             assert "darkstar-qwen3.8-27b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "--max-num-seqs 16" in text
-        else:
+        elif "Lightning" in target:
             assert "darkstar-nemotron-3.5-lightning-v1.0.0" in text
             assert "--max-model-len" in text
+        else:
+            assert "darkstar-nemotron-3-nano-omni-v1.0.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "--max-num-seqs 16" in text
         assert not any(value in text.lower() for value in STALE_UPLOAD_WORDING)
         assert re.search(r"\d+\.\d{4,}%", text) is None
         assert re.search(r"\d+\.\d{4,}\s+tok/s", text) is None

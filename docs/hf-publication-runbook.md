@@ -74,3 +74,7 @@ After each cell ships, update
 field gets the live URL + verification note; the matching `release_gates`
 entries flip PASS-with-evidence. Ledger updates are commits, not chat
 messages.
+
+## Step 9 — surface close-out audit
+
+Run `scripts/verify_family_release.sh <family_slug> <owned-repo...>` after cutting the release tag. It verifies the four surfaces this repo ships: HF repos (200 + card + index), the catalog row on `main`, collection membership, and the GitHub release tag. A family is `released` only when this exits 0. (Nano-Omni, 2026-09-04: a full campaign shipped artifacts + tag + ledger while all three of catalog/collection/release-page missed — the audit exists so that cannot repeat.)

@@ -71,3 +71,7 @@ compliant rows (boundary #1), merged float32 into pristine weights.
 Document the chosen method, every rejected variant, and the quality cost in
 the family recipe + card. This is the Nano-Omni precedent (recipe:
 `lora-unlearning-sft` transform type, schema-supported).
+
+## Close-out rule (four-surface audit)
+
+A family release closes on all four publication surfaces: owned HF repos, catalog row, HF collection, and GitHub release. Every close-out runs `scripts/verify_family_release.sh`; `SURFACE AUDIT: PASS` for every family is part of campaign completion, alongside the GPQA/behavior/speed gates.
