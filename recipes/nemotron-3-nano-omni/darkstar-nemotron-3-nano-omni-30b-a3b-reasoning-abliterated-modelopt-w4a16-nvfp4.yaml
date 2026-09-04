@@ -57,50 +57,23 @@ quantization:
     - "re:.*mixer\\.dt_bias.*"
     - "re:.*mixer\\.in_proj.*"
     - "re:.*mixer\\.out_proj.*"
+    - "re:.*mixer\\.q_proj.*"
+    - "re:.*mixer\\.k_proj.*"
+    - "re:.*mixer\\.v_proj.*"
+    - "re:.*mixer\\.o_proj.*"
+    - "re:.*mixer\\.qkv_proj.*"
     - "re:.*norm\\.weight$"
     - "re:.*ssm.*"
     - "re:.*language_model\\.backbone\\.embeddings.*"
     - "re:.*language_model\\.backbone\\.norm_f.*"
-    - "re:.*lm_head.*"
-  calibration:
-    dataset: cnn_dailymail
-    config: modelopt_text_blend_512
-    samples: 1024
-    max_sequence_length: 2048
-    pipeline: modelopt_hf_ptq
-    shard_size: 5GB
-
-quantization:
-  scheme: NVFP4
-  framework: nvidia-modelopt
-  framework_version: 0.46.0rc2
-  framework_pin_commit: 43fd41a58d52c4e6e5dec1d1ff5989ecc737ae1a
-  algorithm: mse
-  fp8_scale_sweep: true
-  quant_grp:
-    routed_experts: W4A16_NVFP4
-    shared_experts: W4A16_NVFP4
-    lm_head: W4A16_NVFP4
-  protected_tensors:
-    - norms
-    - embeddings
-    - ssm
-    - conv1d
-    - attention
-    - vision_model
-    - sound_encoder
-    - mlp1
-    - sound_projection
   calibration:
     dataset: cnn_dailymail,nemotron-post-training-dataset-v2
+    config: modelopt_text_blend_512_512
     samples: 1024
-    sample_split: 512,512
     max_sequence_length: 2048
-    batch_size: 1
-    kv_cache_qformat: none
     pipeline: modelopt_hf_ptq
     shard_size: 5GB
-
+  lm_head: nvfp4
 
 validation:
   max_refusal_leakage: 0.01

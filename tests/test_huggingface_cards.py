@@ -12,6 +12,9 @@ TARGETS = {
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -37,6 +40,18 @@ EXPECTED_METADATA = {
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": (
         "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
         "quantized",
+    ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4": (
+        "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        "quantized",
+    ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16": (
+        "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        "finetune",
+    ),
+    "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4": (
+        "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        "finetune",
     ),
 }
 SOURCE_CARDS = {
