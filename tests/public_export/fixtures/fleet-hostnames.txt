@@ -1,3 +1,0 @@
-# Synthetic private-runtime fixture. Production denylists stay uncommitted.
-forge-worker-07.private
-nas-build.internal
