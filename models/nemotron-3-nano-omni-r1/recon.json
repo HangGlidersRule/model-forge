@@ -1,0 +1,59 @@
+{
+ "abliteration_target_candidates": [
+  "language_model.backbone.layers.*.mixer.o_proj.weight",
+  "language_model.backbone.layers.*.mixer.out_proj.weight",
+  "language_model.backbone.layers.*.mixer.shared_experts.down_proj.weight",
+  "language_model.backbone.layers.*.mixer.experts.X.down_proj.weight"
+ ],
+ "family": "nemotron-3-nano-omni",
+ "license": "NVIDIA Open Model Agreement (2026-04-02)",
+ "license_notes": "Permissive: commercially usable, derivative works OK, retain license + attribution.",
+ "llm_trunk_inventory": {
+  "mixer.A_log": 23,
+  "mixer.D": 23,
+  "mixer.conv1d.bias": 23,
+  "mixer.conv1d.weight": 23,
+  "mixer.dt_bias": 23,
+  "mixer.experts.X.down_proj.weight": 2944,
+  "mixer.experts.X.up_proj.weight": 2944,
+  "mixer.gate.e_score_correction_bias": 23,
+  "mixer.gate.weight": 23,
+  "mixer.in_proj.weight": 23,
+  "mixer.k_proj.weight": 6,
+  "mixer.norm.weight": 23,
+  "mixer.o_proj.weight": 6,
+  "mixer.out_proj.weight": 23,
+  "mixer.q_proj.weight": 6,
+  "mixer.shared_experts.down_proj.weight": 23,
+  "mixer.shared_experts.up_proj.weight": 23,
+  "mixer.v_proj.weight": 6,
+  "norm.weight": 52
+ },
+ "llm_trunk_path": "language_model.backbone.layers.*",
+ "llm_trunk_tensor_count": 6240,
+ "notes": "Custom code (trust_remote_code) for NemotronH_Nano_Omni_Reasoning_V3; RADIO-v4 vision tower + Parakeet audio encoder. Abliterate only LLM residual writers; towers stay byte-identical.",
+ "protected": [
+  "language_model.mtp.*",
+  "vision_model.*",
+  "sound_encoder.*",
+  "mlp1.*",
+  "sound_projection.*",
+  "language_model.backbone.embeddings.*",
+  "language_model.backbone.norm_f.*"
+ ],
+ "source_repo": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+ "source_sha": "24e67ea000b7c2837fc8f9488aa2008524fac8ba",
+ "spec_decode": {
+  "mtp": false,
+  "dflash2": "blocked (qwen3-only drafters, no Nemotron-H port/drafter)",
+  "dflash_v1": "blocked (no Nano-Omni drafter; Lightning drafter tokenizer mismatch)",
+  "decision": "SKIP SPECULATIVE DECODE per Devin 2026-08-25. Campaign proceeds no-spec; spec decode would require new drafter + vLLM port."
+ },
+ "tensor_top_modules": {
+  "language_model": 6243,
+  "mlp1": 3,
+  "sound_encoder": 710,
+  "sound_projection": 3,
+  "vision_model": 390
+ }
+}
