@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hangglidersrule.com/contracts/ai-review/v1/request.schema.json",
+  "title": "Model Forge maintainer AI review request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "request_id",
+    "repository",
+    "pull_request",
+    "head_sha",
+    "requested_by",
+    "provider",
+    "model",
+    "max_input_tokens",
+    "max_output_tokens",
+    "max_cost_microusd",
+    "untrusted_text"
+  ],
+  "properties": {
+    "schema": {
+      "const": "model-forge-ai-review-request/v1"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "maxLength": 36
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "maxLength": 200
+    },
+    "pull_request": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "head_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "requested_by": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9-]{1,39}$"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "model": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "max_input_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "max_output_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "max_cost_microusd": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000000
+    },
+    "untrusted_text": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "maxLength": 65536
+      }
+    }
+  }
+}

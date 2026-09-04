@@ -1,0 +1,257 @@
+{
+ "protocol": "llm-inference-bench gpqa-diamond (chat template + thinking ON, temp 0)",
+ "serving": "served artifact via evidence runner, Ablit-BF16 r1 (re-gate 2026-09-03)",
+ "selected_summary": {
+  "attempted": 198,
+  "completed": 198,
+  "errors": 0,
+  "correct": 58,
+  "wrong": 140,
+  "score_counts": {
+   "exact": 58,
+   "truncated": 119,
+   "fail": 21
+  },
+  "exact": 58,
+  "near": 0,
+  "fail": 21,
+  "truncated": 119,
+  "correct_rate": 0.29292929292929293,
+  "score_available": true,
+  "hit_max_tokens": 165,
+  "estimated_token_runs": 0,
+  "completion_tokens": {
+   "avg": 7110.60101010101,
+   "min": 171.0,
+   "max": 8192.0,
+   "p50": 8192.0,
+   "p90": 8192.0,
+   "p99": 8192.0,
+   "std": 2478.515672084132
+  },
+  "ttft": {
+   "avg": 120.69941908393568,
+   "min": 15.347587125143036,
+   "max": 187.55776587501168,
+   "p50": 137.8297041875776,
+   "p90": 165.73887608353982,
+   "p99": 187.55648606433067,
+   "std": 48.97028064352624
+  },
+  "elapsed": {
+   "avg": 265.73853203471316,
+   "min": 33.87168112490326,
+   "max": 352.5710942498408,
+   "p50": 287.4733965001069,
+   "p90": 332.9702468954027,
+   "p99": 352.5613216428971,
+   "std": 66.81606210610985
+  },
+  "gen_elapsed": {
+   "avg": 145.0268114065702,
+   "min": 3.5543564169202,
+   "max": 171.9254184581805,
+   "p50": 167.76392100006342,
+   "p90": 170.44220260859,
+   "p99": 171.28254291299498,
+   "std": 50.707423059882004
+  },
+  "gen_tok_s": {
+   "avg": 49.00468461394918,
+   "min": 46.75245157069184,
+   "max": 66.60593737462622,
+   "p50": 48.65227282808841,
+   "p90": 49.652614942612864,
+   "p99": 61.58312554430304,
+   "std": 2.1291871125466035
+  },
+  "e2e_tok_s": {
+   "avg": 26.589477313091223,
+   "min": 1.211471870994582,
+   "max": 45.444668901316874,
+   "p50": 26.094623066270145,
+   "p90": 36.99891162873861,
+   "p99": 43.72175928816563,
+   "std": 9.516275655481495
+  },
+  "aggregate_gen_tok_s": 49.02956178335226,
+  "aggregate_e2e_tok_s": 26.757884736008698
+ },
+ "all_summary": {
+  "attempted": 198,
+  "completed": 198,
+  "errors": 0,
+  "correct": 58,
+  "wrong": 140,
+  "score_counts": {
+   "exact": 58,
+   "truncated": 119,
+   "fail": 21
+  },
+  "exact": 58,
+  "near": 0,
+  "fail": 21,
+  "truncated": 119,
+  "correct_rate": 0.29292929292929293,
+  "score_available": true,
+  "hit_max_tokens": 165,
+  "estimated_token_runs": 0,
+  "completion_tokens": {
+   "avg": 7110.60101010101,
+   "min": 171.0,
+   "max": 8192.0,
+   "p50": 8192.0,
+   "p90": 8192.0,
+   "p99": 8192.0,
+   "std": 2478.515672084132
+  },
+  "ttft": {
+   "avg": 120.69941908393568,
+   "min": 15.347587125143036,
+   "max": 187.55776587501168,
+   "p50": 137.8297041875776,
+   "p90": 165.73887608353982,
+   "p99": 187.55648606433067,
+   "std": 48.97028064352624
+  },
+  "elapsed": {
+   "avg": 265.73853203471316,
+   "min": 33.87168112490326,
+   "max": 352.5710942498408,
+   "p50": 287.4733965001069,
+   "p90": 332.9702468954027,
+   "p99": 352.5613216428971,
+   "std": 66.81606210610985
+  },
+  "gen_elapsed": {
+   "avg": 145.0268114065702,
+   "min": 3.5543564169202,
+   "max": 171.9254184581805,
+   "p50": 167.76392100006342,
+   "p90": 170.44220260859,
+   "p99": 171.28254291299498,
+   "std": 50.707423059882004
+  },
+  "gen_tok_s": {
+   "avg": 49.00468461394918,
+   "min": 46.75245157069184,
+   "max": 66.60593737462622,
+   "p50": 48.65227282808841,
+   "p90": 49.652614942612864,
+   "p99": 61.58312554430304,
+   "std": 2.1291871125466035
+  },
+  "e2e_tok_s": {
+   "avg": 26.589477313091223,
+   "min": 1.211471870994582,
+   "max": 45.444668901316874,
+   "p50": 26.094623066270145,
+   "p90": 36.99891162873861,
+   "p99": 43.72175928816563,
+   "std": 9.516275655481495
+  },
+  "aggregate_gen_tok_s": 49.02956178335226,
+  "aggregate_e2e_tok_s": 26.757884736008698
+ },
+ "accuracy": {
+  "items_total": 198,
+  "items_selected": 198,
+  "attempted": 198,
+  "scored": 198,
+  "correct": 58,
+  "accuracy": 0.29292929292929293,
+  "wilson95_low": 0.2339617343014368,
+  "wilson95_high": 0.3597788160568292,
+  "unparseable": 0,
+  "truncated_no_answer": 119,
+  "hit_max_tokens": 165,
+  "errors": 0,
+  "dataset_exhausted": false
+ },
+ "level_summaries": [
+  {
+   "concurrency": 30,
+   "phase": "profile",
+   "summary": {
+    "attempted": 198,
+    "completed": 198,
+    "errors": 0,
+    "correct": 58,
+    "wrong": 140,
+    "score_counts": {
+     "exact": 58,
+     "truncated": 119,
+     "fail": 21
+    },
+    "exact": 58,
+    "near": 0,
+    "fail": 21,
+    "truncated": 119,
+    "correct_rate": 0.29292929292929293,
+    "score_available": true,
+    "hit_max_tokens": 165,
+    "estimated_token_runs": 0,
+    "completion_tokens": {
+     "avg": 7110.60101010101,
+     "min": 171.0,
+     "max": 8192.0,
+     "p50": 8192.0,
+     "p90": 8192.0,
+     "p99": 8192.0,
+     "std": 2478.515672084132
+    },
+    "ttft": {
+     "avg": 120.69941908393568,
+     "min": 15.347587125143036,
+     "max": 187.55776587501168,
+     "p50": 137.8297041875776,
+     "p90": 165.73887608353982,
+     "p99": 187.55648606433067,
+     "std": 48.97028064352624
+    },
+    "elapsed": {
+     "avg": 265.73853203471316,
+     "min": 33.87168112490326,
+     "max": 352.5710942498408,
+     "p50": 287.4733965001069,
+     "p90": 332.9702468954027,
+     "p99": 352.5613216428971,
+     "std": 66.81606210610985
+    },
+    "gen_elapsed": {
+     "avg": 145.0268114065702,
+     "min": 3.5543564169202,
+     "max": 171.9254184581805,
+     "p50": 167.76392100006342,
+     "p90": 170.44220260859,
+     "p99": 171.28254291299498,
+     "std": 50.707423059882004
+    },
+    "gen_tok_s": {
+     "avg": 49.00468461394918,
+     "min": 46.75245157069184,
+     "max": 66.60593737462622,
+     "p50": 48.65227282808841,
+     "p90": 49.652614942612864,
+     "p99": 61.58312554430304,
+     "std": 2.1291871125466035
+    },
+    "e2e_tok_s": {
+     "avg": 26.589477313091223,
+     "min": 1.211471870994582,
+     "max": 45.444668901316874,
+     "p50": 26.094623066270145,
+     "p90": 36.99891162873861,
+     "p99": 43.72175928816563,
+     "std": 9.516275655481495
+    },
+    "aggregate_gen_tok_s": 49.02956178335226,
+    "aggregate_e2e_tok_s": 26.757884736008698
+   },
+   "selected": true,
+   "improved": true
+  }
+ ],
+ "wrong_runs_count": 140,
+ "methodology": "Each request is scored against its own pinned dataset item. The chosen option letter is extracted from an 'Answer: X' tag on the final line (falling back to a bare final-line letter, then the last answer tag in the visible text) and must match the reference letter. Headline metric is accuracy over scored items with a Wilson 95% interval, plus per-category accuracy. Runs are paired per item across configurations via --compare-baseline."
+}

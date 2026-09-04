@@ -1,0 +1,85 @@
+# W4A16 NVFP4 for NVIDIA-Nemotron-3.5-Lightning-30B-A3B (nemotron_h, hybrid
+# Mamba2 + MoE + Attention). Targets verified against a ModelOpt export summary
+# of this exact architecture:
+#   - MoE experts:    model.layers.N.mixer.experts.{up,down}_proj_weight_quantizers.*
+#                     + model.layers.N.mixer.shared_experts.{up,down}_proj.weight_quantizer
+#   - Attention:      model.layers.N.mixer.{q,k,v,o}_proj (6 layers: 5,12,19,26,33,42)
+#   - Mamba2/SSM:     model.layers.N.mixer.{conv1d,in_proj,out_proj}  (protected, BF16)
+#   - Attention BMM:  model.layers.N.mixer.{q,k,v,p}_bmm_quantizer     (protected, BF16)
+#   - Root:           model.embeddings (protected), lm_head (NVFP4)
+#
+# Semantics: rules apply in order; a later rule overrides an earlier match.
+imports:
+  nvfp4: configs/numerics/nvfp4
+metadata:
+  recipe_type: ptq
+  description: >-
+    Nemotron-3.5-Lightning W4A16 NVFP4: NVFP4 static (e2m1, block16) on MoE
+    expert projections, with BF16 lm_head, attention, KV, Mamba2/SSM path
+    (conv1d/in_proj/out_proj), and attention BMM.
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+    layerwise: false
+  quant_cfg:
+    # 1. Disable everything first (base_disable_all equivalent).
+    - quantizer_name: '*'
+      enable: false
+
+    # 2. W4A16 NVFP4 on MoE expert projections (fused per-expert quantizers
+    #    and shared experts). Static e2m1 scales.
+    - quantizer_name: '*mixer.experts*up_proj_weight_quantizers*'
+      cfg: {$import: nvfp4}
+    - quantizer_name: '*mixer.experts*down_proj_weight_quantizers*'
+      cfg: {$import: nvfp4}
+    - quantizer_name: '*mixer.shared_experts*up_proj*weight_quantizer*'
+      cfg: {$import: nvfp4}
+    - quantizer_name: '*mixer.shared_experts*down_proj*weight_quantizer*'
+      cfg: {$import: nvfp4}
+
+    # 3. lm_head: KEPT BF16. NVFP4 on lm_head was originally enabled, but
+    #    vLLM cu130-nightly (SM120 Blackwell build) loads lm_head through the
+    #    raw vocab-parallel path and chokes on the packed U8 weights (expects
+    #    [vocab, hidden] BF16, gets [vocab, hidden/2] U8). Cost is ~700MB BF16
+    #    on a 96GB card — not worth fighting the loader.
+    - quantizer_name: '*lm_head*'
+      enable: false
+
+    # 4. Attention remains BF16 for vLLM loader compatibility.
+
+    # 5. Nemotron-H exclusions (canonical Qwen-family patterns kept for shared
+    #    machinery compatibility; they match nothing in a text-only nemotron_h).
+    - quantizer_name: '*visual*'
+      enable: false
+    - quantizer_name: '*vision_tower*'
+      enable: false
+    - quantizer_name: '*vision_model*'
+      enable: false
+    - quantizer_name: '*embed_vision*'
+      enable: false
+    - quantizer_name: '*multi_modal_projector*'
+      enable: false
+    - quantizer_name: '*linear_attn.conv1d*'
+      enable: false
+    - quantizer_name: '*linear_attn.in_proj_a*'
+      enable: false
+    - quantizer_name: '*linear_attn.in_proj_b*'
+      enable: false
+
+    # 6. BF16-protected Mamba2/SSM path and attention BMM (must stay
+    #    after the FP8 enables so *_proj rules do not touch them).
+    - quantizer_name: '*mixer.conv1d*'
+      enable: false
+    - quantizer_name: '*mixer.in_proj*'
+      enable: false
+    - quantizer_name: '*mixer.out_proj*'
+      enable: false
+    - quantizer_name: '*mixer.*_bmm_quantizer*'
+      enable: false
+    - quantizer_name: '*mtp*'
+      enable: false
+    - quantizer_name: 'model.embeddings*'
+      enable: false
+    - quantizer_name: '*norm*weight*'
+      enable: false

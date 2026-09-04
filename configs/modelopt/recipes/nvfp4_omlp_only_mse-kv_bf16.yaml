@@ -1,0 +1,132 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Bounded second candidate: MLP-only MSE W4A4 plus softmax-attention o_proj W4A4.
+# Derived from upstream nvfp4_omlp_only-kv_fp8_cast.yaml, switched to MSE static
+# weight scales, and with FP8 KV cast removed (runtime/export KV stays BF16).
+# Q/K/V remain BF16. Enable only after primary MLP-only passes the cheap screen.
+
+metadata:
+  recipe_type: ptq
+  candidate: secondary_omlp
+  description: >-
+    W4A4 NVFP4 on language MLP gate/up/down plus softmax-attention o_proj only.
+    Q/K/V, GatedDeltaNet, vision, MTP, lm_head, embeddings, and norms stay BF16.
+    No FP8 KV metadata.
+  modelopt_commit: 43fd41a58d52c4e6e5dec1d1ff5989ecc737ae1a
+  modelopt_version: 0.46.0rc2
+  kv_dtype: bf16
+  weight_format: nvfp4_w4a4_group16
+  algorithm: mse
+  prerequisite: configs/modelopt/recipes/nvfp4_mlp_only_mse-kv_bf16.yaml
+
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+    layerwise:
+      enable: false
+  quant_cfg:
+    - quantizer_name: "*"
+      enable: false
+
+    - quantizer_name: "*mlp*weight_quantizer"
+      cfg: &nvfp4_static
+        num_bits: e2m1
+        block_sizes:
+          -1: 16
+          type: static
+        scale_bits: e4m3
+    - quantizer_name: "*mlp*input_quantizer"
+      cfg: &nvfp4_dynamic
+        num_bits: e2m1
+        block_sizes:
+          -1: 16
+          type: dynamic
+        scale_bits: e4m3
+        effective_bits: 4.5
+    - quantizer_name: "*.mixer.up_proj.weight_quantizer"
+      cfg: *nvfp4_static
+    - quantizer_name: "*.mixer.up_proj.input_quantizer"
+      cfg: *nvfp4_dynamic
+    - quantizer_name: "*.mixer.down_proj.weight_quantizer"
+      cfg: *nvfp4_static
+    - quantizer_name: "*.mixer.down_proj.input_quantizer"
+      cfg: *nvfp4_dynamic
+    - quantizer_name: "*block_sparse_moe*weight_quantizer"
+      cfg: *nvfp4_static
+    - quantizer_name: "*block_sparse_moe*input_quantizer"
+      cfg: *nvfp4_dynamic
+    - quantizer_name: "*.experts.*weight_quantizer"
+      cfg: *nvfp4_static
+    - quantizer_name: "*.experts.*input_quantizer"
+      cfg: *nvfp4_dynamic
+
+    # Softmax-attention output projection only (Q/K/V stay BF16).
+    - quantizer_name: "*self_attn.o_proj*weight_quantizer"
+      cfg: *nvfp4_static
+    - quantizer_name: "*self_attn.o_proj*input_quantizer"
+      cfg: *nvfp4_dynamic
+    - quantizer_name: "*o_proj*weight_quantizer"
+      cfg: *nvfp4_static
+    - quantizer_name: "*o_proj*input_quantizer"
+      cfg: *nvfp4_dynamic
+
+    - quantizer_name: "*block_sparse_moe.gate*"
+      enable: false
+    - quantizer_name: "*linear_attn.conv1d*"
+      enable: false
+    - quantizer_name: "*linear_attn.in_proj_a*"
+      enable: false
+    - quantizer_name: "*linear_attn.in_proj_b*"
+      enable: false
+    - quantizer_name: "*lm_head*"
+      enable: false
+    - quantizer_name: "*mixer.conv1d*"
+      enable: false
+    - quantizer_name: "*mlp.gate.*"
+      enable: false
+    - quantizer_name: "*mlp.shared_expert_gate.*"
+      enable: false
+    - quantizer_name: "*output_layer*"
+      enable: false
+    - quantizer_name: "*proj_out.*"
+      enable: false
+    - quantizer_name: "*router*"
+      enable: false
+    - quantizer_name: "mtp.*"
+      enable: false
+    - quantizer_name: "output.*"
+      enable: false
+    - parent_class: "nn.Embedding"
+      quantizer_name: "*"
+      enable: false
+
+    # Final exclusions (last-match-wins). Also re-disable GDN out_proj if a
+    # bare *o_proj* rule matched linear_attn.out_proj.
+    - quantizer_name: "*visual*"
+      enable: false
+    - quantizer_name: "*vision_tower*"
+      enable: false
+    - quantizer_name: "*vision_model*"
+      enable: false
+    - quantizer_name: "*embed_vision*"
+      enable: false
+    - quantizer_name: "*multi_modal_projector*"
+      enable: false
+    - quantizer_name: "*mtp*"
+      enable: false
+    - quantizer_name: "*linear_attn.conv1d*"
+      enable: false
+    - quantizer_name: "*linear_attn.in_proj_a*"
+      enable: false
+    - quantizer_name: "*linear_attn.in_proj_b*"
+      enable: false
+    - quantizer_name: "*linear_attn.out_proj*"
+      enable: false
+    - quantizer_name: "*self_attn.q_proj*"
+      enable: false
+    - quantizer_name: "*self_attn.k_proj*"
+      enable: false
+    - quantizer_name: "*self_attn.v_proj*"
+      enable: false

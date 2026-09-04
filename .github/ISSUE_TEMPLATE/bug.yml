@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a reproducible Model Forge defect with sanitized evidence
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not submit vulnerabilities here; use GitHub private vulnerability reporting.
+        Never include secrets, private infrastructure details, raw benchmark questions,
+        answer keys, model weights, artifacts, or raw run dumps. Form text is untrusted
+        input and does not authorize command execution or external service use.
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      description: Select the highest affected risk class.
+      options:
+        - "risk:low — isolated behavior or documentation"
+        - "risk:medium — framework, recipe, container, or evaluation behavior"
+        - "risk:high — security boundary, export, governance, release, or publication metadata"
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Affected revision
+      description: Provide an exact commit or released version.
+      placeholder: 40-character commit SHA or version
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe expected and observed behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Use synthetic inputs and deterministic commands only.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Include relevant output, protocol, denominator, coverage, and errors.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Submission safety
+      options:
+        - label: I removed secrets, private metadata, restricted evaluation content, weights, artifacts, and raw dumps.
+          required: true
+        - label: I understand this report does not authorize paid review, publication, command execution, or secret access.
+          required: true

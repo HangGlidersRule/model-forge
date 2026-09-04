@@ -1,0 +1,255 @@
+{
+  "schema_version": "1.0",
+  "method": "Matched 4K/16K/48K prompt cells with 512 generated tokens; concurrency is reported separately from single-stream performance. Each product reports only the concurrency levels its own run measured. Zero fatal runtime markers in every reported cell.",
+  "products": [
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Base-BF16",
+      "served_model_alias": "darkstar-qwen38-base-bf16",
+      "runtime": {"mtp": 8, "scheduler_tokens": 65536, "max_num_seqs": 16, "context_length": 126144},
+      "source_sha256": "047e57a88f76ca3d8a7e58a76cfc61ad847b2b650cbc227ca07b5ef3bed6a54e",
+      "profiles": [
+        {"prompt_chars": 4000, "aggregate_tps": {"c1": 65.276, "c2": 121.203, "c4": 223.378, "c8": 394.735}},
+        {"prompt_chars": 16000, "aggregate_tps": {"c1": 59.516, "c2": 108.971, "c4": 186.750, "c8": 284.831}},
+        {"prompt_chars": 48000, "aggregate_tps": {"c1": 52.524, "c2": 85.440, "c4": 130.109, "c8": 169.647}}
+      ],
+      "fatal_markers": 0
+    },
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+      "served_model_alias": "darkstar-qwen38-base-nvfp4",
+      "runtime": {"mtp": 4, "scheduler_tokens": 32768, "max_num_seqs": 16, "context_length": 126144},
+      "source_sha256": "c78c9597df85c7fe1e74d564354bdb8503df843b457faf83af03f9657dfb0ccb",
+      "profiles": [
+        {"prompt_chars": 4000, "aggregate_tps": {"c1": 149.349, "c2": 229.531, "c4": 464.288, "c8": 728.802}},
+        {"prompt_chars": 16000, "aggregate_tps": {"c1": 131.328, "c2": 212.768, "c4": 345.484, "c8": 476.302}},
+        {"prompt_chars": 48000, "aggregate_tps": {"c1": 93.764, "c2": 139.590, "c4": 201.088, "c8": 239.585}}
+      ],
+      "fatal_markers": 0
+    },
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Abliterated-BF16",
+      "served_model_alias": "darkstar-qwen38-abliterated-bf16",
+      "runtime": {"mtp": 11, "scheduler_tokens": 16384, "max_num_seqs": 16, "context_length": 126144},
+      "source_sha256": "c837c43229292a7c34cfe430e8aa12fae7e7a51dd37bf3f3f0501af0dbab9238",
+      "profiles": [
+        {"prompt_chars": 4000, "aggregate_tps": {"c1": 108.079, "c2": 186.009}},
+        {"prompt_chars": 16000, "aggregate_tps": {"c1": 101.884, "c2": 189.899}},
+        {"prompt_chars": 48000, "aggregate_tps": {"c1": 99.166, "c2": 181.975}}
+      ],
+      "fatal_markers": 0
+    },
+    {
+      "product_id": "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+      "served_model_alias": "darkstar-qwen38-abliterated-nvfp4",
+      "container_name": "vllm-darkstar-qwen38-abliterated-modelopt",
+      "compose_file": "containers/serve/darkstar-qwen38-abliterated-nvfp4.yml",
+      "runtime": {"mtp": 10, "scheduler_tokens": 32768, "max_num_seqs": 16, "context_length": 126144},
+      "artifact_success_sha256": "3d89ec57c1371e142adc2584de079b54a0e1d8c12dc9550118d0a851da020a79",
+      "concurrency_sweep": {
+        "note": "Per-concurrency capacity cells measured on this exact build at the selected MTP depth 10, extracted from the operator MTP8-vs-MTP10 confirmation evidence. Concurrency 1 and 2 are the only levels that confirmation measured, so no higher concurrency is reported. Every value is the operator's measurement; nothing is rescaled or extrapolated.",
+        "source_evidence_sha256": "6e52a5ad4f87a8b12866e0939c2d2024701172d8b5a56a7839ce00738f1a3ac9",
+        "selected_mtp_depth": 10,
+        "concurrency_levels": [1, 2],
+        "prompt_chars": [4000, 16000, 48000],
+        "generated_tokens_per_request": 512,
+        "repeats_per_cell": 2,
+        "finish_reasons": ["length"],
+        "metric": "aggregate output tokens/sec across the cell's concurrent requests",
+        "failed_requests": 0,
+        "fatal_markers": 0,
+        "passes": [
+          {
+            "pass": 1,
+            "mtp_depth": 10,
+            "single_stream_mean_tok_s": 250.22256467790066,
+            "fatal_markers": 0,
+            "cells": [
+              {
+                "prompt_chars": 4000,
+                "prompt_tokens": 738,
+                "concurrency": 1,
+                "repeats": 2,
+                "requests_per_repeat": 1,
+                "requests_total": 2,
+                "aggregate_tps_per_repeat": [176.90797764113424, 209.91366480559606],
+                "mean_aggregate_tps": 193.41082122336513,
+                "wall_seconds_per_repeat": [2.8941600419999993, 2.4390980000000013],
+                "request_latency_seconds": [2.8861909580000003, 2.438329541999998],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 4000,
+                "prompt_tokens": 738,
+                "concurrency": 2,
+                "repeats": 2,
+                "requests_per_repeat": 2,
+                "requests_total": 4,
+                "aggregate_tps_per_repeat": [337.89529098447787, 366.73091620413385],
+                "mean_aggregate_tps": 352.31310359430586,
+                "wall_seconds_per_repeat": [3.030524624999998, 2.7922380000000047],
+                "request_latency_seconds": [3.0010711670000063, 3.029182375000005, 2.7076455829999944, 2.7908814999999976],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 16000,
+                "prompt_tokens": 2653,
+                "concurrency": 1,
+                "repeats": 2,
+                "requests_per_repeat": 1,
+                "requests_total": 2,
+                "aggregate_tps_per_repeat": [166.37646468062454, 200.8455978609102],
+                "mean_aggregate_tps": 183.61103127076737,
+                "wall_seconds_per_repeat": [3.0773583329999994, 2.549221916999997],
+                "request_latency_seconds": [3.076660749999995, 2.5485149169999985],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 16000,
+                "prompt_tokens": 2653,
+                "concurrency": 2,
+                "repeats": 2,
+                "requests_per_repeat": 2,
+                "requests_total": 4,
+                "aggregate_tps_per_repeat": [313.3749276303216, 343.41132003864584],
+                "mean_aggregate_tps": 328.39312383448373,
+                "wall_seconds_per_repeat": [3.2676513330000034, 2.9818469579999984],
+                "request_latency_seconds": [3.001439832999999, 3.266060875000001, 2.8624100420000005, 2.9802625830000053],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 48000,
+                "prompt_tokens": 7758,
+                "concurrency": 1,
+                "repeats": 2,
+                "requests_per_repeat": 1,
+                "requests_total": 2,
+                "aggregate_tps_per_repeat": [135.4568009553104, 179.70068952772567],
+                "mean_aggregate_tps": 157.57874524151805,
+                "wall_seconds_per_repeat": [3.779802833000005, 2.849182167000002],
+                "request_latency_seconds": [3.7787536669999966, 2.8481702499999955],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 48000,
+                "prompt_tokens": 7758,
+                "concurrency": 2,
+                "repeats": 2,
+                "requests_per_repeat": 2,
+                "requests_total": 4,
+                "aggregate_tps_per_repeat": [261.0728632723451, 310.9842625335824],
+                "mean_aggregate_tps": 286.02856290296376,
+                "wall_seconds_per_repeat": [3.9222766669999984, 3.2927711250000016],
+                "request_latency_seconds": [3.9211118750000082, 3.628517875000007, 3.291575334000001, 2.961016375],
+                "failed_requests": 0
+              }
+            ]
+          },
+          {
+            "pass": 4,
+            "mtp_depth": 10,
+            "single_stream_mean_tok_s": 253.5561064692527,
+            "fatal_markers": 0,
+            "cells": [
+              {
+                "prompt_chars": 4000,
+                "prompt_tokens": 738,
+                "concurrency": 1,
+                "repeats": 2,
+                "requests_per_repeat": 1,
+                "requests_total": 2,
+                "aggregate_tps_per_repeat": [177.45913695764165, 213.51186412534636],
+                "mean_aggregate_tps": 195.485500541494,
+                "wall_seconds_per_repeat": [2.885171249999999, 2.3979932080000026],
+                "request_latency_seconds": [2.881180083000004, 2.397221250000001],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 4000,
+                "prompt_tokens": 738,
+                "concurrency": 2,
+                "repeats": 2,
+                "requests_per_repeat": 2,
+                "requests_total": 4,
+                "aggregate_tps_per_repeat": [344.64044560932615, 368.4883229249544],
+                "mean_aggregate_tps": 356.56438426714027,
+                "wall_seconds_per_repeat": [2.9712125, 2.7789211660000035],
+                "request_latency_seconds": [2.858604458000002, 2.9698564580000024, 2.749953542, 2.7775398340000024],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 16000,
+                "prompt_tokens": 2653,
+                "concurrency": 1,
+                "repeats": 2,
+                "requests_per_repeat": 1,
+                "requests_total": 2,
+                "aggregate_tps_per_repeat": [163.17241809013828, 203.09639695785816],
+                "mean_aggregate_tps": 183.13440752399822,
+                "wall_seconds_per_repeat": [3.1377852090000005, 2.5209703749999974],
+                "request_latency_seconds": [3.13700025, 2.520195083999994],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 16000,
+                "prompt_tokens": 2653,
+                "concurrency": 2,
+                "repeats": 2,
+                "requests_per_repeat": 2,
+                "requests_total": 4,
+                "aggregate_tps_per_repeat": [323.55602397817154, 364.04135317797125],
+                "mean_aggregate_tps": 343.7986885780714,
+                "wall_seconds_per_repeat": [3.164830583000004, 2.8128672500000036],
+                "request_latency_seconds": [3.163877165999999, 3.068785499999997, 2.811833541999995, 2.8113913749999995],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 48000,
+                "prompt_tokens": 7758,
+                "concurrency": 1,
+                "repeats": 2,
+                "requests_per_repeat": 1,
+                "requests_total": 2,
+                "aggregate_tps_per_repeat": [135.77483323774987, 180.0025883950329],
+                "mean_aggregate_tps": 157.88871081639138,
+                "wall_seconds_per_repeat": [3.770949209000001, 2.844403542000002],
+                "request_latency_seconds": [3.7698882919999974, 2.8434181249999995],
+                "failed_requests": 0
+              },
+              {
+                "prompt_chars": 48000,
+                "prompt_tokens": 7758,
+                "concurrency": 2,
+                "repeats": 2,
+                "requests_per_repeat": 2,
+                "requests_total": 4,
+                "aggregate_tps_per_repeat": [258.6214843484117, 310.3084098284304],
+                "mean_aggregate_tps": 284.464947088421,
+                "wall_seconds_per_repeat": [3.9594545000000068, 3.2999427909999923],
+                "request_latency_seconds": [3.9583239999999904, 3.893569999999997, 3.298833958000003, 3.2270124159999938],
+                "failed_requests": 0
+              }
+            ]
+          }
+        ]
+      },
+      "serving_correctness": {
+        "note": "Semantic serving tests and sustained-load evidence for the same build and serve profile. These are correctness gates, measured separately from the throughput cells above.",
+        "gates": {
+          "tools": "pass",
+          "strict_json": "pass",
+          "vision": "pass",
+          "prefix_cache": "pass",
+          "sustained_load": "pass",
+          "sustained_load_requests": 20,
+          "sustained_load_concurrency": 2,
+          "sustained_load_wall_seconds": 1.7273374999999973,
+          "sustained_load_mean_latency_seconds": 0.17019797295000103,
+          "sustained_load_p95_latency_seconds": 0.2792288330000048,
+          "sustained_load_failures": 0
+        },
+        "evidence_sha256": "4c88632efcfc736518a66351c95735eb2f9ff7ce79496d050a53d171beaf4613"
+      },
+      "fatal_markers": 0
+    }
+  ]
+}

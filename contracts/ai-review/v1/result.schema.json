@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hangglidersrule.com/contracts/ai-review/v1/result.schema.json",
+  "title": "Model Forge advisory AI review result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "request_id",
+    "repository",
+    "pull_request",
+    "head_sha",
+    "request_sha256",
+    "dedupe_key",
+    "status",
+    "advisory",
+    "provider",
+    "model",
+    "usage",
+    "cost_microusd",
+    "findings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "model-forge-ai-review-result/v1"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "pull_request": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "head_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "request_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "dedupe_key": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "status": {
+      "enum": ["completed", "dry_run", "refused"]
+    },
+    "advisory": {
+      "const": true
+    },
+    "provider": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "model": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_tokens", "output_tokens"],
+      "properties": {
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cost_microusd": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "path", "line", "message"],
+        "properties": {
+          "severity": {
+            "enum": ["info", "warning", "error"]
+          },
+          "path": {
+            "type": ["string", "null"],
+            "maxLength": 1024,
+            "pattern": "^(?!/)(?!~)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$"
+          },
+          "line": {
+            "type": ["integer", "null"],
+            "minimum": 1
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 8192
+          }
+        }
+      }
+    },
+    "refusal_reason": {
+      "type": "string",
+      "maxLength": 256
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "refused"
+          }
+        }
+      },
+      "then": {
+        "required": ["refusal_reason"]
+      },
+      "else": {
+        "not": {
+          "required": ["refusal_reason"]
+        }
+      }
+    }
+  ]
+}

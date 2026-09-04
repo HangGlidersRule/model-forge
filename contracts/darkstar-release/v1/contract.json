@@ -1,0 +1,313 @@
+{
+  "contract_id": "darkstar-four-product-release",
+  "contract_version": "1.0.0",
+  "process_document": "docs/darkstar-four-product-release-process.md",
+  "ledger_schema": "contracts/darkstar-release/v1/ledger.schema.json",
+  "note": "Machine-readable contract for the immutable Darkstar four-product release process. Per-family publication-readiness ledgers validate against ledger.schema.json and are the source of truth. Human-readable statuses are rendered directly into Git-tracked model matrices and model cards; no separate gap report exists. Product build completion is distinguished from public release: a product whose every applicable build gate is verified is build-complete and may be locally_complete_unpublished while applicable publication-only gates stay open. Public HF visibility alone is not the lifecycle publication claim: the immutable release tag must also be verified.",
+  "canonical_roles": [
+    "base-bf16",
+    "base-modelopt-nvfp4",
+    "abliterated-bf16",
+    "abliterated-modelopt-nvfp4"
+  ],
+  "product_id_templates": {
+    "base-bf16": "Darkstar-<Family>-Base-BF16",
+    "base-modelopt-nvfp4": "Darkstar-<Family>-Base-ModelOpt-NVFP4",
+    "abliterated-bf16": "Darkstar-<Family>-Abliterated-BF16",
+    "abliterated-modelopt-nvfp4": "Darkstar-<Family>-Abliterated-ModelOpt-NVFP4"
+  },
+  "served_model_identity": {
+    "rule": "Runtime API identity is distinct from publication identity. Every Darkstar product exposes a concise lowercase alias darkstar-<family>-<behavior>-<format> through --served-model-name. Publication repositories and artifact identities remain precision-encoded under the candidate_precision_encoding contract.",
+    "alias_template": "darkstar-<family>-<base|abliterated>-<bf16|nvfp4>",
+    "container_template": "vllm-darkstar-<family>-<base|abliterated>-<bf16|modelopt>",
+    "compose_filename_template": "darkstar-<family>-<base|abliterated>-<bf16|nvfp4>.yml",
+    "idempotency": "A profile deterministically owns one alias, one container name, and one compose filename. Regeneration replaces changed content at that filename and never introduces random suffixes or duplicate container identities.",
+    "product4": {
+      "served_model_alias": "darkstar-qwen38-abliterated-nvfp4",
+      "publication_repository": "HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+      "container_name": "vllm-darkstar-qwen38-abliterated-modelopt",
+      "compose_file": "containers/serve/darkstar-qwen38-abliterated-nvfp4.yml"
+    },
+    "enforcement": "Validated and rendered deterministically by src/model_forge/serve_profile.py; regression-tested in tests/test_serve_profile.py and tests/test_release_contract.py."
+  },
+  "candidate_precision_encoding": {
+    "rule": "The four-product family slot id (Darkstar-<Family>-Base-ModelOpt-NVFP4 and its Abliterated twin) is the release-slot label only. Every ModelOpt NVFP4 candidate that is selected, rejected, or under evaluation, and every actual Hugging Face repository, model-card identity, model source passed to vllm serve/--model, and recipe publication target, MUST encode the real activation/recipe precision class and MUST NOT hide it. A mixed-precision artifact MUST NOT be named as if it were uniform W4A4, and a uniform W4A4 artifact MUST NOT be named W4A16. Precision maps may never be omitted or conflated. The separate --served-model-name API alias follows served_model_identity and is intentionally concise.",
+    "canonical_id_order": "Darkstar-<Family>-<Base|Abliterated>-ModelOpt-<W4A16|W4A4>-NVFP4[-Mixed-FP8]",
+    "examples": {
+      "mixed_w4a16_fp8": "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+      "full_w4a4": "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A4-NVFP4"
+    },
+    "required_precision_map_components": [
+      "language_mlp",
+      "lm_head",
+      "self_attention",
+      "gdn_projections",
+      "kv_cache",
+      "protected"
+    ],
+    "selection_states": [
+      "selected",
+      "rejected",
+      "under_evaluation",
+      "not_built"
+    ],
+    "mixed_fp8_derivation": {
+      "rule": "Whether an artifact is Mixed-FP8 is DERIVED from its precision map, never trusted from the names it declares. If a candidate's precision map puts FP8 on any served weight path, then its precision_class, candidate_id, reserved target_repository, the product target_repository when resolved to it, its model-card identity heading, and every repository model source passed to vllm serve/--model MUST encode Mixed-FP8; absence of Mixed-FP8 is a violation, not an accepted shorthand. Conversely a candidate whose served weight paths contain no FP8 (uniform W4A4, or any other non-FP8 recipe) MUST NOT encode Mixed-FP8 in those identities. The concise runtime API alias is governed separately and does not make a precision claim.",
+      "weight_components": [
+        "language_mlp",
+        "lm_head",
+        "self_attention",
+        "gdn_projections",
+        "protected"
+      ],
+      "runtime_components_excluded": [
+        "kv_cache"
+      ],
+      "runtime_kv_rule": "Runtime KV metadata is never evidence of the Mixed-FP8 class: an FP8 KV cache does not make an artifact Mixed-FP8, and runtime BF16 KV remains a separate, independently documented property.",
+      "enforcement": "Derived and enforced fail-closed by precision_map_requires_mixed_fp8 in src/model_forge/release.py, by the conditional Mixed-FP8 naming rule in ledger.schema.json, and by negative regression tests in tests/test_release_contract.py."
+    },
+    "actual_id_encoding": {
+      "rule": "The bare release-slot id (Darkstar-<Family>-<Base|Abliterated>-ModelOpt-NVFP4) is an abstract label. It may be used only where nothing concrete resolves to it: this contract, the process document, and the ledger product_id/LEDGER-SYNC rendering. Every artifact/publication identifier \u2014 Hugging Face target repository, model-card identity heading, model source passed to vllm serve/--model, and recipe publication target \u2014 MUST encode ModelOpt plus W4A16 or W4A4, and Mixed-FP8 when FP8 is part of the recipe. No exemption exists for redundant format wording. The --served-model-name API alias is not an artifact/publication identifier and follows the concise served_model_identity contract.",
+      "applies_to": [
+        "hugging_face_target_repository",
+        "model_card_identity_heading",
+        "serve_model_source",
+        "recipe_publication_target"
+      ],
+      "id_conflation_rules": [
+        "An id must not contain both W4A16 and W4A4.",
+        "Mixed-FP8 is valid only on a W4A16 id.",
+        "A uniform W4A4 id must not encode FP8.",
+        "FP8 in an id is always spelled Mixed-FP8."
+      ],
+      "candidate_repository_rule": "Each ModelOpt NVFP4 candidate reserves exactly <namespace>/<candidate_id>, so the reserved repository id carries the candidate's precision class even before the candidate is built.",
+      "target_repository_states": [
+        "resolved",
+        "unresolved_pending_precision_winner"
+      ],
+      "unresolved_target_rule": "A ModelOpt NVFP4 product may resolve target_repository only to a candidate that has been built. Until a precision winner is selected the product target_repository is null with status unresolved_pending_precision_winner, its model card declares the candidate ids instead of a slot id, and only candidate-specific repository ids are reserved. Publishing a bare Base-NVFP4 or Abliterated-NVFP4 target is a contract violation.",
+      "enforcement": "Fail-closed in src/model_forge/release.py and tests/test_release_contract.py across the ledger, model cards, serve examples, recipes, and repository documentation."
+    },
+    "promotion_note": "modelopt_candidate_comparison and gpqa_matched_full_denominator record measurement facts about a candidate. Promotion of a candidate to the release winner is a separate, documented decision: selecting a winner requires both a completed W4A16-vs-W4A4 comparison and an explicit rationale weighing quality against throughput. For Darkstar-Qwen3.8-27B the mixed W4A16-NVFP4+FP8 base candidate was selected (promoted) over the uniform W4A4 candidate: it delivers the higher single-stream throughput while its GPQA (153/198 = 77.27%) sits within about 2.02 percentage points / 4 questions of the Base BF16 baseline (157/198 = 79.29%); the W4A4 candidate was built, measured, and rejected on throughput. Promotion is never automatic from a GPQA number alone, and a rejected candidate is never presented as the winner."
+  },
+  "statuses": [
+    "verified",
+    "in_progress",
+    "missing",
+    "rejected_historical",
+    "not_applicable"
+  ],
+  "status_semantics": {
+    "verified": "Immutable tracked evidence exists in this repository and satisfies the gate for this exact product artifact.",
+    "in_progress": "Work is documented or claimed but the immutable tracked evidence required to verify it has not been curated yet. Live, transient, or undocumented work is at most in_progress, never verified.",
+    "missing": "No qualifying evidence exists, or the required proof is unknown. Unknown is missing.",
+    "rejected_historical": "A prior artifact or result kept for lineage only (e.g. llm-compressor compressed-tensors NVFP4, or mixed-protocol GPQA). Never republished or counted toward publication.",
+    "not_applicable": "The gate does not apply to this product role per applies_to."
+  },
+  "product_lifecycle": {
+    "rule": "Every product declares a lifecycle that must agree with its gate statuses. build gates describe the built artifact; publication_only gates gate public release. A product is build-complete when every applicable build gate is verified, and publication-ready when every applicable gate (build and publication) is verified. Product build completion is separate from public release: a locally complete artifact that has not been uploaded is locally_complete_unpublished, not published.",
+    "states": [
+      "in_progress",
+      "locally_complete_unpublished",
+      "published"
+    ],
+    "state_semantics": {
+      "in_progress": "At least one applicable build gate is still missing or in_progress. The artifact is not a finished local build.",
+      "locally_complete_unpublished": "Every applicable build gate is verified, but at least one publication-only gate is still open. Public artifacts may already be accessible, but the contract publication claim remains false until every applicable gate, including the immutable release tag, is verified.",
+      "published": "Every applicable gate, build and publication, is verified. Only a published product may set publication_claim true."
+    },
+    "publication_only_gates": [
+      "model_card_final",
+      "publication_targets_hf_ghcr",
+      "clean_download_boot_smoke",
+      "release_tag"
+    ],
+    "enforcement": "Derived and enforced fail-closed by product_build_complete, expected_lifecycle, and product_lifecycle_errors in src/model_forge/release.py, and by regression tests in tests/test_release_contract.py."
+  },
+  "publication_rule": "A product may claim publication only when every gate that applies to its role has status verified. not_applicable gates are excluded. Any gate that is missing, in_progress, or rejected_historical blocks publication. No inherited runtime, quality, or behavior result counts as verified without direct verification on the exact product artifact.",
+  "gates": [
+    {
+      "id": "provenance_ownership",
+      "title": "Source lineage and ownership/provenance resolution",
+      "requirement": "Pin the upstream source to a full 40-character SHA, record the edit/quantization lineage, and resolve who owns and is licensed to publish this exact artifact.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "artifact_manifest",
+      "title": "Artifact file manifest and SHA-256 checksums",
+      "requirement": "Freeze the exact file list and SHA-256 checksums of the published artifact.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "recipe_edit_manifest",
+      "title": "Recipe and edit manifest",
+      "requirement": "A pinned, declarative recipe (and, for abliterated products, the edit/target manifest) defines the build and hashes cleanly.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "artifact_validation",
+      "title": "Fail-closed artifact/structural validation",
+      "requirement": "Structural validation passes with committed evidence: tokenizer/processor/chat/generation config preserved, protected/vision/MTP tensors intact, no drift.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "abliteration_pass",
+      "title": "Reproducible abliteration pass",
+      "requirement": "A reproducible refusal-direction projection with pinned corpora, layer, seed, target inventory, and leakage bound is recorded as immutable evidence.",
+      "applies_to": [
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "modelopt_candidate_comparison",
+      "title": "Pinned ModelOpt W4A16 vs W4A4/mixed candidate comparison",
+      "requirement": "Compare pinned NVIDIA ModelOpt W4A16 against W4A4/mixed candidates and record the winning recipe with tracked evidence. Every candidate is named with its explicit precision class (candidate_precision_encoding) and carries a complete precision_map; a mixed W4A16+FP8 candidate is never conflated with a uniform W4A4 candidate. Selecting a promotion winner is separate from verifying a candidate's GPQA measurement.",
+      "applies_to": [
+        "base-modelopt-nvfp4",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "nvfp4_tensor_scale_validation",
+      "title": "NVFP4 tensor/scale/MTP/vision/fusion validation",
+      "requirement": "Validate NVFP4 tensor and scale integrity (no empty/zero/NaN/Inf scales), no quantized vision, BF16 MTP preserved, no mixed precision inside fused groups, no FP8 KV metadata.",
+      "applies_to": [
+        "base-modelopt-nvfp4",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "performance_profile",
+      "title": "Independent single-stream performance tuning profile",
+      "requirement": "An independent, warmup-aware single-stream throughput profile is measured for this exact product and recorded; never inherited from another artifact.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "serving_capacity_profile",
+      "title": "Independent serving/capacity tuning profile",
+      "requirement": "An independent serving/concurrency/capacity profile is measured for this exact product, kept separate from single-stream throughput.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "gpqa_matched_full_denominator",
+      "title": "Matched full-denominator GPQA (198/198)",
+      "requirement": "GPQA Diamond measured under the frozen protocol with 198/198 terminal parseable responses (full denominator) on this exact product; immutable hashes recorded.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "behavior_refusal_eval",
+      "title": "Harmful-refusal and safe-over-refusal behavior evaluation",
+      "requirement": "Fresh harmful-compliance and safe-over-refusal evaluation measured on this exact abliterated product with zero errors.",
+      "applies_to": [
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "serve_profile_frozen",
+      "title": "Exact serve profile frozen",
+      "requirement": "The exact serve command/runtime profile (runtime, KV dtype, context, speculation, kernels, budgets) is frozen for this product.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "model_card_final",
+      "title": "Final model card (no placeholders)",
+      "requirement": "The model card is complete with resolved license and evidence links, no *_PLACEHOLDER values, and the exact planned immutable release tag reference. Tag existence is verified separately by release_tag.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "publication_targets_hf_ghcr",
+      "title": "Hugging Face / GHCR publication",
+      "requirement": "The artifact is public at its pinned HF target and every container image explicitly required by the release is published. A release with reproducible pinned upstream/local vLLM commands may record GHCR as not required.",
+      "applies_to": [
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "clean_download_boot_smoke",
+      "title": "Clean re-download boot/smoke verification",
+      "requirement": "The published artifact is re-downloaded to a clean mount and boots/smokes successfully.",
+      "applies_to": [
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "release_tag",
+      "title": "Immutable release tag",
+      "requirement": "An immutable Git release tag/commit is cut and referenced from the model card.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    },
+    {
+      "id": "no_inherited_unverified_results",
+      "title": "No inherited unverified results",
+      "requirement": "No runtime, quality, or behavior result is carried over from another artifact or protocol without direct verification on this exact product.",
+      "applies_to": [
+        "base-bf16",
+        "base-modelopt-nvfp4",
+        "abliterated-bf16",
+        "abliterated-modelopt-nvfp4"
+      ]
+    }
+  ],
+  "serving_axis_applicability_note": "Per-family applicable/N-A handling for MTP, DFlash, FlashAttention, FlashInfer, Marlin/CUTLASS, prefix caching, chunked prefill, scheduler budgets, kernels, CUDA graphs/compile, LMCache, max-num-seqs, served model length, GMU, KV dtype, concurrency/capacity, and recurrent cache modes is defined normatively in the process document.",
+  "citations": {
+    "nvidia_model_optimizer": "https://github.com/NVIDIA/TensorRT-Model-Optimizer",
+    "mlabonne_abliteration": "https://github.com/mlabonne/abliteration",
+    "ritesh_khanna_abliteration_eval": "https://huggingface.co/datasets/treadon/abliteration-eval"
+  }
+}

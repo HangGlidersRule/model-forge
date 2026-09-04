@@ -1,0 +1,31 @@
+imports:
+  shared_quant_cfg: huggingface/qwen3_5/ptq/w4a16_nvfp4_mse-fp8_attn-kv_fp8_cast.quant_cfg
+metadata:
+  recipe_type: ptq
+  description: >-
+    Qwen3.8 performance candidate with MSE NVFP4 MLP and lm_head, FP8
+    self-attention and large GDN projections, and BF16 KV, vision, MTP,
+    in_proj_a, in_proj_b, and conv1d.
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+    layerwise: false
+  quant_cfg:
+    - $import: shared_quant_cfg
+    - quantizer_name: '*k_proj.output_quantizer'
+      enable: false
+    - quantizer_name: '*v_proj.output_quantizer'
+      enable: false
+    - quantizer_name: '*visual*'
+      enable: false
+    - quantizer_name: '*vision_tower*'
+      enable: false
+    - quantizer_name: '*vision_model*'
+      enable: false
+    - quantizer_name: '*embed_vision*'
+      enable: false
+    - quantizer_name: '*multi_modal_projector*'
+      enable: false
+    - quantizer_name: '*mtp*'
+      enable: false

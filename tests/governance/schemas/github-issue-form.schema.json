@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HangGlidersRule/model-forge/tests/governance/schemas/github-issue-form.schema.json",
+  "title": "GitHub issue form",
+  "description": "Offline transcription of GitHub's documented form schema for issue templates. Element keys, attributes, and validations are enumerated per element type so that unsupported keys fail closed instead of reaching GitHub's parser.",
+  "type": "object",
+  "required": ["name", "description", "body"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "title": { "type": "string" },
+    "type": { "type": "string", "minLength": 1 },
+    "labels": { "$ref": "#/$defs/nameList" },
+    "assignees": { "$ref": "#/$defs/nameList" },
+    "projects": { "$ref": "#/$defs/nameList" },
+    "body": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/element" }
+    }
+  },
+  "$defs": {
+    "nameList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "text": { "type": "string" },
+    "requiredValidations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "required": { "type": "boolean" } }
+    },
+    "element": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "markdown",
+            "input",
+            "textarea",
+            "dropdown",
+            "checkboxes",
+            "upload"
+          ]
+        }
+      },
+      "oneOf": [
+        { "$ref": "#/$defs/markdownElement" },
+        { "$ref": "#/$defs/inputElement" },
+        { "$ref": "#/$defs/textareaElement" },
+        { "$ref": "#/$defs/dropdownElement" },
+        { "$ref": "#/$defs/checkboxesElement" },
+        { "$ref": "#/$defs/uploadElement" }
+      ]
+    },
+    "markdownElement": {
+      "$comment": "Markdown is display-only: it carries no identifier and no validations.",
+      "type": "object",
+      "required": ["type", "attributes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "markdown" },
+        "attributes": {
+          "type": "object",
+          "required": ["value"],
+          "additionalProperties": false,
+          "properties": { "value": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "inputElement": {
+      "type": "object",
+      "required": ["type", "attributes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "input" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "attributes": {
+          "type": "object",
+          "required": ["label"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "description": { "$ref": "#/$defs/text" },
+            "placeholder": { "$ref": "#/$defs/text" },
+            "value": { "$ref": "#/$defs/text" }
+          }
+        },
+        "validations": { "$ref": "#/$defs/requiredValidations" }
+      }
+    },
+    "textareaElement": {
+      "type": "object",
+      "required": ["type", "attributes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "textarea" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "attributes": {
+          "type": "object",
+          "required": ["label"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "description": { "$ref": "#/$defs/text" },
+            "placeholder": { "$ref": "#/$defs/text" },
+            "value": { "$ref": "#/$defs/text" },
+            "render": { "type": "string", "minLength": 1 }
+          }
+        },
+        "validations": { "$ref": "#/$defs/requiredValidations" }
+      }
+    },
+    "dropdownElement": {
+      "type": "object",
+      "required": ["type", "attributes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "dropdown" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "attributes": {
+          "type": "object",
+          "required": ["label", "options"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "description": { "$ref": "#/$defs/text" },
+            "multiple": { "type": "boolean" },
+            "default": { "type": "integer", "minimum": 0 },
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "validations": { "$ref": "#/$defs/requiredValidations" }
+      }
+    },
+    "checkboxesElement": {
+      "$comment": "Checkbox requirement is a per-option flag. The element itself takes no validations key.",
+      "type": "object",
+      "required": ["type", "attributes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "checkboxes" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "attributes": {
+          "type": "object",
+          "required": ["label", "options"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "description": { "$ref": "#/$defs/text" },
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["label"],
+                "additionalProperties": false,
+                "properties": {
+                  "label": { "type": "string", "minLength": 1 },
+                  "required": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "uploadElement": {
+      "type": "object",
+      "required": ["type", "attributes"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "upload" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "attributes": {
+          "type": "object",
+          "required": ["label"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "description": { "$ref": "#/$defs/text" }
+          }
+        },
+        "validations": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "required": { "type": "boolean" },
+            "accept": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

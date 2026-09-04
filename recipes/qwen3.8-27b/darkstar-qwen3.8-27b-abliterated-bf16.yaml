@@ -1,0 +1,66 @@
+schema_version: "2.0"
+name: darkstar-qwen3.8-27b-abliterated-bf16
+family: qwen3.8-27b
+
+# R3 is the internal lineage id for this abliterated edit.
+
+source:
+  model_id: Qwen/Qwen3.8-27B
+  revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+
+transforms:
+  - type: abliteration
+    layer: 38
+    seed: 42
+    harmful_prompts: 128
+    harmless_prompts: 128
+    orthogonalize_harmless: false
+    target_selectors:
+      - "re:model\\.language_model\\.layers\\.\\d+\\.self_attn\\.o_proj\\.weight"
+      - "re:model\\.language_model\\.layers\\.\\d+\\.linear_attn\\.out_proj\\.weight"
+      - "re:model\\.language_model\\.layers\\.\\d+\\.mlp\\.down_proj\\.weight"
+      - "model.language_model.embed_tokens.weight"
+      - "mtp.layers.0.self_attn.o_proj.weight"
+      - "mtp.layers.0.mlp.down_proj.weight"
+    expected_target_count: 131
+    reject_visual_selectors: true
+
+datasets:
+  harmful:
+    source: mlabonne/harmful_behaviors
+    revision: 01cead01398926d81f7c52bdb790ee8cf77ebba7
+    sha256: null
+  harmless:
+    source: mlabonne/harmless_alpaca
+    revision: 02c6a92cfcf11bb0c387334f8146d149d65b587f
+    sha256: null
+
+validation:
+  max_refusal_leakage: 0.01
+  max_benign_kl_divergence: 0.05
+  max_perplexity_delta_pct: 5.0
+  vision_byte_identical: true
+  mtp_present: true
+
+runtime:
+  kv_dtype: bf16
+  context_length: 126144
+  compiled_mode: true
+  flash_attention: true
+  mtp_depth_initial: 6
+  mtp_sweep_range: [5, 6, 7, 8]
+
+performance:
+  target_tok_s: 200
+  minimum_tok_s: 180
+  warmup_repeats: 2
+  measure_repeats: 5
+  prompt_lengths: [4096, 16384, 49152]
+
+outputs:
+  artifact_kind: bf16
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_bf16: HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-BF16
+    ghcr_serve: ghcr.io/hangglidersrule/model-forge-serve
+    ghcr_build: ghcr.io/hangglidersrule/model-forge-build

@@ -1,0 +1,116 @@
+schema_version: "2.0"
+name: darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4-dflash2
+family: qwen3.8-27b
+
+# Serving-profile variant of the abliterated ModelOpt NVFP4 product.
+# Same build/quant lineage as darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4;
+# the runtime axis changes spec decode from the in-model MTP head to the
+# external DFlash2 drafter, which measured faster across 4K/16K/48K single-stream.
+# Requires the DFlash2 drafter artifact (incoai/Qwen3.8-27B-DFlash2, Apache-2.0).
+
+source:
+  model_id: Qwen/Qwen3.8-27B
+  revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+
+transforms:
+  - type: abliteration
+    layer: 38
+    seed: 42
+    harmful_prompts: 128
+    harmless_prompts: 128
+    orthogonalize_harmless: false
+    target_selectors:
+      - "re:model\\.language_model\\.layers\\.\\d+\\.self_attn\\.o_proj\\.weight"
+      - "re:model\\.language_model\\.layers\\.\\d+\\.linear_attn\\.out_proj\\.weight"
+      - "re:model\\.language_model\\.layers\\.\\d+\\.mlp\\.down_proj\\.weight"
+      - "model.language_model.embed_tokens.weight"
+      - "mtp.layers.0.self_attn.o_proj.weight"
+      - "mtp.layers.0.mlp.down_proj.weight"
+    expected_target_count: 131
+    reject_visual_selectors: true
+
+datasets:
+  harmful:
+    source: mlabonne/harmful_behaviors
+    revision: 01cead01398926d81f7c52bdb790ee8cf77ebba7
+    sha256: null
+  harmless:
+    source: mlabonne/harmless_alpaca
+    revision: 02c6a92cfcf11bb0c387334f8146d149d65b587f
+    sha256: null
+  cnn_dailymail:
+    source: abisee/cnn_dailymail
+    revision: 96df5e686bee6baa90b8bee7c28b81fa3fa6223d
+    sha256: null
+  nemotron_post_training_v2:
+    source: nvidia/Nemotron-Post-Training-Dataset-v2
+    revision: 5c89e01dd720ae0f4058445ed49c5fb68a03c76e
+    sha256: null
+
+quantization:
+  scheme: NVFP4
+  targets: Linear
+  group_size: 16
+  protected_tensors:
+    - mtp
+    - visual
+    - conv1d
+    - norms
+    - embeddings
+  keep_bf16:
+    - mtp
+    - visual
+    - conv1d
+    - norms
+    - embeddings
+  ignore:
+    - "re:.*visual.*"
+    - "re:.*vision_tower.*"
+    - "re:.*vision_model.*"
+    - "re:.*embed_vision.*"
+    - "re:.*multi_modal_projector.*"
+    - "re:.*conv1d.*"
+    - "re:.*mtp.*"
+    - "re:.*self_attn\\.(q|k|v)_proj.*"
+    - "re:.*linear_attn.*"
+  calibration:
+    dataset: cnn_dailymail,nemotron-post-training-dataset-v2
+    config: modelopt_text_blend_512_512
+    samples: 1024
+    max_sequence_length: 2048
+    pipeline: modelopt_hf_ptq
+    shard_size: 5GB
+
+validation:
+  max_refusal_leakage: 0.01
+  max_benign_kl_divergence: 0.05
+  max_perplexity_delta_pct: 5.0
+  vision_byte_identical: true
+  mtp_present: true
+
+runtime:
+  kv_dtype: bf16
+  context_length: 126144
+  compiled_mode: true
+  flash_attention: true
+  mtp_depth_initial: 1
+  mtp_sweep_range: []
+  spec_decode: dflash2
+  drafter_model: incoai/Qwen3.8-27B-DFlash2
+  drafter_tokens: 7
+
+performance:
+  target_tok_s: 140
+  minimum_tok_s: 120
+  warmup_repeats: 2
+  measure_repeats: 5
+  prompt_lengths: [4096, 16384, 49152]
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_bf16: HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-BF16
+    huggingface_nvfp4: HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8
+    ghcr_serve: ghcr.io/hangglidersrule/model-forge-serve
+    ghcr_build: ghcr.io/hangglidersrule/model-forge-build
