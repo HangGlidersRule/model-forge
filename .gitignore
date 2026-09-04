@@ -58,6 +58,7 @@ build/
 !/configs/modelopt/recipes/
 !/configs/modelopt/recipes/nvfp4_mlp_only_mse-kv_bf16.yaml
 !/configs/modelopt/recipes/nvfp4_omlp_only_mse-kv_bf16.yaml
+!/configs/modelopt/recipes/w4a16_nvfp4_lmhead_nemotron_h.yaml
 !/configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml
 !/configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h.yaml
 !/containers/

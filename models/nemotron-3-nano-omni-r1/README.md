@@ -30,7 +30,7 @@ The family release is the immutable tag
 ## Recipes
 
 - [`../../recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml`](../../recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml) — LoRA unlearning SFT (r1) BF16 edit
-- [`../../configs/modelopt/recipes/w4a16_nvfp4_lmhead_nemotron_h.yaml`](../../configs/modelopt/recipes/w4a16_nvfp4_lmhead_nemotron_h.yaml) — ModelOpt NVFP4 recipe (NVFP4 lm_head; used for both Base-NVFP4 and Abliterated-NVFP4)
+- [`../../recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml`](../../recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml) — ModelOpt NVFP4 recipe (NVFP4 lm_head; used for both Base-NVFP4 and Abliterated-NVFP4)
 
 ## Hugging Face repositories
 

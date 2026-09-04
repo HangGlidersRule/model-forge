@@ -38,7 +38,7 @@ protected and byte-identical to upstream; the NVFP4 product is a text-trunk quan
 Full provenance, protocol, and caveats:
 
 - [Source card](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md)
-- [Recipe](https://github.com/HangGlidersRule/model-forge/blob/main/configs/modelopt/recipes/w4a16_nvfp4_lmhead_nemotron_h.yaml)
+- [Recipe](https://github.com/HangGlidersRule/model-forge/blob/main/recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml)
 
 ## Evaluation
 
