@@ -613,13 +613,26 @@ rules:
     resolves:
       - model-results-default-private
 
-  - id: nano-omni-recipes
-    source: "recipes/nemotron-3-nano-omni/*.yaml"
+  - id: nano-omni-lora-recipe
+    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml"
     disposition: transform
     public_destination: "{source}"
-    reason: Publish the LoRA-unlearning-SFT and ModelOpt NVFP4 recipes after schema validation.
+    reason: Publish the LoRA-unlearning-SFT family recipe after schema-2 validation.
     transformation: sanitize_and_validate_recipe
     owner: model-recipes
+    max_size_bytes: 65536
+    generated: false
+    precedence: 200
+    resolves:
+      - public-recipes
+
+  - id: nano-omni-quant-recipe
+    source: "recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the ModelOpt quant-cfg recipe (validated, private paths removed).
+    transformation: sanitize_and_validate_modelopt_config
+    owner: model-runtime
     max_size_bytes: 65536
     generated: false
     precedence: 200

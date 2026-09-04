@@ -17,7 +17,7 @@ quantization: nvidia-modelopt
 extra_gated_heading: Darkstar Nemotron-3-Nano-Omni 30B-A3B Abliterated ModelOpt NVFP4
 ---
 
-# Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-NVFP4
+# Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4
 
 > **Reduced-refusal model:** a refusal-behavior edit was deliberately applied in BF16 before
 > quantization. Read the safety warning before use.
@@ -83,7 +83,7 @@ Validated with vLLM `0.27.1` (aeon build, torch 2.13.0+cu130), MARLIN NvFp4 MoE 
 Attention, BF16 KV cache, context 131,072, `max_num_seqs=16`:
 
 ```bash
-vllm serve HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-NVFP4 \
+vllm serve HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4 \
   --served-model-name nano-omni-ablit-nvfp4 \
   --trust-remote-code \
   --kv-cache-dtype bfloat16 \
