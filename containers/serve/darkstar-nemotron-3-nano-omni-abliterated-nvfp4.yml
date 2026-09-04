@@ -14,7 +14,7 @@ services:
     - TRANSFORMERS_OFFLINE=1
     command:
     - --model
-    - ${PUBLIC_ARTIFACT_PATH}
+    - /models/nano-omni-ablit-nvfp4
     - --served-model-name
     - darkstar-nemotron-3-nano-omni-abliterated-nvfp4
     - --trust-remote-code

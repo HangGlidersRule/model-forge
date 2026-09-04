@@ -67,7 +67,6 @@ quantization:
     - "re:.*ssm.*"
     - "re:.*language_model\\.backbone\\.embeddings.*"
     - "re:.*language_model\\.backbone\\.norm_f.*"
-    - "re:.*lm_head.*"
   calibration:
     dataset: cnn_dailymail,nemotron-post-training-dataset-v2
     config: modelopt_text_blend_512_512

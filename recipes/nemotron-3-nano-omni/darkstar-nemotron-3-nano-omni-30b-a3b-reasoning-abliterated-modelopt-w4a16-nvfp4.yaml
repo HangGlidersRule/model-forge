@@ -7,39 +7,58 @@ source:
   revision: 24e67ea000b7c2837fc8f9488aa2008524fac8ba
 
 transforms:
-  - type: abliteration
-    layer: 41
+  - type: lora-unlearning-sft
     seed: 42
-    harmful_prompts: 320
-    harmless_prompts: 320
-    orthogonalize_harmless: false
-    target_selectors:
-      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.o_proj\\.weight"
-      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.out_proj\\.weight"
-      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.experts\\.\\d+\\.down_proj\\.weight"
-      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.shared_experts\\.down_proj\\.weight"
-    expected_target_count: 2996
-    reject_visual_selectors: true
+    harmful_prompts: 200
+    harmless_prompts: 83
+    teacher_dataset: treadon/abliteration-eval
+    harmful_compliant_rows: 25
+    safe_rows: 77
+    lora_r: 32
+    lora_alpha: 64
+    epochs: 3
+    learning_rate: 1.0e-4
+    description: >-
+      Campaign-canonical LoRA unlearning SFT (rank-32 on language-trunk q/k/v/o_proj,
+      α=64) after closed-form projection collapsed GPQA on this hybrid Mamba2+MoE trunk.
+      Teacher = the subject's own compliant rows under the teacher-selection boundary;
+      adapter merged float32 into pristine trunk weights before NVFP4 quantization.
+  - type: quantization
+    kind: trunk_only_ptq
+    trunk_extract:
+      from_wrapper: language_model
+      rename_to: backbone
+      towers: byte_identical_from_source
+    description: >-
+      ModelOpt quantization runs on the language trunk extracted as a standalone plain
+      nemotron_h checkpoint; the VLM wrapper is reassembled afterward with the vision and
+      audio towers byte-identical from the edited BF16 parent. Same W4A16-NVFP4 contract
+      as the base control (experts + lm_head packed NVFP4).
 
 datasets:
-  harmful:
-    source: mlabonne/harmful_behaviors
-    revision: 01cead01398926d81f7c52bdb790ee8cf77ebba7
+  cnn_dailymail:
+    source: abisee/cnn_dailymail
+    revision: 96df5e686bee6baa90b8bee7c28b81fa3fa6223d
     sha256: null
-  harmless:
-    source: mlabonne/harmless_alpaca
-    revision: 02c6a92cfcf11bb0c387334f8146d149d65b587f
+  nemotron_post_training:
+    source: nvidia/Nemotron-Post-Training-Dataset-v2
+    revision: 5c89e01dd720ae0f4058445ed49c5fb68a03c76e
     sha256: null
 
 quantization:
+  targets: Linear
+  group_size: 16
   scheme: NVFP4
   framework: nvidia-modelopt
   framework_version: 0.46.0rc2
   framework_pin_commit: 43fd41a58d52c4e6e5dec1d1ff5989ecc737ae1a
-  targets: Linear
-  group_size: 16
+  algorithm: mse
+  fp8_scale_sweep: true
+  quant_grp:
+    routed_experts: W4A16_NVFP4
+    shared_experts: W4A16_NVFP4
+    lm_head: W4A16_NVFP4
   protected_tensors:
-    - mtp
     - norms
     - embeddings
     - ssm
@@ -64,12 +83,13 @@ quantization:
     - "re:.*ssm.*"
     - "re:.*language_model\\.backbone\\.embeddings.*"
     - "re:.*language_model\\.backbone\\.norm_f.*"
-    - "re:.*lm_head.*"
   calibration:
-    dataset: cnn_dailymail
-    config: modelopt_text_blend_512
+    dataset: cnn_dailymail,nemotron-post-training-dataset-v2
+    config: modelopt_text_blend_512_512
     samples: 1024
     max_sequence_length: 2048
+    batch_size: 1
+    kv_cache_qformat: none
     pipeline: modelopt_hf_ptq
     shard_size: 5GB
 
@@ -77,31 +97,27 @@ validation:
   max_refusal_leakage: 0.01
   max_benign_kl_divergence: 0.05
   max_perplexity_delta_pct: 5.0
-  vision_byte_identical: true
-  mtp_present: false
-  expected_target_count: 2996
-  target_notes: >
-    LLM trunk residual writers only (attention o_proj, mamba out_proj, routed +
-    shared expert down_proj). Vision (RADIOv4), sound (Parakeet), projections,
-    embeddings, and norms stay byte-identical. count derived from recon:
-    o_proj 6 + out_proj 23 + routed down_proj 2944 + shared down_proj 23 = 2996.
+  quantized_layers_count: 5935
+  byte_identical_towers: true
+  mm_towers_identical: true
+  serving_verified: true
 
 runtime:
   kv_dtype: bf16
-  context_length: 262144
-  compiled_mode: false
+  context_length: 131072
   flash_attention: true
-  spec_decode: mtp
+  vllm_pin: local/vllm-aeon:v0.27.1
+  vllm_moe_backend: MARLIN NvFp4 MoE
+  spec_decode: none
   mtp_present: false
-  mtp_depth_initial: 1
-  mtp_sweep_range: []
+  mtp_note: >-
+    this hybrid family carries no MTP layers and no compatible drafter (verified); no speculative
+    decoding is configured for any Nano-Omni product.
 
 performance:
   measured_weighted_tok_s: 249.468
-  minimum_tok_s: 150
-  warmup_repeats: 2
-  measure_repeats: 5
   prompt_lengths: [4096, 16384, 49152]
+  lane_weights: {'4096': 0.6, '16384': 0.3, '49152': 0.1}
 
 outputs:
   artifact_kind: nvfp4
