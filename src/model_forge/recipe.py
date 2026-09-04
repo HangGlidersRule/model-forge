@@ -97,6 +97,17 @@ class TransformSpec:
     target_selectors: tuple[str, ...] = ()
     expected_target_count: int | None = None
     reject_visual_selectors: bool = True
+    # lora-unlearning-sft fields (campaign-canonical for families whose
+    # refusal/reasoning circuitry shares attention head-space — projection
+    # edits collapse GPQA on such architectures; SFT route does not).
+    teacher_dataset: str | None = None
+    harmful_compliant_rows: int | None = None
+    safe_rows: int | None = None
+    general_instruction_rows: int | None = None
+    lora_r: int | None = None
+    lora_alpha: int | None = None
+    epochs: int | None = None
+    learning_rate: float | None = None
 
 
 @dataclass(frozen=True)
@@ -431,6 +442,23 @@ def _parse_transform(value: Any, label: str) -> TransformSpec:
         harmful_prompts = _positive_int(raw, "harmful_prompts", label)
         harmless_prompts = _positive_int(raw, "harmless_prompts", label)
         expected_target_count = _positive_int(raw, "expected_target_count", label)
+    elif transform_type == "lora-unlearning-sft":
+        # Campaign-canonical unlearning route. Required: teacher dataset and
+        # LoRA shape. No target selectors — the adapter targets q/k/v/o of
+        # the language trunk and the tensor inventory comes from the merge
+        # step, not from selectors.
+        selectors = ()
+        layer = raw.get("layer")
+        seed = _nonnegative_int(raw, "seed", label)
+        harmful_prompts = _positive_int(raw, "harmful_prompts", label)
+        harmless_prompts = _positive_int(raw, "harmless_prompts", label)
+        expected_target_count = raw.get("expected_target_count")
+        if raw.get("teacher_dataset") is None:
+            raise RecipeError(f"{label}.teacher_dataset is required for lora-unlearning-sft")
+        if raw.get("lora_r") is None or raw.get("lora_alpha") is None:
+            raise RecipeError(f"{label}.lora_r and {label}.lora_alpha are required for lora-unlearning-sft")
+        if raw.get("epochs") is None or raw.get("learning_rate") is None:
+            raise RecipeError(f"{label}.epochs and {label}.learning_rate are required for lora-unlearning-sft")
     else:
         selectors = _string_tuple(raw.get("target_selectors"), f"{label}.target_selectors")
         layer = raw.get("layer")
@@ -452,6 +480,16 @@ def _parse_transform(value: Any, label: str) -> TransformSpec:
         target_selectors=selectors,
         expected_target_count=expected_target_count,
         reject_visual_selectors=reject_visual,
+        teacher_dataset=raw.get("teacher_dataset"),
+        harmful_compliant_rows=raw.get("harmful_compliant_rows"),
+        safe_rows=raw.get("safe_rows"),
+        general_instruction_rows=raw.get("general_instruction_rows"),
+        lora_r=raw.get("lora_r"),
+        lora_alpha=raw.get("lora_alpha"),
+        epochs=raw.get("epochs"),
+        learning_rate=(
+            float(raw["learning_rate"]) if raw.get("learning_rate") is not None else None
+        ),
     )
 
 
@@ -521,11 +559,15 @@ def _parse_runtime(value: Any, label: str = "runtime") -> RuntimeSpec:
     spec_decode_value = raw.get("spec_decode", "mtp")
     if not isinstance(spec_decode_value, str):
         raise RecipeError(f"{label}.spec_decode must be a string, got {_kind(spec_decode_value)}")
-    if spec_decode_value not in {"mtp", "dflash", "dflash2", "dspark"}:
+    # 'none' = verified no speculative decode for the architecture (no MTP
+    # layers and no compatible drafter — Nano-Omni precedent, recon-backed).
+    if spec_decode_value not in {"mtp", "dflash", "dflash2", "dspark", "none"}:
         raise RecipeError(
-            f"{label}.spec_decode must be one of mtp, dflash, dflash2, dspark; "
+            f"{label}.spec_decode must be one of mtp, dflash, dflash2, dspark, none; "
             f"got {spec_decode_value!r}"
         )
+    if spec_decode_value == "none" and raw.get("drafter_model"):
+        raise RecipeError(f"{label}.drafter_model is invalid when spec_decode is none")
     drafter_model = raw.get("drafter_model")
     if drafter_model is not None and not isinstance(drafter_model, str):
         raise RecipeError(f"{label}.drafter_model must be a string, got {_kind(drafter_model)}")
