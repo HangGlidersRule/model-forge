@@ -626,11 +626,11 @@ rules:
     resolves:
       - public-recipes
 
-  - id: nano-omni-schema-recipes
-    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-*.yaml"
+  - id: nano-omni-base-nvfp4-recipe
+    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-base-modelopt-w4a16-nvfp4.yaml"
     disposition: transform
     public_destination: "{source}"
-    reason: Publish the schema-2 family recipes after load-recipe validation.
+    reason: Publish the schema-2 Base ModelOpt NVFP4 family recipe.
     transformation: sanitize_and_validate_recipe
     owner: model-recipes
     max_size_bytes: 65536
@@ -639,18 +639,18 @@ rules:
     resolves:
       - public-recipes
 
-  - id: nano-omni-serve-profile
-    source: "containers/serve/darkstar-nemotron-3-nano-omni-abliterated-nvfp4.yml"
+  - id: nano-omni-ablit-nvfp4-recipe
+    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4.yaml"
     disposition: transform
     public_destination: "{source}"
-    reason: Publish the vLLM serve profile for the Nano-Omni Ablit-NVFP4 product.
-    transformation: sanitize_and_validate_serve_profile
-    owner: model-runtime
-    max_size_bytes: 32768
+    reason: Publish the schema-2 Ablit ModelOpt NVFP4 family recipe.
+    transformation: sanitize_and_validate_recipe
+    owner: model-recipes
+    max_size_bytes: 65536
     generated: false
     precedence: 200
     resolves:
-      - serve-profile
+      - public-recipes
 
   - id: hf-card-nano-omni-ablit-bf16
     source: "publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16/README.md"
