@@ -626,19 +626,6 @@ rules:
     resolves:
       - public-recipes
 
-  - id: nano-omni-quant-recipe
-    source: "recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml"
-    disposition: transform
-    public_destination: "{source}"
-    reason: Publish the ModelOpt quant-cfg recipe (validated, private paths removed).
-    transformation: sanitize_and_validate_modelopt_config
-    owner: model-runtime
-    max_size_bytes: 65536
-    generated: false
-    precedence: 200
-    resolves:
-      - public-recipes
-
   - id: curated-readiness-ledger
     source: "models/*/results/publication-readiness-ledger.json"
     disposition: copy

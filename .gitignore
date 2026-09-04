@@ -204,7 +204,6 @@ build/
 !/recipes/README.md
 !/recipes/nemotron-3-nano-omni/
 !/recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml
-!/recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml
 !/recipes/nemotron-3.5-lightning/
 !/recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-abliterated-bf16.yaml
 !/recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-abliterated-modelopt-nvfp4.yaml
