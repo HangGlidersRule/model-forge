@@ -1,0 +1,24 @@
+{
+  "dataset_name": "GPQA Diamond",
+  "dataset_sha256": "41d1213cd7a4998605a26c2798500652572007161b3a92817ba46b35befcd305",
+  "harness_version": "1.0.0",
+  "expected": 198,
+  "terminal": 198,
+  "correct": 53,
+  "parse_errors": 60,
+  "timeouts": 0,
+  "errors": 0,
+  "accuracy_full_denominator": 0.2676767676767677,
+  "completed_parseable": 138,
+  "accuracy_completed_only": 0.38405797101449274,
+  "complete": false,
+  "sampling": {
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "thinking": false,
+    "max_tokens": 512,
+    "workers": 6
+  },
+  "artifact_hashes": {}
+}

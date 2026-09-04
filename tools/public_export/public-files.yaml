@@ -569,6 +569,63 @@ rules:
     resolves:
       - model-results-default-private
 
+  - id: curated-nano-omni-gpqa-evidence
+    source: "models/nemotron-3-nano-omni-r1/results/gpqa-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated GPQA evidence for the published Nano-Omni cells (sanitized provenance).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - curated-gpqa-matrix
+      - model-results-default-private
+
+  - id: curated-nano-omni-behavior-evidence
+    source: "models/nemotron-3-nano-omni-r1/results/abliteration-eval-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated shipment behavior evidence for the published Abliterated-BF16 cell.
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-gpqa-matrix
+
+  - id: curated-nano-omni-performance
+    source: "models/nemotron-3-nano-omni-r1/results/performance-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated single-stream throughput evidence for the published Nano-Omni cells.
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+
+  - id: nano-omni-lora-recipe
+    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the LoRA-unlearning-SFT family recipe after schema-2 validation.
+    transformation: sanitize_and_validate_recipe
+    owner: model-recipes
+    max_size_bytes: 65536
+    generated: false
+    precedence: 200
+    resolves:
+      - public-recipes
+
   - id: curated-readiness-ledger
     source: "models/*/results/publication-readiness-ledger.json"
     disposition: copy

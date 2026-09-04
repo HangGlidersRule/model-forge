@@ -131,7 +131,12 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
         assert metadata["base_model"] == expected_base
         assert metadata["base_model_relation"] == expected_relation
         assert "**Private checkpoint repository.**" not in text
-        assert "public on Hugging Face" in text
+        # Publication claim: gold-standard Release reference (immutable tag +
+        # contract) or the explicit public-on-HF phrase (older variant).
+        assert (
+            "This immutable tag exists and the release contract is published." in text
+            or "public on Hugging Face" in text
+        )
         if "Qwen" in target:
             assert "darkstar-qwen3.8-27b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
