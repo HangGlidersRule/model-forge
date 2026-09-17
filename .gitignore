@@ -58,6 +58,7 @@ build/
 !/configs/modelopt/recipes/
 !/configs/modelopt/recipes/nvfp4_mlp_only_mse-kv_bf16.yaml
 !/configs/modelopt/recipes/nvfp4_omlp_only_mse-kv_bf16.yaml
+!/configs/modelopt/recipes/qwen38-full-w4a4-modelopt.yaml
 !/configs/modelopt/recipes/w4a16_nvfp4_lmhead_nemotron_h.yaml
 !/configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml
 !/configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h.yaml
@@ -245,6 +246,8 @@ build/
 !/scripts/qwen3_8/bench_qwen38_dflash2_backport.py
 !/scripts/qwen3_8/checkpoint_vllm_mcprue.sh
 !/scripts/qwen3_8/materialize_abliteration_corpus.py
+!/scripts/qwen3_8/mcprue/
+!/scripts/qwen3_8/mcprue/run_ablit_full_w4a4.sh
 !/scripts/qwen3_8/measure_qwen38_refusal_direction.py
 !/scripts/qwen3_8/quantize_blackfrost_nvfp4.py
 !/scripts/qwen3_8/quantize_qwen38_modelopt.py
@@ -346,6 +349,7 @@ build/
 !/tests/test_extended.py
 !/tests/test_gpqa_harness.py
 !/tests/test_huggingface_cards.py
+!/tests/test_kv_cache_matrix.py
 !/tests/test_model_card_gold_standard.py
 !/tests/test_modelopt_build_identity.py
 !/tests/test_modelopt_container_dockerfile.py

@@ -1,0 +1,48 @@
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+metadata:
+  recipe_type: ptq
+  description: >-
+    Qwen3.8 full-compute W4A4 NVFP4 candidate with static MSE weight scales,
+    dynamic NVFP4 activations, BF16 KV, and protected vision, MTP, GDN
+    in_proj_a/in_proj_b/conv1d, embeddings, norms, routers, and lm_head.
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+    layerwise: false
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*weight_quantizer'
+      cfg: {$import: nvfp4_static}
+    - quantizer_name: '*input_quantizer'
+      cfg: {$import: nvfp4}
+    - $import: default_disabled_quantizers
+    - quantizer_name: '*linear_attn.in_proj_a*'
+      enable: false
+    - quantizer_name: '*linear_attn.in_proj_b*'
+      enable: false
+    - quantizer_name: '*linear_attn.conv1d*'
+      enable: false
+    - quantizer_name: '*visual*'
+      enable: false
+    - quantizer_name: '*vision_tower*'
+      enable: false
+    - quantizer_name: '*vision_model*'
+      enable: false
+    - quantizer_name: '*embed_vision*'
+      enable: false
+    - quantizer_name: '*multi_modal_projector*'
+      enable: false
+    - quantizer_name: '*mtp*'
+      enable: false
+    - quantizer_name: '*lm_head*'
+      enable: false
+    - parent_class: nn.Embedding
+      quantizer_name: '*'
+      enable: false
+    - quantizer_name: '*norm*'
+      enable: false

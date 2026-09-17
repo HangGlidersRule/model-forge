@@ -102,6 +102,54 @@ for it in d.get("items") or []:
   done
 fi
 
+
+## 5. Family surfaces on the public repo (recipes / serve profile / staged cards)
+say "family surfaces on $GH_REPO main"
+code=$(curl -sL -o /dev/null -w '%{http_code}' "https://raw.githubusercontent.com/$GH_REPO/main/recipes/*/$family" 2>/dev/null)
+# recipes exist: list via GitHub contents API
+recipes_dir=$(curl -sL "https://api.github.com/repos/$GH_REPO/contents/recipes?ref=main" | python3 -c 'import json,sys,os
+key = (os.environ.get("HF_FAMILY", "") or "").lower()
+items = json.load(sys.stdin) or []
+for it in items:
+    if key and key in (it.get("name") or ""):
+        print(it.get("name"))
+        break' 2>/dev/null || true)
+export HF_FAMILY="$family"
+if [[ -z "$recipes_dir" ]]; then
+  report "FAIL" "no recipes/<family> dir on main"
+  status=1
+else
+  rc=$(curl -sL -o /dev/null -w '%{http_code}' "https://api.github.com/repos/$GH_REPO/contents/recipes/$recipes_dir?ref=main")
+  nrec=$(curl -sL "https://api.github.com/repos/$GH_REPO/contents/recipes/$recipes_dir?ref=main" | python3 -c 'import json,sys
+items = json.load(sys.stdin) or []
+print(len([i for i in items if (i.get("name") or "").endswith(".yaml")]))' 2>/dev/null)
+  if [[ "$nrec" -ge 1 ]]; then report "ok" "recipes/$recipes_dir has $nrec recipe(s)"; else report "FAIL" "no recipes on main for $recipes_dir"; status=1; fi
+fi
+# serve profile (qwen-pattern name or omni-pattern)
+if [[ -n "${SERVE_PROFILE_OVERRIDE:-}" ]]; then
+  srv_names=("$SERVE_PROFILE_OVERRIDE")
+else
+  # profile filenames use each family's own slug; scan the dir
+  srv_names=($(curl -sL "https://api.github.com/repos/$GH_REPO/contents/containers/serve?ref=main" | python3 -c 'import json,sys
+items = json.load(sys.stdin) or []
+for it in items:
+    n = (it.get("name") or "")
+    if n.endswith(".yml") and "docker-compose" not in n:
+        print(n)' 2>/dev/null || true))
+fi
+if (( ${#srv_names[@]} )); then
+  report "ok" "serve profile(s) on main: ${srv_names[*]}"
+else
+  report "FAIL" "no serve profile on main for the family"
+  status=1
+fi
+# staged cards: one per owned repo
+for repo in "${repos[@]}"; do
+  bare="${repo#HangGlidersRule/}"
+  code=$(curl -sL -o /dev/null -w '%{http_code}' "https://raw.githubusercontent.com/$GH_REPO/main/publication/huggingface/$bare/README.md")
+  if [[ "$code" == "200" ]]; then report "ok" "staged card $repo"; else report "FAIL" "staged card missing for $repo"; status=1; fi
+done
+
 ## 4. GitHub release tag
 say "release tag"
 code=$(curl -s -o /dev/null -w '%{http_code}' "https://api.github.com/repos/$GH_REPO/releases/tags/$RELEASE_TAG")

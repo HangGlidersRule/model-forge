@@ -1,5 +1,27 @@
 version: 1
 rules:
+  - id: private-mcprue-ops-serve-config
+    source: "containers/serve/serve-production-nvfp4kv.yml"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal production serve config with host-specific D:/ paths, local image pins, and internal endpoints. Public users get the documented vllm serve example in the model card instead.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+  - id: private-mcprue-ops-rollback-runbook
+    source: "containers/serve/ROLLBACK-RUNBOOK.md"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal rollback runbook (host paths, internal incident notes, hard rules for Devin's hosts only).
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
   - id: private-hermes-guard
     source: ".hermes/**"
     disposition: exclude
