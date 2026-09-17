@@ -75,7 +75,7 @@ candidates are named for their real precision class and mirror the clean-base ca
 
 - Upstream model: `Qwen/Qwen3.8-27B`
 - Upstream revision: `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`
-- Editable source: `HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-BF16` (see [`bf16.md`](bf16.md))
+- Editable source: `HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-BF16` (see [`bf16.md`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/model-card/bf16.md))
 - Weight edit: refusal-direction projection (abliteration), layer 38, seed 42
 - Exact recipe: [`recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml`](https://github.com/HangGlidersRule/model-forge/blob/main/recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml)
 - Exact selected operator recipe (tracked): [`configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml`](https://github.com/HangGlidersRule/model-forge/blob/main/configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml), SHA-256 `90fc6b37c00334debd49f1975ab406b5e20667f07e4be0be3e463a648abac642` — the identical selected clean-base recipe. It quantizes `lm_head` in W4A16 NVFP4, matching the product precision map above.
@@ -87,7 +87,7 @@ candidates are named for their real precision class and mirror the clean-base ca
 ## Edit + quantization summary
 
 - Edit: normalized float32 refusal-direction projection at layer 38, seed 42, applied to exactly 131
-  residual-writing tensors (see [`bf16.md`](bf16.md) for the full inventory). Vision tower untouched.
+  residual-writing tensors (see [`bf16.md`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/model-card/bf16.md) for the full inventory). Vision tower untouched.
 - Quantization: NVIDIA ModelOpt unified HF NVFP4/FP8 (`hf_quant_config.json`), reusing the selected
   clean-base mixed W4A16-NVFP4+FP8 recipe (W4A16 NVFP4 on language MLP + `lm_head`, FP8 on
   self-attention and GatedDeltaNet projections). Prior compressed-tensors builds are rejected/historical.
@@ -120,7 +120,7 @@ not safety endorsements.
   from the **rejected historical R3 compressed-tensors NVFP4 artifact**, not this ModelOpt build; it is
   not matched-matrix eligible and cannot be attributed purely to quantization.
 - The R3 edit itself costs measured accuracy (full-denominator BF16 delta `-11` questions / `-5.56` pp;
-  see [`bf16.md`](bf16.md)).
+  see [`bf16.md`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/model-card/bf16.md)).
 - Quantization can introduce quality regressions not captured by the smoke suite.
 
 ## Evaluation
