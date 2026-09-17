@@ -22,6 +22,18 @@ rules:
     generated: false
     precedence: 1000
     allow_empty: true
+  - id: private-qwen38-full-w4a4-recipe
+    source: "configs/modelopt/recipes/qwen38-full-w4a4-modelopt.yaml"
+    disposition: exclude
+    public_destination: null
+    reason: The abliterated full-W4A4 candidate is unbuilt/unvalidated (attempt-1 rejected on wrong-model source; gate campaign pending). Its imports resolve only against ModelOpt's in-container builtin recipes lib and fail repo-side validation. Publishes with its own campaign when validated.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+    resolves: ["modelopt-config-recipes"]
   - id: private-hermes-guard
     source: ".hermes/**"
     disposition: exclude

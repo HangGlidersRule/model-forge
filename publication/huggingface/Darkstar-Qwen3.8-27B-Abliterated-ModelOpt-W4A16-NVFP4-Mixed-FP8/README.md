@@ -77,12 +77,12 @@ candidates are named for their real precision class and mirror the clean-base ca
 - Upstream revision: `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`
 - Editable source: `HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-BF16` (see [`bf16.md`](bf16.md))
 - Weight edit: refusal-direction projection (abliteration), layer 38, seed 42
-- Exact recipe: [`recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml`](../../../recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml)
-- Exact selected operator recipe (tracked): [`configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml`](../../../configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml), SHA-256 `90fc6b37c00334debd49f1975ab406b5e20667f07e4be0be3e463a648abac642` — the identical selected clean-base recipe. It quantizes `lm_head` in W4A16 NVFP4, matching the product precision map above.
+- Exact recipe: [`recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml`](https://github.com/HangGlidersRule/model-forge/blob/main/recipes/qwen3.8-27b/darkstar-qwen3.8-27b-abliterated-modelopt-nvfp4.yaml)
+- Exact selected operator recipe (tracked): [`configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml`](https://github.com/HangGlidersRule/model-forge/blob/main/configs/modelopt/recipes/w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml), SHA-256 `90fc6b37c00334debd49f1975ab406b5e20667f07e4be0be3e463a648abac642` — the identical selected clean-base recipe. It quantizes `lm_head` in W4A16 NVFP4, matching the product precision map above.
 - Artifact identity: `_SUCCESS.json` SHA-256 `3d89ec57c1371e142adc2584de079b54a0e1d8c12dc9550118d0a851da020a79`; `manifest.sha256` SHA-256 `642dbbe89b085a2daf5119c37c0496576a475ed64c36653fc993c04abaf2ca9f`
-- ModelOpt pin/recipes: [`modelopt/README.md`](../modelopt/README.md)
+- ModelOpt pin/recipes: [`modelopt/README.md`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/modelopt/README.md)
 - Engineering repository: [`HangGlidersRule/model-forge`](https://github.com/HangGlidersRule/model-forge)
-- Lineage detail: [`artifact-lineage.md`](../artifact-lineage.md)
+- Lineage detail: [`artifact-lineage.md`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/artifact-lineage.md)
 
 ## Edit + quantization summary
 
@@ -125,8 +125,8 @@ not safety endorsements.
 
 ## Evaluation
 
-Curated aggregates: [`../results/gpqa-matrix.json`](../results/gpqa-matrix.json). Protocol:
-[`../gpqa-protocol.md`](../gpqa-protocol.md). Full caveats: [`../benchmark-matrix.md`](../benchmark-matrix.md).
+Curated aggregates: [`../results/gpqa-matrix.json`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/results/gpqa-matrix.json). Protocol:
+[`../gpqa-protocol.md`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/gpqa-protocol.md). Full caveats: [`../benchmark-matrix.md`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/benchmark-matrix.md).
 
 | Metric | Value | Basis |
 |---|---|---|
@@ -143,7 +143,7 @@ protocol.
 > **Full-denominator, measured on this exact build.** The GPQA row above is a verified full-denominator
 > measurement on the selected mixed candidate (thinking off, temperature 1.0, top-p 0.95, top-k 20, 4
 > workers, no output cap; external operator evidence with immutable hashes in
-> [`../results/gpqa-matrix.json`](../results/gpqa-matrix.json)).
+> [`../results/gpqa-matrix.json`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/results/gpqa-matrix.json)).
 > GPQA question text, answer keys, per-question responses, and the run journal are intentionally not
 > committed.
 
@@ -176,7 +176,7 @@ vllm serve HangGlidersRule/Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4
 ```
 
 See the exact frozen profile in
-[`containers/serve/darkstar-qwen38-abliterated-nvfp4.yml`](../../../containers/serve/darkstar-qwen38-abliterated-nvfp4.yml).
+[`containers/serve/darkstar-qwen38-abliterated-nvfp4.yml`](https://github.com/HangGlidersRule/model-forge/blob/main/containers/serve/darkstar-qwen38-abliterated-nvfp4.yml).
 The checked-in canonical launcher supports `--dry-run` and `--print-config`, validates the
 deterministic tracked Compose digest, and allows only the host port as a Product 4 environment
 override. It does not accept mutable vLLM model/runtime arguments.
@@ -186,7 +186,7 @@ override. It does not accept mutable vLLM model/runtime arguments.
 Matched capacity cells at the frozen MTP10 profile: 512 generated tokens per request, two repeats per
 cell, concurrency 1 and 2 — the only concurrency levels this run measured, so no higher concurrency is
 reported. Zero failed requests and zero fatal markers in every cell. Machine-readable record:
-[`../results/serving-capacity-profiles.json`](../results/serving-capacity-profiles.json); source evidence
+[`../results/serving-capacity-profiles.json`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/results/serving-capacity-profiles.json); source evidence
 SHA-256 `6e52a5ad4f87a8b12866e0939c2d2024701172d8b5a56a7839ce00738f1a3ac9`.
 
 | Prompt | Prompt tokens | C1 mean aggregate tok/s (pass 1 / pass 4) | C2 mean aggregate tok/s (pass 1 / pass 4) |
@@ -201,9 +201,9 @@ mixed into it.
 ## Publication-readiness (rendered from the ledger)
 
 This block is rendered from the machine-readable source of truth
-[`../results/publication-readiness-ledger.json`](../results/publication-readiness-ledger.json) and kept
-in sync by CI, per the [four-product release process](../../../docs/darkstar-four-product-release-process.md).
-The [benchmark matrix](../benchmark-matrix.md) shows all four products together. This checkpoint is
+[`../results/publication-readiness-ledger.json`](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/results/publication-readiness-ledger.json) and kept
+in sync by CI, per the [four-product release process](https://github.com/HangGlidersRule/model-forge/blob/main/docs/darkstar-four-product-release-process.md).
+The [benchmark matrix](https://github.com/HangGlidersRule/model-forge/blob/main/models/qwen3.8-27b-r3/benchmark-matrix.md) shows all four products together. This checkpoint is
 public on Hugging Face with clean download/boot/smoke verified. The immutable Git tag is the sole remaining release gate.
 
 <!-- LEDGER-SYNC product=Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-NVFP4 -->
