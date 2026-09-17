@@ -21,6 +21,14 @@ MIXED_W4A16_RECIPE = RECIPES_DIR / "w4a16_nvfp4_mse-fp8_attn-kv_bf16.yaml"
 # W4A16 NVFP4 on MLP/MoE projections, FP8 attention, Mamba2/SSM + MTP protected,
 # BF16 KV. See recipe file for full protections.
 LIGHTNING_W4A16_RECIPE = RECIPES_DIR / "w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h.yaml"
+# Qwen3.8-27B full-compute W4A4 NVFP4 candidate (static MSE weight scales, dynamic NVFP4
+# activations, BF16 KV). Protections: vision/MTP/lm_head/embeddings/norms/routers BF16;
+# GDN recurrence guts (in_proj_a/in_proj_b/conv1d) BF16; GDN projection matmuls
+# (out_proj/in_proj_qkv/in_proj_z) W4A4 — the gittensor-style decode-speed change.
+# Provenance: recipe sha256 f581bb8a2f8ae8be4dbe4120b46f0f576fec003184c775d7686ec22da47eb180
+# = exact recipe that built the validated clean-full-w4a4 artifact (Qwen3.8-27B-clean-
+# full-w4a4-modelopt, _SUCCESS.json recipe_sha256 match).
+FULL_W4A4_RECIPE = RECIPES_DIR / "qwen38-full-w4a4-modelopt.yaml"
 # Compatibility alias for callers written before the mixed recipe was selected.
 OPTIONAL_W4A16_RECIPE = MIXED_W4A16_RECIPE
 

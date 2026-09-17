@@ -1,5 +1,39 @@
 version: 1
 rules:
+  - id: private-mcprue-ops-serve-config
+    source: "containers/serve/serve-production-nvfp4kv.yml"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal production serve config with host-specific D:/ paths, local image pins, and internal endpoints. Public users get the documented vllm serve example in the model card instead.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+  - id: private-mcprue-ops-rollback-runbook
+    source: "containers/serve/ROLLBACK-RUNBOOK.md"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal rollback runbook (host paths, internal incident notes, hard rules for Devin's hosts only).
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+  - id: private-qwen38-full-w4a4-recipe
+    source: "configs/modelopt/recipes/qwen38-full-w4a4-modelopt.yaml"
+    disposition: exclude
+    public_destination: null
+    reason: The abliterated full-W4A4 candidate is unbuilt/unvalidated (attempt-1 rejected on wrong-model source; gate campaign pending). Its imports resolve only against ModelOpt's in-container builtin recipes lib and fail repo-side validation. Publishes with its own campaign when validated.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+    resolves: ["modelopt-config-recipes"]
   - id: private-hermes-guard
     source: ".hermes/**"
     disposition: exclude

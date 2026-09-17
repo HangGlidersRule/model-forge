@@ -232,3 +232,49 @@ public on Hugging Face with clean download/boot/smoke verified. The immutable Gi
 
 - License: Apache-2.0.
 - Preserve upstream attribution and required notices.
+
+
+## Serving-stack update (2026-09-16): NVFP4-KV production profile + measured gates
+
+A production serve profile update was measured on this exact artifact (2026-09-16, mcprue
+RTX PRO 6000 Blackwell, single GPU). It is an **alternate serving profile** — the artifact
+weights are unchanged (frozen at `_SUCCESS` SHA-256 `3d89ec57...`).
+
+### NVFP4-KV serving profile (validated 2026-09-16)
+
+- Runtime: custom vLLM nightly `0.27.2rc1.dev77+gac7509e2b` with upstream PR #49891
+  (FA2-nvfp4 routing) rebased + an sm120 linear-V-scale writer overlay
+  (image `vllm-qwen38:nvfp4kv`).
+- KV cache: **nvfp4** (4-bit KV) with `--attention-backend FLASHINFER` (top + spec config).
+- Spec decode: MTP depth 4 (`{"method":"mtp","num_speculative_tokens":4,"attention_backend":
+  "FLASHINFER"}`), mamba cache mode `align`, chunked prefill.
+- Context: **262,144** (native `max_position_embeddings`), util 0.50, mnbt 8192, seqs 16.
+- KV pool: **1,046,192 tokens** at util 0.50 (~4× the bf16-KV pool at equal VRAM budget);
+  max concurrency 3.99× at full 262,144-token requests.
+
+### Measured gates on the NVFP4-KV profile (secondary protocol — llm-inference-bench,
+thinking-on, concurrency 30, max-tokens 32768; NOT the matched-matrix cell above)
+
+- **GPQA Diamond: 170/198 = 85.86%** (0 errors, 0 unparseable, 13 truncated, 0 IMAs).
+  Reference runs on the same protocol: bf16-KV serve 169/198 = 85.35%; earlier nvfp4-KV
+  boot 168/198 = 84.85%. The quantized-KV profile is **parity-or-better** with the bf16-KV
+  serving reference while carrying 4× the KV pool. Protocol mismatch note: these numbers
+  use a different harness/protocol than the matched thinking-off cell (148/198) above and
+  are not comparable to it; they compare serving profiles to each other only.
+- Long-context needles: HIT at 52,080 / 100,079 / 145,078 / 210,078 prompt tokens.
+- Sustained MTP acceptance under thinking-on load: ~63-70% of drafted tokens accepted.
+- Zero illegal-memory-access events across the full concurrency-30 thinking-load battery
+  (the fp8-KV Triton path failed this battery; the nvfp4 path passes it).
+
+### Behavior-gate band disclosure (decision A, 2026-09-16)
+
+The gate re-measured on modern serving stacks (7 runs, canonical harness, raw completions,
+temp 0, thinking-independent) gives a **band: 197-198/200 harmful compliance + 0-1/83
+over-refusals**, with borderline items (suicide-adjacent crisis preambles; a legal-info
+clarification) flipping between boots — boot-level greedy tie-break nondeterminism at the
+decision edge. The 200/200 + 0/83 figures above were single-boot measurements in the
+release window (the exact 2026-08-21 release-gate serve configuration reproduces
+197-198/200 + 0/83 today; MTP10 + xxhash config restores 0/83 — MTP4 causes one
+over-refusal). Serving stack, KV dtype, and runtime version are ruled out (identical scores
+across all configurations). Honest current claim: **~98.5-99% harmful compliance band,
+0-1/83 over-refusal**, not a stable 200/200.
