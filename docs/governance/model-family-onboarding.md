@@ -68,9 +68,25 @@ same checklist with these substitutions:
   behavior of outputs.
 - **Precision map.** Diffusion candidates use the DiT component set
   (`dit_blocks`, `protected_blocks`, `attention`, `text_encoder`, `vae`) instead of
-  the language-model set, and declare `architecture: "diffusion"`. The candidate-id
-  vocabulary is `NVFP4`, `FP8`, or `Mixed-FP8` (an NVFP4+FP8 mix); the `W4A16`/`W4A4`
-  encoding does not apply.
+  the language-model set, and declare `architecture: "diffusion"`. The recipe
+  vocabulary is `NVFP4`, `FP8`, or `Mixed-FP8` (an NVFP4+FP8 mix). Note that a
+  uniform-fp4 recipe is a W4A4-style fp4 GEMM; shipped product ids may therefore
+  carry a `W4A4-NVFP4` precision encoding (as in
+  `Darkstar-Qwen-Image-2.1-Base-ModelOpt-W4A4-NVFP4`), while the recipe id itself
+  spells only the recipe class (`NVFP4`). Product ids and recipe ids are two
+  different encodings; the release contract validates both against the precision
+  map.
+- **Behavior cells.** Image-family abliterated cells are gated on demonstrated
+  behavior mechanism, not assumed by default. A behavior cell ships only when the
+  mechanism is validated against the frozen behavior suites (benign compliance
+  preserved, refusal-adjacent compliance raised) with the full-denominator judge.
+  If instrumented attempts show the family's censorship mechanism is not
+  editable-grade reachable (as for Qwen-Image-2.1, where seven instrumented
+  attempts — encoder-direction removal, subspace projections, and two
+  LoRA-pair training regimes — either had no effect or collapsed benign
+  compliance), the family ships base cells only and the evidence is recorded as
+  the justification. The four-cell matrix remains the default template for
+  future families whose censoring is encoder-mediated and edit-transferable.
 - **Recipe.** Same naming convention:
   `darkstar-<family>-<behavior>-<precision>.yaml` under `recipes/<family>/`, where
   `<family>` is alnum-only in recipe identifiers (for example `qwenimage21`).
