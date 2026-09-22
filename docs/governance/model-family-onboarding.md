@@ -91,7 +91,7 @@ same checklist with these substitutions:
   `darkstar-<family>-<behavior>-<precision>.yaml` under `recipes/<family>/`, where
   `<family>` is alnum-only in recipe identifiers (for example `qwenimage21`).
 - **Serving profile.** Image families use the diffusion serving profile and the
-  image smoke contract: `/v1/images/generations` and `/v1/images/edits` reachability,
+  image smoke contract: `${PUBLIC_WORKSPACE}` and `${PUBLIC_WORKSPACE}` reachability,
   seed determinism under the frozen batching configuration, and an RGBA round-trip
   assertion where the family supports transparency. The text smokes (`/v1/models`,
   context length, text/JSON/tool checks) do not apply to image servers.

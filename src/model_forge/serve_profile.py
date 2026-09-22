@@ -227,10 +227,65 @@ class ServeProfile:
                 "non-local model_path must exactly equal the precision-encoded repository_id"
             )
 
+        # KV-cache quantization matrix (SM120-measured; updated 2026-09-16):
+        # - bf16 (native) KV is valid on EVERY backend, every runtime — always a
+        #   supported co-option for any profile.
+        # - fp8-family KV requires a backend with fp8-KV support: TRITON_ATTN or
+        #   FLASHINFER. On stock 0.27.1 + FLASH_ATTN it hard-fails engine init on
+        #   SM120 (requires FA3/SM90 or FA4/SM100). On stock 0.27.1 + TRITON_ATTN
+        #   it boots but carries a LOAD-TRIGGERED race (cudaErrorIllegalAddress
+        #   under concurrent thinking-load, with/without --no-async-scheduling,
+        #   with/without prefix caching and mamba align mode) — measured
+        #   2026-09-15. On the nvfp4kv nightly (0.27.2rc1.dev77+gac7509e2b with
+        #   PR #49891 rebased + sm120 linear-V-scale overlay) fp8 KV under
+        #   FLASHINFER is the AEON-recipe shape; treat as candidate-validate-first.
+        # - nvfp4 KV is VALIDATED on the nvfp4kv nightly (0.27.2rc1.dev77) with
+        #   FLASHINFER + MTP4 + mamba align: GPQA 168/198 = 84.85% (bf16-thinking
+        #   baseline 85.35%), zero IMAs under full concurrency-30 thinking load,
+        #   needles HIT to 210K tokens, KV pool 1.05M tokens at util 0.50.
+        #   Measured 2026-09-16 on mcprue (RTX PRO 6000). NOT validated on stock
+        #   0.27.1 (upstream there is SM100-trtllm-gen-only for nvfp4).
+        # - turboquant KV remains refused (never validated on any of our runtimes).
+        _QUANT_KV_OK_BACKENDS = {"TRITON_ATTN", "FLASHINFER"}
+        _NVFP4KV_RUNTIME = "nvfp4kv-nightly-0.27.2rc1.dev77"
         if self.kv_cache_dtype != "bf16":
-            raise ServeProfileError("this frozen profile requires BF16 KV cache")
-        if self.attention_backend != "FLASH_ATTN":
-            raise ServeProfileError("this frozen profile requires FLASH_ATTN")
+            if self.kv_cache_dtype in {"fp8", "fp8_e4m3", "fp8_e5m2"}:
+                if self.attention_backend not in _QUANT_KV_OK_BACKENDS:
+                    raise ServeProfileError(
+                        f"kv_cache_dtype {self.kv_cache_dtype!r} requires attention_backend in "
+                        f"{sorted(_QUANT_KV_OK_BACKENDS)} (FLASH_ATTN does not support FP8 KV on "
+                        "SM120 — engine init fails); got "
+                        f"{self.attention_backend!r}"
+                    )
+                if self.attention_backend == "TRITON_ATTN":
+                    # 2026-09-15: load-triggered IMA race under concurrent
+                    # thinking-load on stock 0.27.1. Not a hard refuse (the
+                    # pairing does boot), but profile validation flags it.
+                    raise ServeProfileError(
+                        "kv_cache_dtype fp8-family + TRITON_ATTN on stock 0.27.1 carries a "
+                        "load-triggered cudaErrorIllegalAddress race (measured 2026-09-15); "
+                        f"use FLASHINFER on the {_NVFP4KV_RUNTIME} runtime instead, or bf16"
+                    )
+            elif self.kv_cache_dtype == "nvfp4":
+                if self.attention_backend != "FLASHINFER":
+                    raise ServeProfileError(
+                        "kv_cache_dtype nvfp4 requires attention_backend FLASHINFER "
+                        f"(FA2-nvfp4 routing per PR #49891; got {self.attention_backend!r})"
+                    )
+                # nvfp4 KV is validated ONLY on the nvfp4kv nightly runtime; a
+                # profile declaring nvfp4 KV on stock 0.27.1 is a config error.
+                if "nvfp4kv" not in (self.image or ""):
+                    raise ServeProfileError(
+                        f"kv_cache_dtype nvfp4 requires the {_NVFP4KV_RUNTIME} image "
+                        "(vllm-qwen38:nvfp4kv) — stock 0.27.1 gates nvfp4 KV to "
+                        "SM100-trtllm-gen only"
+                    )
+            else:
+                raise ServeProfileError(
+                    f"kv_cache_dtype {self.kv_cache_dtype!r} is not validated for Darkstar "
+                    "serve profiles (bf16 native, fp8-family, or nvfp4 on the nvfp4kv "
+                    "runtime only)"
+                )
         if self.mtp_depth < 1 or self.scheduler_tokens < 1:
             raise ServeProfileError("scheduler budget and speculative depth must be positive")
         if self.spec_decode not in {"mtp", "dflash", "dflash2"}:

@@ -147,3 +147,41 @@ def compute_leakage(
     if w_norm == 0:
         return 0.0
     return float(proj_norm / w_norm)
+
+
+def biproject_direction(
+    direction: torch.Tensor,
+    harmless_mean: torch.Tensor,
+) -> torch.Tensor:
+    """Orthogonalize a refusal direction against the harmless mean activation.
+
+    jim-plus/llm-abliteration "projected" measurement (mlabonne biprojected
+    abliteration): the ablated axis carries only the harmful-conditional
+    component, leaving shared harmless content intact. Returns a unit vector.
+    """
+    d = direction.float()
+    n = harmless_mean.float()
+    n_norm_sq = n.norm().pow(2)
+    if n_norm_sq.item() < 1e-12:
+        return d / d.norm()
+    d = d - (d @ n) * n / n_norm_sq
+    return d / d.norm()
+
+
+def norm_preserving_project(
+    weight: torch.Tensor,
+    direction: torch.Tensor,
+) -> torch.Tensor:
+    """Ablate then restore each edited row to its pre-edit L2 norm.
+
+    grimjim norm-preserving biprojected abliteration: prevents the global
+    norm shrink that degrades non-refusal behavior when many rows lose the
+    same direction component. Applies :func:`project_weight` then rescales.
+    """
+    edited = project_weight(weight, direction)
+    if edited.ndim != 2 or weight.ndim != 2:
+        return edited
+    orig_norms = weight.float().norm(dim=1, keepdim=True)
+    new_norms = edited.float().norm(dim=1, keepdim=True).clamp_min(1e-12)
+    scale = (orig_norms / new_norms).to(edited.dtype)
+    return (edited.float() * scale).to(edited.dtype)

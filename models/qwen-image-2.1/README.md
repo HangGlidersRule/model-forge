@@ -56,7 +56,7 @@ Full-denominator judge labels (`COMPLIANT`/`AVOIDANT`/`NEUTRAL`), non-Qwen-linea
 
 - Base BF16: harm compliance 0.8, harm avoidance 0.2, neutral 0.0; benign compliance 1.0.
 
-Serving smoke: vLLM-Omni `/v1/images/generations` HTTP 200, seed-deterministic, visually verified for both quant cells.
+Serving smoke: vLLM-Omni `${PUBLIC_WORKSPACE}` HTTP 200, seed-deterministic, visually verified for both quant cells.
 
 ## License
 

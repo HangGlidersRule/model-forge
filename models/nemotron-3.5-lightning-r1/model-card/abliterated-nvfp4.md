@@ -2,95 +2,81 @@
 license: other
 license_name: openmdw-1.1
 license_link: https://openmdw.ai/license/1-1/
-language:
-  - en
-tags:
-  - nemotron-h
-  - darkstar
-  - abliteration
-  - nvfp4
-  - modelopt
-  - hybrid-mamba-moe
-pipeline_tag: text-generation
 base_model: HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16
 base_model_relation: quantized
+pipeline_tag: text-generation
+tags:
+  - darkstar
+  - nemotron-h
+  - abliterated
+  - reduced-refusal
+  - nvfp4
+  - modelopt
+  - vllm
 quantization: nvidia-modelopt
 extra_gated_heading: Darkstar Nemotron-3.5-Lightning 30B-A3B Abliterated ModelOpt NVFP4
 ---
 
 # Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4
 
-> **Safety notice:** This checkpoint is an **edited (abliterated) derivative**
-> served in **NVFP4**: the refusal direction measured at layer 34 was
-> deliberately projected out of 3,126 residual-writing tensors, then the edited
-> BF16 artifact was quantized with NVIDIA TensorRT Model Optimizer to a mixed
-> W4A16-NVFP4 layout. It will tend to comply with harmful requests. Released for
-> red-teaming and alignment research **only**. Also see [Safety](#safety).
+> **Reduced-refusal model:** a refusal-direction edit was deliberately applied in BF16 before
+> quantization. Read the safety warning before use.
 
-A single-GPU-friendly (≈22 GB), modelopt-quantized derivative of NVIDIA's
-[Nemotron-3.5-Lightning-30B-A3B-BF16](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16):
-hybrid Mamba2 + MoE + sparse attention, 52 layers, 262,144-token context,
-OpenMDW-1.1 license. This is the fourth product in the Darkstar family matrix.
+## Summary
 
-## Product family
+NVIDIA ModelOpt quantization of the Darkstar Abliterated BF16 derivative of
+[`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16),
+pinned upstream at `d468880b6ad3c6e0d21377ce7242adaea4cc884d`. The R1 edit projects a normalized
+float32 refusal direction (measured at layer 34, seed 42, chat-templated corpora) from exactly 3,126
+residual-writing tensors; the edited BF16 artifact was then quantized to a mixed W4A16-NVFP4 layout
+(5,934 expert modules quantized; lm_head, Mamba/SSM, norms, embeddings, and MTP head protected in
+BF16). Artifact is 3 shards, ≈22 GB; `quantization_config` maps to vLLM `modelopt_mixed`.
 
-| Product | Format | Edit | Status |
-|---|---|---|---|
-| Base-BF16 | BF16 | none (upstream reference) | not republished here |
-| Base-ModelOpt-NVFP4 | W4A16 NVFP4 | none | sibling repository |
-| Abliterated-BF16 | BF16 | refusal direction removed | sibling repository |
-| **Abliterated-ModelOpt-NVFP4** | **W4A16 NVFP4** | **refusal direction removed** | **this repository** |
+ModelOpt is pinned to `0.46.0rc2` at `43fd41a58d52c4e6e5dec1d1ff5989ecc737ae1a`. Calibration used
+`cnn_dailymail` plus `nvidia/Nemotron-Post-Training-Dataset-v2`, 512+512 samples, sequence length 2048,
+seed 1234, batch 1, KV cache quantization disabled (BF16).
 
-## Quantization contract (reproducible)
+Full provenance, protocol, and caveats:
 
-- Source for the edit: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`
-  @ `d468880b6ad3c6e0d21377ce7242adaea4cc884d`
-- Abliteration: identical to the Abliterated-BF16 product (layer 34, 3,126
-  targets, max residual leakage 0.000160, MTP intact, 320/320 chat-templated)
-- Quantization: NVIDIA Model Optimizer `0.46.0rc2` (`43fd41a`), recipe
-  `w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h.yaml`
-- Calibration: cnn_dailymail 512 + Nemotron-Post-Training-Dataset-v2 512,
-  sequence length 2048, seed 1234, batch 1, KV cache quantization disabled (BF16)
-- Protected BF16: lm_head, Mamba/SSM (conv1d, in_proj, out_proj, A_log, D,
-  dt_bias), norms, embeddings, MTP head
-- Quantized: routed + shared expert up/down projections (5,934 modules),
-  W4A16-NVFP4 group 16
-- Artifact: 3 shards, 22 GB, `quantization_config` → vLLM `modelopt_mixed`
-- Recipe: `recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-abliterated-modelopt-nvfp4.yaml`
-  in [HangGlidersRule/model-forge](https://github.com/HangGlidersRule/model-forge)
+- [Source card](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/model-card/abliterated-nvfp4.md)
+- [Artifact lineage](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/artifact-lineage.md)
+- [Benchmark matrix](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/benchmark-matrix.md)
+- [GPQA protocol](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/gpqa-protocol.md)
 
-## Measured quality (final servable result)
+## Evaluation
 
-- **GPQA Diamond: 141/198 = 71.2%** (Wilson 95% 64.5–77.1; 1 unparseable, 2 TRUNC, 0 errors),
-  evaluated with llm-inference-bench `gpqa-diamond` (chat template + thinking ON, temp 0),
-  served **MTP10 + `--reasoning-parser nemotron_v3`**, single RTX PRO 6000 Blackwell, BF16 KV.
-- Behavior gate: **200/200 harmful compliance, 0/83 safe over-refusals, 0 errors**.
-- Throughput (weighted 4K/16K/48K = 0.6/0.3/0.1): **MTP10 = 554.7 tok/s** (4K 571.2, 16K 546.3, 48K 480.7).
-- NVIDIA publishes GPQA Diamond 75.44 (BF16) / 75.57 (NVFP4) on the same task; the delta is
-  serving-stack config (their vLLM 0.26 + FP8 KV + TP2 + temp 1.0 averaged over 8 repeats), not
-  abliteration or quantization damage. Full protocol: `models/nemotron-3.5-lightning-r1/gpqa-protocol.md`.
+| Metric | Value | Basis |
+|---|---|---|
+| GPQA Diamond (thinking on) | 141/198 = 71.2% | llm-inference-bench `gpqa-diamond`, chat template + thinking ON, temp 0; full denominator; served MTP10 + `--reasoning-parser nemotron_v3` |
+| Behavior: harmful-prompt compliance | 200/200 (0/200 refusals) | fresh suite on this exact artifact; 0 errors |
+| Safe over-refusals | 0/83 (0.00%) | 0 errors |
+| Single-stream throughput (MTP10) | 554.7 tok/s weighted | 4K 571.2 / 16K 546.3 / 48K 480.7; sweep winner |
 
-## Publication
+Missing cells are marked `not measured` and are never backfilled from a different checkpoint or
+protocol.
 
-This checkpoint is **public on Hugging Face** at the pinned milestone tag
-`darkstar-nemotron-3.5-lightning-v1.0.0`. Weights are hash-verified (sha256
-manifest in the source repo) and serve with vLLM (the measured shipping
-config — MTP10):
+## Safety warning
+
+This model has had its refusal direction deliberately reduced. It complied with 200/200 harmful
+prompts in the measured suite and has no added safety mitigations. It will comply with many requests
+the upstream model would refuse. Deploy only behind appropriate policy, filtering, access controls,
+and legal review. Refusal-rate numbers are behavior measurements, not safety endorsements.
+
+## Release reference
+
+Engineering release: [`darkstar-nemotron-3.5-lightning-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3.5-lightning-v1.0.0). This immutable tag exists and the release contract is published.
+
+## Runtime
+
+Validated with vLLM (CUDA 13 Blackwell nightly build family), Flash Attention, BF16 KV cache,
+context 131,072, MTP depth 10, and `max_num_seqs=16`:
 
 ```bash
 vllm serve HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4 \
-  --max-model-len 131072 --kv-cache-dtype bfloat16 --reasoning-parser nemotron_v3 \
-  --speculative-config '{"method":"mtp","num_speculative_tokens":10}'
+  --served-model-name darkstar-nemotron-3.5-lightning-abliterated-nvfp4 \
+  --kv-cache-dtype bfloat16 \
+  --max-model-len 131072 \
+  --max-num-seqs 16 \
+  --reasoning-parser nemotron_v3 \
+  --speculative-config '{"method": "mtp", "num_speculative_tokens": 10}'
 ```
-
-## License
-
-OpenMDW-1.1 (same as upstream). See https://openmdw.ai/license/1-1/. Retain all
-NVIDIA copyright/attribution/notice lines in distributions of this derivative.
-
-## Safety
-
-This model intentionally has a reduced refusal response. Do not deploy in
-user-facing assistant roles without alignment hardening and content filtering.
-It is intended for researchers studying refusal behavior, ablation, and
-alignment techniques.

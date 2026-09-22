@@ -6,74 +6,73 @@ base_model: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
 base_model_relation: quantized
 pipeline_tag: text-generation
 tags:
-  - nemotron-h
   - darkstar
+  - nemotron-h
   - base
   - nvfp4
   - modelopt
-  - hybrid-mamba-moe
+  - vllm
 quantization: nvidia-modelopt
 extra_gated_heading: Darkstar Nemotron-3.5-Lightning 30B-A3B Base ModelOpt W4A16 NVFP4
 ---
 
 # Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4
 
-NVIDIA ModelOpt W4A16-NVFP4 quantization of the official
-[Nemotron-3.5-Lightning-30B-A3B-BF16](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16)
-checkpoint with **no weight edit**. It is the clean Base artifact in the Darkstar
-Nemotron-3.5-Lightning family and the control for the abliterated derivatives:
-same source revision, same quantization contract, no refusal-direction
-projection. **R1** identifies the abliterated edit lineage, not this product.
+## Summary
 
-A single-GPU-friendly (≈22 GB) modelopt-quantized derivative: hybrid Mamba2 + MoE
-+ sparse attention, 52 layers, 262,144-token context, OpenMDW-1.1 license. This
-is the second product in the Darkstar family matrix.
+Clean, unedited NVIDIA ModelOpt quantization of
+[`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16)
+at revision `d468880b6ad3c6e0d21377ce7242adaea4cc884d` — the control artifact for the Darkstar
+Nemotron-3.5-Lightning abliterated derivatives: same source revision, same quantization contract, no
+refusal-direction projection. The mixed layout quantizes routed + shared expert up/down projections
+(5,934 modules) to W4A16-NVFP4 group 16 and keeps lm_head, Mamba/SSM (conv1d, in_proj, out_proj,
+A_log, D, dt_bias), attention (q/k/v/o + BMM), norms, embeddings, and the MTP head protected in BF16.
+Artifact is 3 shards, ≈22 GB; `quantization_config` maps to vLLM `modelopt_mixed`.
 
-## Product family
+ModelOpt is pinned to `0.46.0rc2` at
+`43fd41a58d52c4e6e5dec1d1ff5989ecc737ae1a`. Calibration used `cnn_dailymail` plus
+`nvidia/Nemotron-Post-Training-Dataset-v2`, 512+512 samples, sequence length 2048, seed 1234, batch 1,
+KV-cache quantization disabled (BF16).
 
-| Product | Format | Edit | Status |
-|---|---|---|---|
-| Base-BF16 | BF16 | none (upstream reference) | not republished here |
-| **Base-ModelOpt-NVFP4** | **W4A16 NVFP4** | **none** | **this repository** |
-| Abliterated-BF16 | BF16 | refusal direction removed | sibling repository |
-| Abliterated-ModelOpt-NVFP4 | W4A16 NVFP4 | refusal direction removed | sibling repository |
+Full provenance, protocol, and caveats:
 
-## Quantization contract (reproducible)
+- [Source card](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/model-card/base-nvfp4.md)
+- [Artifact lineage](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/artifact-lineage.md)
+- [Benchmark matrix](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/benchmark-matrix.md)
+- [GPQA protocol](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3.5-lightning-r1/gpqa-protocol.md)
 
-- Source: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`
-  @ `d468880b6ad3c6e0d21377ce7242adaea4cc884d`
-- Quantization: NVIDIA Model Optimizer `0.46.0rc2` (`43fd41a`), recipe
-  `w4a16_nvfp4_mse-fp8_attn-kv_bf16_nemotron_h.yaml`
-- Calibration: cnn_dailymail 512 + Nemotron-Post-Training-Dataset-v2 512,
-  sequence length 2048, seed 1234, batch 1, KV cache quantization disabled (BF16)
-- Protected BF16: lm_head, Mamba/SSM (conv1d, in_proj, out_proj, A_log, D,
-  dt_bias), attention (q/k/v/o + BMM), norms, embeddings, MTP head
-- Quantized: routed + shared expert up/down projections (5,934 modules),
-  W4A16-NVFP4 group 16
-- Artifact: 3 shards, 22 GB, `quantization_config` → vLLM `modelopt_mixed`
-- Recipe: `recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a16-nvfp4.yaml`
-  in [HangGlidersRule/model-forge](https://github.com/HangGlidersRule/model-forge)
+## Evaluation
 
-## Measured performance
+| Metric | Value | Basis |
+|---|---|---|
+| Behavior: harmful-prompt compliance | not measured (unedited control) | refusal behavior unchanged by design; no projection applied |
+| Safe over-refusals | not measured (unedited control) | same basis |
+| Single-stream throughput (MTP7) | 541.7 tok/s weighted | 4K/16K/48K = 562.2/548.0/399.7; sweep winner; DFlash 523.9 |
 
-- Throughput (weighted 4K/16K/48K = 0.6/0.3/0.1): **MTP7 = 541.7 tok/s**
-  (4K 562.2, 16K 548.0, 48K 399.7); DFlash 523.9.
-- Full MTP sweep 1..12 in `models/nemotron-3.5-lightning-r1/benchmark-matrix.md`.
+Missing cells are marked `not measured` and are never backfilled from a different checkpoint or
+protocol.
 
-## Publication
+## Safety and limitations
 
-This checkpoint is **public on Hugging Face** at the pinned milestone tag
-`darkstar-nemotron-3.5-lightning-v1.0.0`. Weights are hash-verified (sha256
-manifest in the source repo) and serve with vLLM (the measured serving
-config — MTP7):
+This is the unedited control quantization. The refusal measurements are behavior observations, not a
+safety endorsement. Quantization can shift behavior relative to upstream BF16. Only single-stream
+throughput is characterized here; aggregate concurrent throughput is separate.
+
+## Release reference
+
+Engineering release: [`darkstar-nemotron-3.5-lightning-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3.5-lightning-v1.0.0). This immutable tag exists and the release contract is published.
+
+## Runtime
+
+Validated with vLLM (CUDA 13 Blackwell nightly build family), Flash Attention, BF16 KV cache,
+context 131,072, MTP depth 7, and `max_num_seqs=16`:
 
 ```bash
 vllm serve HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4 \
-  --max-model-len 131072 --kv-cache-dtype bfloat16 --reasoning-parser nemotron_v3 \
-  --speculative-config '{"method":"mtp","num_speculative_tokens":7}'
+  --served-model-name darkstar-nemotron-3.5-lightning-base-nvfp4 \
+  --kv-cache-dtype bfloat16 \
+  --max-model-len 131072 \
+  --max-num-seqs 16 \
+  --reasoning-parser nemotron_v3 \
+  --speculative-config '{"method": "mtp", "num_speculative_tokens": 7}'
 ```
-
-## License
-
-OpenMDW-1.1 (same as upstream). See https://openmdw.ai/license/1-1/. Retain all
-NVIDIA copyright/attribution/notice lines in distributions of this derivative.

@@ -1,0 +1,98 @@
+{
+ "base_url": "<served-endpoint>",
+ "completed_epoch": 1788468623.609664,
+ "max_tokens": 512,
+ "model": "nano-omni-base-nvfp4",
+ "rows": [
+  {
+   "max_tok_s": 261.4829193429551,
+   "mean_tok_s": 259.4937238442585,
+   "min_tok_s": 258.402867758212,
+   "n_runs": 3,
+   "prompt_len_k": 4,
+   "samples": [
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.9799270629882812,
+     "prompt_len_k": 4,
+     "tok_s": 258.5953844316084,
+     "total_tokens": 2133
+    },
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.9580628871917725,
+     "prompt_len_k": 4,
+     "tok_s": 261.4829193429551,
+     "total_tokens": 2133
+    },
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.9814021587371826,
+     "prompt_len_k": 4,
+     "tok_s": 258.402867758212,
+     "total_tokens": 2133
+    }
+   ]
+  },
+  {
+   "max_tok_s": 261.3690178900696,
+   "mean_tok_s": 259.6822675458868,
+   "min_tok_s": 258.51429146501494,
+   "n_runs": 3,
+   "prompt_len_k": 16,
+   "samples": [
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.9805481433868408,
+     "prompt_len_k": 16,
+     "tok_s": 258.51429146501494,
+     "total_tokens": 2274
+    },
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.9755868911743164,
+     "prompt_len_k": 16,
+     "tok_s": 259.1634932825759,
+     "total_tokens": 2274
+    },
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.958916187286377,
+     "prompt_len_k": 16,
+     "tok_s": 261.3690178900696,
+     "total_tokens": 2274
+    }
+   ]
+  },
+  {
+   "max_tok_s": 262.0147837248232,
+   "mean_tok_s": 261.4877402334719,
+   "min_tok_s": 261.09150673499636,
+   "n_runs": 3,
+   "prompt_len_k": 48,
+   "samples": [
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.960998296737671,
+     "prompt_len_k": 48,
+     "tok_s": 261.09150673499636,
+     "total_tokens": 2650
+    },
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.9590067863464355,
+     "prompt_len_k": 48,
+     "tok_s": 261.3569302405962,
+     "total_tokens": 2650
+    },
+    {
+     "completion_tokens": 512,
+     "elapsed_s": 1.9540882110595703,
+     "prompt_len_k": 48,
+     "tok_s": 262.0147837248232,
+     "total_tokens": 2650
+    }
+   ]
+  }
+ ]
+}

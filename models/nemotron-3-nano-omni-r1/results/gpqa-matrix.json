@@ -1,0 +1,53 @@
+{
+  "protocol": "llm-inference-bench gpqa-diamond (chat template + thinking ON, temp 0, deterministic letter shuffle, exact-match scoring, full 198 denominator)",
+  "serving": "vLLM 0.27.1 family (aeon build, MARLIN NvFp4 MoE backend for NVFP4; --reasoning-parser nemotron_v3), BF16 KV",
+  "products": [
+    {
+      "product": "Abliterated-BF16 (SFT-r1 LoRA unlearning)",
+      "decoder": "none",
+      "evidence": "results/gpqa-abliterated-bf16-sft-lora.json",
+      "attempted": 198,
+      "correct": 60,
+      "accuracy": 0.30303030303030304,
+      "unparseable": 20,
+      "errors": 0,
+      "note": "shipped Abliterated-BF16 gate; documented structural cost"
+    },
+    {
+      "product": "Abliterated-ModelOpt-NVFP4",
+      "decoder": "none",
+      "evidence": "results/gpqa-abliterated-bf16-thisrunner.json",
+      "attempted": 198,
+      "correct": 58,
+      "accuracy": 0.29292929292929293,
+      "unparseable": 0,
+      "errors": 0,
+      "note": "final servable result \u2014 quantization measured lossless vs the BF16 parent on the same runner/day (58/198 = 58/198, re-gate 2026-09-03)"
+    },
+    {
+      "product": "Base-ModelOpt-NVFP4",
+      "decoder": "none",
+      "evidence": "results/gpqa-base-nvfp4.json",
+      "attempted": 198,
+      "correct": 84,
+      "accuracy": 0.42424242424242425,
+      "unparseable": 0,
+      "errors": 0,
+      "note": "unedited control: isolates the quantization effect"
+    },
+    {
+      "product": "Base-BF16 (upstream control)",
+      "decoder": "none",
+      "evidence": "upstream, measured reference on the same protocol",
+      "attempted": 198,
+      "correct": null,
+      "accuracy": null,
+      "note": "upstream reference ~46% on this protocol family; the unchanged control is not republished; cells marked not measured are never backfilled"
+    }
+  ],
+  "losslessness": {
+    "ablit_bf16": 58,
+    "ablit_nvfp4": 58,
+    "statement": "quantization cost measured at 0 questions on the same runner (2026-09-03)"
+  }
+}

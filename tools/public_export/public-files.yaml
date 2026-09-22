@@ -1,5 +1,39 @@
 version: 1
 rules:
+  - id: private-mcprue-ops-serve-config
+    source: "containers/serve/serve-production-nvfp4kv.yml"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal production serve config with host-specific D:/ paths, local image pins, and internal endpoints. Public users get the documented vllm serve example in the model card instead.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+  - id: private-mcprue-ops-rollback-runbook
+    source: "containers/serve/ROLLBACK-RUNBOOK.md"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal rollback runbook (host paths, internal incident notes, hard rules for Devin's hosts only).
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+  - id: private-qwen38-full-w4a4-recipe
+    source: "configs/modelopt/recipes/qwen38-full-w4a4-modelopt.yaml"
+    disposition: exclude
+    public_destination: null
+    reason: The abliterated full-W4A4 candidate is unbuilt/unvalidated (attempt-1 rejected on wrong-model source; gate campaign pending). Its imports resolve only against ModelOpt's in-container builtin recipes lib and fail repo-side validation. Publishes with its own campaign when validated.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+    resolves: ["modelopt-config-recipes"]
   - id: private-hermes-guard
     source: ".hermes/**"
     disposition: exclude
@@ -356,6 +390,102 @@ rules:
     precedence: 1000
     allow_empty: true
 
+  - id: private-image-lane-research
+    source: "plans/image-support/**"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal image-lane research evidence (session logs, probe PNGs, serving smokes, e42 negatives, review rounds). Aggregated findings publish via the family record README and curated cells.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 16777216
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-image-lane-plan
+    source: "plans/image-support-plan.md"
+    disposition: exclude
+    public_destination: null
+    reason: Internal image-support campaign plan with private host/tooling references.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-diffusion-recipes-and-containers
+    source: "configs/modelopt/diffusion/**"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal DiT quantization recipes and fleet pins (host-specific paths and toolchain pins). Publishes with the public onboarding of the next diffusion family.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-diffusion-pin
+    source: "configs/modelopt/diffusion_pin.json"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal toolchain pin manifest.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-diffusion-containers
+    source: "containers/modelopt/diffusion/**"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal quantization container build files.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-qwenimage-recon
+    source: "models/qwen-image-2.1/recon.json"
+    disposition: exclude
+    public_destination: null
+    reason: Internal Qwen-Image-2.1 recon (composite anatomy, tensor inventory, watermarker notes). Excluded until the family's public onboarding expands.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-qwenimage-family-decision
+    source: "models/qwen-image-2.1/FAMILY-DECISION.md"
+    disposition: exclude
+    public_destination: null
+    reason: Internal family decision notes (private host/tooling references). Aggregated posture publishes via the family record README.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-qwenimage-license
+    source: "models/qwen-image-2.1/LICENSE"
+    disposition: exclude
+    public_destination: null
+    reason: License ships inside the published HF repositories; the public docs repo carries the obligation summary in the family record.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
   - id: models-index
     source: "models/README.md"
     disposition: transform
@@ -568,6 +698,146 @@ rules:
     precedence: 100
     resolves:
       - model-results-default-private
+
+  - id: curated-nano-omni-gpqa-evidence
+    source: "models/nemotron-3-nano-omni-r1/results/gpqa-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated GPQA evidence for the published Nano-Omni cells (sanitized provenance).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - curated-gpqa-matrix
+      - model-results-default-private
+
+  - id: curated-nano-omni-behavior-evidence
+    source: "models/nemotron-3-nano-omni-r1/results/abliteration-eval-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated shipment behavior evidence for the published Abliterated-BF16 cell.
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-gpqa-matrix
+
+  - id: curated-nano-omni-performance
+    source: "models/nemotron-3-nano-omni-r1/results/performance-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated single-stream throughput evidence for the published Nano-Omni cells.
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+
+  - id: nano-omni-lora-recipe
+    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the LoRA-unlearning-SFT family recipe after schema-2 validation.
+    transformation: sanitize_and_validate_recipe
+    owner: model-recipes
+    max_size_bytes: 65536
+    generated: false
+    precedence: 200
+    resolves:
+      - public-recipes
+
+  - id: nano-omni-base-nvfp4-recipe
+    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-base-modelopt-w4a16-nvfp4.yaml"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the schema-2 Base ModelOpt NVFP4 family recipe.
+    transformation: sanitize_and_validate_recipe
+    owner: model-recipes
+    max_size_bytes: 65536
+    generated: false
+    precedence: 200
+    resolves:
+      - public-recipes
+
+  - id: nano-omni-ablit-nvfp4-recipe
+    source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4.yaml"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the schema-2 Ablit ModelOpt NVFP4 family recipe.
+    transformation: sanitize_and_validate_recipe
+    owner: model-recipes
+    max_size_bytes: 65536
+    generated: false
+    precedence: 200
+    resolves:
+      - public-recipes
+
+  - id: release-verify-script
+    source: "scripts/verify_family_release.sh"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the four-surface release close-out verifier after script sanitization.
+    transformation: sanitize_qwen_script
+    owner: release-engineering
+    max_size_bytes: 32768
+    generated: false
+    precedence: 100
+
+  - id: nano-omni-serve-profile
+    source: "containers/serve/darkstar-nemotron-3-nano-omni-abliterated-nvfp4.yml"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Publish the vLLM serve profile for the Nano-Omni Ablit-NVFP4 product.
+    transformation: sanitize_and_validate_serve_profile
+    owner: container-runtime
+    max_size_bytes: 32768
+    generated: false
+    precedence: 200
+    resolves:
+      - serve-profile
+
+  - id: hf-card-nano-omni-ablit-bf16
+    source: "publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Nano-Omni Abliterated-BF16 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: hf-card-nano-omni-base-nvfp4
+    source: "publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Nano-Omni Base ModelOpt NVFP4 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: hf-card-nano-omni-ablit-nvfp4
+    source: "publication/huggingface/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Nano-Omni Ablit ModelOpt NVFP4 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
 
   - id: curated-readiness-ledger
     source: "models/*/results/publication-readiness-ledger.json"
@@ -784,6 +1054,18 @@ rules:
     disposition: exclude
     public_destination: null
     reason: Internal campaign ledger with live in-progress evidence. Excluded until the family's public onboarding completes.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: nemotron-nano-omni-operator-scripts-private
+    source: "scripts/nemotron-3-nano-omni/**"
+    disposition: exclude
+    public_destination: null
+    reason: Nano-Omni operator-only abliteration harnesses carry in-progress experimental controls and raw behavior-eval affordances; public family onboarding will export curated recipes/results only after gates pass.
     transformation: null
     owner: private-operations
     max_size_bytes: 262144

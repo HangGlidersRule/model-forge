@@ -2,7 +2,7 @@
   "family": "Darkstar Nemotron-3.5-Lightning 30B-A3B",
   "source_revision": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16@d468880b6ad3c6e0d21377ce7242adaea4cc884d",
   "license": "OpenMDW-1.1",
-  "updated": "2026-08-25",
+  "updated": "2026-08-31",
   "products": [
     {
       "product": "Base-BF16",
@@ -47,6 +47,6 @@
     "hash_verified_weights": "PASS (manifests sha256 verified on mcprue)",
     "cards_ready": "PASS (README cards live on both repos)",
     "hf_uploaded": "PASS (both checkpoints live)",
-    "release_tag": "PENDING (github tag next)"
+    "release_tag": "PASS (https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3.5-lightning-v1.0.0)"
   }
 }

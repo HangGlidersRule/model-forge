@@ -1,0 +1,112 @@
+schema_version: "2.0"
+name: darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4
+family: nemotron-3-nano-omni
+
+source:
+  model_id: nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16
+  revision: 24e67ea000b7c2837fc8f9488aa2008524fac8ba
+
+transforms:
+  - type: abliteration
+    layer: 41
+    seed: 42
+    harmful_prompts: 320
+    harmless_prompts: 320
+    orthogonalize_harmless: false
+    target_selectors:
+      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.o_proj\\.weight"
+      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.out_proj\\.weight"
+      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.experts\\.\\d+\\.down_proj\\.weight"
+      - "re:language_model\\.backbone\\.layers\\.\\d+\\.mixer\\.shared_experts\\.down_proj\\.weight"
+    expected_target_count: 2996
+    reject_visual_selectors: true
+
+datasets:
+  harmful:
+    source: mlabonne/harmful_behaviors
+    revision: 01cead01398926d81f7c52bdb790ee8cf77ebba7
+    sha256: null
+  harmless:
+    source: mlabonne/harmless_alpaca
+    revision: 02c6a92cfcf11bb0c387334f8146d149d65b587f
+    sha256: null
+
+quantization:
+  scheme: NVFP4
+  framework: nvidia-modelopt
+  framework_version: 0.46.0rc2
+  framework_pin_commit: 43fd41a58d52c4e6e5dec1d1ff5989ecc737ae1a
+  targets: Linear
+  group_size: 16
+  protected_tensors:
+    - mtp
+    - norms
+    - embeddings
+    - ssm
+    - conv1d
+    - vision_model
+    - sound_encoder
+    - mlp1
+    - sound_projection
+  ignore:
+    - "re:.*vision_model.*"
+    - "re:.*sound_encoder.*"
+    - "re:.*sound_projection.*"
+    - "re:.*mlp1.*"
+    - "re:.*mtp.*"
+    - "re:.*conv1d.*"
+    - "re:.*A_log.*"
+    - "re:.*mixer\\.D$"
+    - "re:.*mixer\\.dt_bias.*"
+    - "re:.*mixer\\.in_proj.*"
+    - "re:.*mixer\\.out_proj.*"
+    - "re:.*norm\\.weight$"
+    - "re:.*ssm.*"
+    - "re:.*language_model\\.backbone\\.embeddings.*"
+    - "re:.*language_model\\.backbone\\.norm_f.*"
+    - "re:.*lm_head.*"
+  calibration:
+    dataset: cnn_dailymail
+    config: modelopt_text_blend_512
+    samples: 1024
+    max_sequence_length: 2048
+    pipeline: modelopt_hf_ptq
+    shard_size: 5GB
+
+validation:
+  max_refusal_leakage: 0.01
+  max_benign_kl_divergence: 0.05
+  max_perplexity_delta_pct: 5.0
+  vision_byte_identical: true
+  mtp_present: false
+  expected_target_count: 2996
+  target_notes: >
+    LLM trunk residual writers only (attention o_proj, mamba out_proj, routed +
+    shared expert down_proj). Vision (RADIOv4), sound (Parakeet), projections,
+    embeddings, and norms stay byte-identical. count derived from recon:
+    o_proj 6 + out_proj 23 + routed down_proj 2944 + shared down_proj 23 = 2996.
+
+runtime:
+  kv_dtype: bf16
+  context_length: 262144
+  compiled_mode: false
+  flash_attention: true
+  spec_decode: mtp
+  mtp_present: false
+  mtp_depth_initial: 1
+  mtp_sweep_range: []
+
+performance:
+  measured_weighted_tok_s: 249.468
+  minimum_tok_s: 150
+  warmup_repeats: 2
+  measure_repeats: 5
+  prompt_lengths: [4096, 16384, 49152]
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_nvfp4: HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4
+    ghcr_serve: ghcr.io/hangglidersrule/model-forge-serve
+    ghcr_build: ghcr.io/hangglidersrule/model-forge-build
