@@ -14,7 +14,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # 2.1 DiT anatomy (source-verified, diffusers main transformer_qwenimage21.py)
 # ---------------------------------------------------------------------------
