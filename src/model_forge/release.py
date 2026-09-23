@@ -91,6 +91,29 @@ RUNTIME_PRECISION_MAP_COMPONENTS: frozenset[str] = (
     REQUIRED_PRECISION_MAP_COMPONENTS - WEIGHT_PRECISION_MAP_COMPONENTS
 )
 
+# Diffusion/DiT architecture (contract v2). A DiT composite has a different anatomy: the
+# transformer blocks, the (possibly quantized) attention projections inside them, the text
+# encoder, and the VAE are the component boundaries. There is no lm_head, language MLP, GDN
+# projection, or KV-cache component; prefix-KV reuse is runtime state on the text encoder and is
+# deliberately not a declared component.
+DIFFUSION_PRECISION_MAP_COMPONENTS: frozenset[str] = frozenset(
+    {
+        "dit_blocks",
+        "protected_blocks",
+        "attention",
+        "text_encoder",
+        "vae",
+    }
+)
+DIFFUSION_WEIGHT_PRECISION_MAP_COMPONENTS: frozenset[str] = frozenset(
+    {
+        "dit_blocks",
+        "attention",
+        "text_encoder",
+        "vae",
+    }
+)
+
 # Hugging Face namespace that owns every actual Darkstar weight repository.
 DARKSTAR_HF_NAMESPACE = "HangGlidersRule"
 
@@ -239,25 +262,77 @@ def product_candidates(product: dict[str, Any]) -> list[dict[str, Any]]:
     return list(candidates)
 
 
-def precision_map_requires_mixed_fp8(precision_map: dict[str, Any]) -> bool:
+def precision_map_requires_mixed_fp8(
+    precision_map: dict[str, Any],
+    weight_components: frozenset[str] | None = None,
+) -> bool:
     """True when a precision map puts FP8 on any served weight path.
 
-    Only `WEIGHT_PRECISION_MAP_COMPONENTS` are consulted, so the answer is a property of the served
-    weights and never of runtime KV metadata. This is the authority for the `Mixed-FP8` naming
-    requirement: enforcement derives the requirement from the map instead of trusting whatever the
-    declared precision class or ids happen to spell, which is what makes it fail closed.
+    Only the weight-path components of the candidate's architecture are consulted, so the answer
+    is a property of the served weights and never of runtime KV metadata. This is the authority
+    for the `Mixed-FP8` naming requirement: enforcement derives the requirement from the map
+    instead of trusting whatever the declared precision class or ids happen to spell, which is
+    what makes it fail closed. `weight_components` defaults to the text-model set; diffusion
+    candidates pass the DiT set.
     """
+    if weight_components is None:
+        weight_components = WEIGHT_PRECISION_MAP_COMPONENTS
     weights = " ".join(
         str(value)
         for component, value in precision_map.items()
-        if component in WEIGHT_PRECISION_MAP_COMPONENTS
+        if component in weight_components
     )
     return "FP8" in weights
 
 
+def candidate_architecture(candidate: dict[str, Any]) -> str:
+    """Architecture family of a candidate: `text` (default, causal LM) or `diffusion` (DiT).
+
+    The field is optional in the ledger: its absence means text, so every v1 ledger and every
+    existing caller keeps working unchanged. A candidate whose precision_map carries DiT
+    anatomy (e.g. `dit_blocks`) without declaring `architecture: "diffusion"` is rejected
+    downstream by `candidate_precision_errors` rather than silently re-validated as text with
+    a misleading error message.
+    """
+    arch = str(candidate.get("architecture", "text"))
+    if arch not in ("text", "diffusion"):
+        raise ValueError(
+            f"{candidate.get('candidate_id', '<unnamed>')}: unknown architecture {arch!r} "
+            "(expected 'text' or 'diffusion')"
+        )
+    return arch
+
+
+def diffusion_anatomy_undeclared(candidate: dict[str, Any]) -> bool:
+    """True when a candidate's precision_map looks DiT-shaped but no architecture is declared.
+
+    Fails closed: an undeclared DiT candidate cannot masquerade as a text candidate and pass
+    validation on a technically-satisfying component subset.
+    """
+    if "architecture" in candidate:
+        return False
+    return "dit_blocks" in candidate.get("precision_map", {})
+
+
+def candidate_weight_components(candidate: dict[str, Any]) -> frozenset[str]:
+    """Served-weight precision-map components for the candidate's architecture."""
+    if candidate_architecture(candidate) == "diffusion":
+        return DIFFUSION_WEIGHT_PRECISION_MAP_COMPONENTS
+    return WEIGHT_PRECISION_MAP_COMPONENTS
+
+
+def candidate_required_components(candidate: dict[str, Any]) -> frozenset[str]:
+    """Required (complete) precision-map components for the candidate's architecture."""
+    if candidate_architecture(candidate) == "diffusion":
+        return DIFFUSION_PRECISION_MAP_COMPONENTS
+    return REQUIRED_PRECISION_MAP_COMPONENTS
+
+
 def candidate_requires_mixed_fp8(candidate: dict[str, Any]) -> bool:
     """Whether this candidate's every actual id must carry `Mixed-FP8`, per its precision map."""
-    return precision_map_requires_mixed_fp8(candidate["precision_map"])
+    return precision_map_requires_mixed_fp8(
+        candidate["precision_map"], candidate_weight_components(candidate)
+    )
 
 
 def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
@@ -278,24 +353,40 @@ def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
     cid = str(candidate["candidate_id"])
     pclass = str(candidate["precision_class"])
     pmap = candidate["precision_map"]
+    is_diffusion = candidate_architecture(candidate) == "diffusion"
+    weight_components = candidate_weight_components(candidate)
 
-    missing = REQUIRED_PRECISION_MAP_COMPONENTS - set(pmap)
+    if diffusion_anatomy_undeclared(candidate):
+        errors.append(
+            f"{cid}: precision_map carries DiT anatomy but architecture is not declared; "
+            "add architecture: 'diffusion'"
+        )
+
+    missing = candidate_required_components(candidate) - set(pmap)
     if missing:
         errors.append(f"{cid}: precision_map omits components {sorted(missing)}")
 
     if pclass not in cid:
         errors.append(f"{cid}: candidate_id does not encode precision_class {pclass!r}")
-    if "W4A16" not in cid and "W4A4" not in cid:
+    if not is_diffusion and "W4A16" not in cid and "W4A4" not in cid:
         errors.append(f"{cid}: candidate_id must encode W4A16 or W4A4")
+    if is_diffusion:
+        # DiT recipes quantize linear weights to NVFP4 (W4A4-style fp4 GEMM) or FP8; the
+        # vocabulary is the activation/recipe class the recipe actually applies, spelled the
+        # same way: NVFP4 (uniform fp4), Mixed-FP8 (fp4 + fp8 weights), or FP8 (uniform fp8).
+        if not any(tok in cid for tok in ("NVFP4", "FP8")):
+            errors.append(
+                f"{cid}: diffusion candidate_id must encode NVFP4 or FP8"
+            )
 
     weights = " ".join(
         str(value)
         for component, value in pmap.items()
-        if component in WEIGHT_PRECISION_MAP_COMPONENTS
+        if component in weight_components
     )
     has_fp8 = "FP8" in weights
     has_w4a16 = "W4A16" in weights
-    requires_mixed_fp8 = precision_map_requires_mixed_fp8(pmap)
+    requires_mixed_fp8 = precision_map_requires_mixed_fp8(pmap, weight_components)
 
     if pclass.startswith("W4A4") and (has_fp8 or has_w4a16):
         errors.append(
@@ -305,7 +396,7 @@ def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
     if requires_mixed_fp8:
         fp8_weights = sorted(
             component
-            for component in WEIGHT_PRECISION_MAP_COMPONENTS & set(pmap)
+            for component in weight_components & set(pmap)
             if "FP8" in str(pmap[component])
         )
         if "Mixed-FP8" not in pclass:
@@ -326,7 +417,13 @@ def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
         if "FP8" in cid:
             errors.append(f"{cid}: candidate_id claims FP8 but no served weight path is FP8")
 
-    if "Mixed-FP8" in pclass and not (has_w4a16 and has_fp8):
+    if is_diffusion:
+        # Diffusion Mixed-FP8 means a DiT recipe mixing NVFP4 and FP8 served weights.
+        if "Mixed-FP8" in pclass and not (has_fp8 and "NVFP4" in weights):
+            errors.append(
+                f"{cid}: named Mixed-FP8 but precision_map is not NVFP4+FP8"
+            )
+    elif "Mixed-FP8" in pclass and not (has_w4a16 and has_fp8):
         errors.append(f"{cid}: named Mixed-FP8 but precision_map is not W4A16+FP8")
 
     return errors

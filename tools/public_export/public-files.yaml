@@ -390,6 +390,101 @@ rules:
     precedence: 1000
     allow_empty: true
 
+  - id: private-image-lane-research
+    source: "plans/image-support/**"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal image-lane research evidence (session logs, probe PNGs, serving smokes, e42 negatives, review rounds). Aggregated findings publish via the family record README and curated cells.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 16777216
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-image-lane-plan
+    source: "plans/image-support-plan.md"
+    disposition: exclude
+    public_destination: null
+    reason: Internal image-support campaign plan with private host/tooling references.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-diffusion-recipes-and-containers
+    source: "configs/modelopt/diffusion/**"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal DiT quantization recipes and fleet pins (host-specific paths and toolchain pins). Publishes with the public onboarding of the next diffusion family.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-diffusion-pin
+    source: "configs/modelopt/diffusion_pin.json"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal toolchain pin manifest.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-diffusion-containers
+    source: "containers/modelopt/diffusion/**"
+    disposition: exclude
+    public_destination: null
+    reason: Operator-internal quantization container build files.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-qwenimage-recon
+    source: "models/qwen-image-2.1/recon.json"
+    disposition: exclude
+    public_destination: null
+    reason: Internal Qwen-Image-2.1 recon (composite anatomy, tensor inventory, watermarker notes). Excluded until the family's public onboarding expands.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: private-qwenimage-family-decision
+    source: "models/qwen-image-2.1/FAMILY-DECISION.md"
+    disposition: exclude
+    public_destination: null
+    reason: Internal family decision notes (private host/tooling references). Aggregated posture publishes via the family record README.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 262144
+    generated: false
+    precedence: 1000
+    allow_empty: true
+
+  - id: qwenimage-license
+    source: "models/qwen-image-2.1/LICENSE"
+    disposition: copy
+    public_destination: "{source}"
+    reason: The Qwen Research License Agreement text is already public in both published HF repositories; the family record and cards link it.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 262144
+    generated: false
+    precedence: 100
+
   - id: models-index
     source: "models/README.md"
     disposition: transform

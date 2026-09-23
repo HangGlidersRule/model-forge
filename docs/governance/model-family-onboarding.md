@@ -57,6 +57,51 @@ contract are resolved. Record the decision in the public lineage.
     validated evidence. No placeholders, no "staged/pending" wording once
     weights are live.
 
+## Image and diffusion families
+
+Image-generation families (diffusion transformers, e.g. Qwen-Image-2.1) follow the
+same checklist with these substitutions:
+
+- **Architecture record.** `recon.json` additionally records the composite anatomy
+  (transformer/DiT class and layer count, text-encoder class, VAE channel/latent
+  layout), the companion checkpoints (e.g. prompt rewriters), and any watermarking
+  behavior of outputs.
+- **Precision map.** Diffusion candidates use the DiT component set
+  (`dit_blocks`, `protected_blocks`, `attention`, `text_encoder`, `vae`) instead of
+  the language-model set, and declare `architecture: "diffusion"`. The recipe
+  vocabulary is `NVFP4`, `FP8`, or `Mixed-FP8` (an NVFP4+FP8 mix). Note that a
+  uniform-fp4 recipe is a W4A4-style fp4 GEMM; shipped product ids may therefore
+  carry a `W4A4-NVFP4` precision encoding (as in
+  `Darkstar-Qwen-Image-2.1-Base-ModelOpt-W4A4-NVFP4`), while the recipe id itself
+  spells only the recipe class (`NVFP4`). Product ids and recipe ids are two
+  different encodings; the release contract validates both against the precision
+  map.
+- **Behavior cells.** Image-family abliterated cells are gated on demonstrated
+  behavior mechanism, not assumed by default. A behavior cell ships only when the
+  mechanism is validated against the frozen behavior suites (benign compliance
+  preserved, refusal-adjacent compliance raised) with the full-denominator judge.
+  If instrumented attempts show the family's censorship mechanism is not
+  editable-grade reachable (as for Qwen-Image-2.1, where seven instrumented
+  attempts — encoder-direction removal, subspace projections, and two
+  LoRA-pair training regimes — either had no effect or collapsed benign
+  compliance), the family ships base cells only and the evidence is recorded as
+  the justification. The four-cell matrix remains the default template for
+  future families whose censoring is encoder-mediated and edit-transferable.
+- **Recipe.** Same naming convention:
+  `darkstar-<family>-<behavior>-<precision>.yaml` under `recipes/<family>/`, where
+  `<family>` is alnum-only in recipe identifiers (for example `qwenimage21`).
+- **Serving profile.** Image families use the diffusion serving profile and the
+  image smoke contract: `${PUBLIC_WORKSPACE}` and `${PUBLIC_WORKSPACE}` reachability,
+  seed determinism under the frozen batching configuration, and an RGBA round-trip
+  assertion where the family supports transparency. The text smokes (`/v1/models`,
+  context length, text/JSON/tool checks) do not apply to image servers.
+- **Quality screen.** Image families run the frozen image case manifest (T2I
+  quality, composition, editing, typography, RGBA) with matched full-denominator
+  pass rates; text benchmarks such as GPQA are not applicable.
+- **Fleet env pins.** Where a family's serving stack requires host-specific
+  environment pins (for example fp4 GEMM backend selection on non-SM100 hardware),
+  the pins are part of the serve profile and are validated by the smoke contract.
+
 ## Supported vs. experimental
 
 - **Supported** means the family has passed the full onboarding checklist and

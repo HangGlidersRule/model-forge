@@ -1,0 +1,329 @@
+{
+ "schema_version": "1.0.0",
+ "contract": "contracts/darkstar-release/v2/contract.json",
+ "contract_version": "2.0.0",
+ "family": "qwen-image-2.1",
+ "family_display": "Darkstar Qwen-Image-2.1",
+ "source_revision": "Qwen/Qwen-Image-2.1@b3179ad355be050328e483a9dfdd9e60cd62adfa",
+ "note": "Image family ledger. Architecture: diffusion (7B DiT + Qwen3-VL 8B encoder). Consumption paths validated: vLLM-Omni serving (forge doctrine) AND plain-diffusers dequant-on-load (ComfyUI-style). Ablit cells pending the DiT-side shaping mechanism (issue #42) and are NOT published in this ledger revision.",
+ "any_publication_claim": true,
+ "products": [
+  {
+   "product_id": "Darkstar-Qwen-Image-2.1-Base-BF16",
+   "role": "image-base-bf16",
+   "lifecycle": "published",
+   "target_repository": "Qwen/Qwen-Image-2.1",
+   "target_repository_note": "Upstream reference only. Qwen/Qwen-Image-2.1 at b3179ad\u2026 supplies the unchanged BF16 control; HangGlidersRule does not own or republish these weights.",
+   "served_model_alias": "darkstar-qwenimage21-base-bf16",
+   "runtime_container_name": "vllm-darkstar-qwenimage21-base-bf16",
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Source pinned to Qwen/Qwen-Image-2.1@b3179ad\u2026; unchanged-reference posture recorded",
+     "evidence_path": "models/qwen-image-2.1/FAMILY-DECISION.md",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "image_matched_full_denominator",
+     "status": "verified",
+     "evidence": "Frozen manifest image-eval-v1 (sha 09daf654\u2026): 25/25 pass, all capabilities rate 1.0 (t2i 10/10, comp 6/6, typo 4/4, rgba 2/2, edit 3/3)",
+     "evidence_path": "models/qwen-image-2.1/results/eval/bf16-control/summary.json",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "image_behavior_gates",
+     "status": "verified",
+     "evidence": "E0 pilot + E1 judge baseline frozen: harm 0.8/0.2/0.0, benign 1.0, judge-refusal 0.0; thresholds frozen",
+     "evidence_path": "models/qwen-image-2.1/results/behavior-baseline.json",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "image_serve_smoke",
+     "status": "verified",
+     "evidence": "vLLM-Omni BF16 serve: healthy + HTTP 200 generations (seed 42) + seed determinism byte-identical; visual verification passed",
+     "evidence_path": "plans/image-support/research/c0-omni-apple.png",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "license_research_non_commercial",
+     "status": "verified",
+     "evidence": "Qwen Research License obligation table recorded; non-commercial posture declared",
+     "evidence_path": "models/qwen-image-2.1/FAMILY-DECISION.md",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "performance_profile",
+     "status": "verified",
+     "evidence": "4.73 s/img mean (25 cases, 20 steps, 1024\u00b2, RTX PRO 6000)",
+     "evidence_path": "models/qwen-image-2.1/results/eval/bf16-control/summary.json",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    }
+   ],
+   "model_card": "models/qwen-image-2.1/model-card/image-base-bf16.md",
+   "recipe": "configs/modelopt/diffusion/darkstar-qwen-image-2-1-base-bf16-reference.yaml",
+   "target_repository_status": "resolved"
+  },
+  {
+   "product_id": "Darkstar-Qwen-Image-2.1-Base-ModelOpt-W4A4-NVFP4",
+   "role": "image-base-nvfp4",
+   "lifecycle": "published",
+   "target_repository": "HangGlidersRule/Darkstar-Qwen-Image-2.1-Base-ModelOpt-W4A4-NVFP4",
+   "target_repository_note": "Planned publication target; upload pending final #41 review.",
+   "served_model_alias": "darkstar-qwenimage21-base-nvfp4",
+   "runtime_container_name": "vllm-darkstar-qwenimage21-base-nvfp4",
+   "publication_claim": true,
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Quantized by our pipeline from pinned upstream BF16; no third-party quantized checkpoints used as inputs",
+     "evidence_path": "configs/modelopt/diffusion/darkstar-qwen-image-2-1-base-nvfp4.yaml",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "nvfp4_tensor_scale_validation",
+     "status": "verified",
+     "evidence": "Per-block scales [4096,256] fp8e4m3 + weight_scale_2 scalar; dequant verified vs upstream (max err 0.083, corr 0.996) via fixed e2m1 LUT",
+     "evidence_path": "models/qwen-image-2.1/results/dequant-verification.md",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "image_matched_full_denominator",
+     "status": "verified",
+     "evidence": "Paired frozen-manifest run: 25/25 pass, identical rates to BF16 control",
+     "evidence_path": "models/qwen-image-2.1/results/eval/nvfp4-cell/summary.json",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "image_behavior_gates",
+     "status": "verified",
+     "evidence": "Benign compliance 1.0 across all variants; base cell carries upstream behavior (no treatment)",
+     "evidence_path": "models/qwen-image-2.1/results/behavior-baseline.json",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "image_serve_smoke",
+     "status": "verified",
+     "evidence": "vLLM-Omni NVFP4 serve: healthy, HTTP 200 in 13s, visually verified coherent (ignore-pattern normalization shim)",
+     "evidence_path": "plans/image-support/research/b3-nvfp4-omni-served-apple.png",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "license_research_non_commercial",
+     "status": "verified",
+     "evidence": "Non-commercial posture; obligations recorded",
+     "evidence_path": "models/qwen-image-2.1/FAMILY-DECISION.md",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "performance_profile",
+     "status": "verified",
+     "evidence": "4.78 s/img mean dequant-on-load (parity; native fp4 kernels are the serving speedup path)",
+     "evidence_path": "models/qwen-image-2.1/results/eval/nvfp4-cell/summary.json",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "model_card_final",
+     "status": "verified",
+     "evidence": "Card written with identity heading = target repo id, full Qwen Research License obligations (Notice, Sec 1(i), 4b), validated serving commands, evaluation evidence",
+     "evidence_path": "models/qwen-image-2.1/model-card/image-base-nvfp4.md",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    }
+   ],
+   "model_card": "models/qwen-image-2.1/model-card/image-base-nvfp4.md",
+   "recipe": "configs/modelopt/diffusion/darkstar-qwen-image-2-1-base-nvfp4.yaml",
+   "target_repository_status": "resolved",
+   "published_revision": "16f1b7fd748aa07e4f19c532991b0defe047dce0"
+  },
+  {
+   "product_id": "Darkstar-Qwen-Image-2.1-Base-ModelOpt-FP8",
+   "role": "image-base-fp8",
+   "lifecycle": "published",
+   "target_repository": "HangGlidersRule/Darkstar-Qwen-Image-2.1-Base-ModelOpt-FP8",
+   "served_model_alias": "darkstar-qwenimage21-base-fp8",
+   "runtime_container_name": "vllm-darkstar-qwenimage21-base-fp8",
+   "publication_claim": true,
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Own quantization from pinned upstream",
+     "evidence_path": "configs/modelopt/diffusion/darkstar-qwen-image-2-1-base-fp8.yaml",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "image_matched_full_denominator",
+     "status": "verified",
+     "evidence": "Paired frozen-manifest run: 25/25 pass, identical rates to BF16 control (executed under prod-GPU contention; timing excluded, quality gates unaffected)",
+     "next_missing_proof": "none \u2014 gate satisfied",
+     "evidence_path": "models/qwen-image-2.1/results/eval/fp8-cell/summary.json"
+    },
+    {
+     "id": "image_serve_smoke",
+     "status": "verified",
+     "evidence": "vLLM-Omni FP8 serve: healthy, HTTP 200 in 15.5s, visually verified coherent",
+     "evidence_path": "plans/image-support/research/b3-fp8-omni-served-apple.png",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "license_research_non_commercial",
+     "status": "verified",
+     "evidence": "Non-commercial posture",
+     "evidence_path": "models/qwen-image-2.1/FAMILY-DECISION.md",
+     "next_missing_proof": "none \u2014 gate satisfied"
+    },
+    {
+     "id": "model_card_final",
+     "status": "verified",
+     "evidence": "Card written with identity heading = target repo id, full Qwen Research License obligations (Notice, Sec 1(i), 4b), validated serving commands, evaluation evidence",
+     "next_missing_proof": "none \u2014 gate satisfied",
+     "evidence_path": "models/qwen-image-2.1/model-card/image-base-fp8.md"
+    }
+   ],
+   "model_card": "models/qwen-image-2.1/model-card/image-base-fp8.md",
+   "recipe": "configs/modelopt/diffusion/darkstar-qwen-image-2-1-base-fp8.yaml",
+   "target_repository_status": "resolved",
+   "published_revision": "5fcc2176bd2edc19d27a33229f75ff2a03decdfb"
+  },
+  {
+   "product_id": "Darkstar-Qwen-Image-2.1-Bf16",
+   "role": "image-abliterated-bf16",
+   "lifecycle": "in_progress",
+   "target_repository": "HangGlidersRule/Darkstar-Qwen-Image-2.1-Abliterated-BF16",
+   "target_repository_status": "resolved",
+   "served_model_alias": "darkstar-qwenimage21-abliterated-bf16",
+   "runtime_container_name": "vllm-darkstar-qwenimage21-abliterated-bf16",
+   "model_card": "models/qwen-image-2.1/model-card/image-abliterated-bf16.md",
+   "recipe": "configs/modelopt/diffusion/darkstar-qwen-image-2-1-abliterated-bf16.yaml",
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "in_progress",
+     "evidence": "Will be own Ablit-BF16 built from pinned upstream (rule 9)",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "image_matched_full_denominator",
+     "status": "in_progress",
+     "evidence": "Requires the ablit artifact",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "image_behavior_gates",
+     "status": "in_progress",
+     "evidence": "Requires harm-suite compliance rise vs frozen control 0.8/0.2/1.0 with benign >= 0.9",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "image_serve_smoke",
+     "status": "in_progress",
+     "evidence": "Requires the ablit artifact",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "license_research_non_commercial",
+     "status": "in_progress",
+     "evidence": "Obligations recorded; non-commercial applies",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "model_card_final",
+     "status": "in_progress",
+     "evidence": "Card after mechanism lands",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "release_tag",
+     "status": "in_progress",
+     "evidence": "Family tag after all cells",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    }
+   ]
+  },
+  {
+   "product_id": "Darkstar-Qwen-Image-2.1-Nvfp4",
+   "role": "image-abliterated-nvfp4",
+   "lifecycle": "in_progress",
+   "target_repository": "HangGlidersRule/Darkstar-Qwen-Image-2.1-Abliterated-ModelOpt-W4A4-NVFP4",
+   "target_repository_status": "resolved",
+   "served_model_alias": "darkstar-qwenimage21-abliterated-nvfp4",
+   "runtime_container_name": "vllm-darkstar-qwenimage21-abliterated-nvfp4",
+   "model_card": "models/qwen-image-2.1/model-card/image-abliterated-nvfp4.md",
+   "recipe": "configs/modelopt/diffusion/darkstar-qwen-image-2-1-abliterated-nvfp4.yaml",
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "in_progress",
+     "evidence": "Will be own Ablit-BF16 built from pinned upstream (rule 9)",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "image_matched_full_denominator",
+     "status": "in_progress",
+     "evidence": "Requires the ablit artifact",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "image_behavior_gates",
+     "status": "in_progress",
+     "evidence": "Requires harm-suite compliance rise vs frozen control 0.8/0.2/1.0 with benign >= 0.9",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "image_serve_smoke",
+     "status": "in_progress",
+     "evidence": "Requires the ablit artifact",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "license_research_non_commercial",
+     "status": "in_progress",
+     "evidence": "Obligations recorded; non-commercial applies",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "model_card_final",
+     "status": "in_progress",
+     "evidence": "Card after mechanism lands",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    },
+    {
+     "id": "release_tag",
+     "status": "in_progress",
+     "evidence": "Family tag after all cells",
+     "next_missing_proof": "mechanism under research: issue #42 (E2/E2B/E2D instrumented negatives; LoRA-pair track next)",
+     "evidence_path": "models/qwen-image-2.1/results/evidence-index.md"
+    }
+   ]
+  }
+ ],
+ "rejected_historical": [],
+ "related_issues": [
+  "HangGlidersRule/model-forge-private-archive#34",
+  "HangGlidersRule/model-forge-private-archive#35",
+  "HangGlidersRule/model-forge-private-archive#36",
+  "HangGlidersRule/model-forge-private-archive#37",
+  "HangGlidersRule/model-forge-private-archive#38",
+  "HangGlidersRule/model-forge-private-archive#39",
+  "HangGlidersRule/model-forge-private-archive#40",
+  "HangGlidersRule/model-forge-private-archive#41",
+  "HangGlidersRule/model-forge-private-archive#42"
+ ]
+}
