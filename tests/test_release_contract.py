@@ -631,10 +631,18 @@ def test_model_card_identity_matches_the_ledger_target() -> None:
             )
 
 
+def _all_family_aliases() -> set[str]:
+    aliases: set[str] = set()
+    for path in sorted((REPO_ROOT / "models").glob("*/results/publication-readiness-ledger.json")):
+        ledger = load_json(path)
+        aliases |= {
+            p["served_model_alias"] for p in ledger.get("products", []) if p.get("served_model_alias")
+        }
+    return aliases
+
+
 def test_serve_examples_use_registered_runtime_aliases() -> None:
-    known_aliases = {
-        p["served_model_alias"] for p in _ledger()["products"] if p.get("served_model_alias")
-    }
+    known_aliases = _all_family_aliases()
     violations: list[str] = []
     for path in _publication_surface_files():
         for served in extract_serve_model_ids(

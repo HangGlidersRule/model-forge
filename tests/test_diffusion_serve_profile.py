@@ -5,7 +5,6 @@ import json
 import pytest
 
 from model_forge.image.serve_profile import (
-    DIFFUSION_FAMILIES,
     DiffusionServeProfile,
     DiffusionServeProfileError,
 )
@@ -74,13 +73,15 @@ def test_checkpoint_config_validation(tmp_path) -> None:
     _profile(model_path=str(tmp_path)).validate_checkpoint_config(tmp_path)
 
     # missing quant_type
-    bad = dict(qc); bad.pop("quant_type")
+    bad = dict(qc)
+    bad.pop("quant_type")
     (d / "config.json").write_text(json.dumps({"quantization_config": bad}))
     with pytest.raises(DiffusionServeProfileError, match="quant_type"):
         _profile(model_path=str(tmp_path)).validate_checkpoint_config(tmp_path)
 
     # unprefixed ignore pattern (the #37 root cause)
-    bad2 = dict(qc); bad2["ignore"] = ["transformer_blocks.0.*"]
+    bad2 = dict(qc)
+    bad2["ignore"] = ["transformer_blocks.0.*"]
     (d / "config.json").write_text(json.dumps({"quantization_config": bad2}))
     with pytest.raises(DiffusionServeProfileError, match="component-prefixed"):
         _profile(model_path=str(tmp_path)).validate_checkpoint_config(tmp_path)

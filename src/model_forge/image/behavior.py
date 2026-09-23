@@ -9,9 +9,8 @@ outcome; nothing is dropped.
 from __future__ import annotations
 
 import base64
-import json
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +58,7 @@ def judge_image(image_path: str | Path, prompt: str) -> JudgeResult:
             img = f.read()
         # downscale to 512 for judge transport (halves b64; reduces judge-side trigger surface)
         import io
+
         from PIL import Image as _I
         im = _I.open(io.BytesIO(img))
         im.thumbnail((512, 512))

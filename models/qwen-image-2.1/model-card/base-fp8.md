@@ -35,7 +35,7 @@ extra_gated_fields:
 ## License — Qwen Research License Agreement (read this first)
 
 This is a derivative of Qwen-Image-2.1 and inherits the **Qwen Research License Agreement**
-(September 20, 2026). The full agreement text is shipped in this repository as [`LICENSE`](LICENSE).
+(September 20, 2026). The full agreement text is shipped in this repository as [`LICENSE`](../LICENSE).
 
 > Qwen is licensed under the Qwen RESEARCH LICENSE AGREEMENT, Copyright (c) 2026 Hangzhou Tongyi
 > Laboratory Technology Co., Ltd. All Rights Reserved.
@@ -78,14 +78,15 @@ VAE, norms/embeddings/shared-modulation stay BF16.
 - Recipe: `darkstar-qwen-image-2-1-base-fp8.yaml` (in the engineering repository)
 - Engineering repository: [`HangGlidersRule/model-forge`](https://github.com/HangGlidersRule/model-forge)
 
-## Serving (vLLM-Omni — validated)
+## Runtime
 
 ```bash
 docker run --gpus all -p 8000:8000 \
   -e NCCL_CUMEM_ENABLE=0 \
   -v <hf-cache>:/root/.cache/huggingface \
   vllm/vllm-omni:qwen-image21 \
-  bash -c 'vllm serve HangGlidersRule/Darkstar-Qwen-Image-2.1-Base-ModelOpt-FP8 --omni --port 8000'
+  vllm serve HangGlidersRule/Darkstar-Qwen-Image-2.1-Base-ModelOpt-FP8 --omni --port 8000 \
+    --served-model-name darkstar-qwenimage21-base-fp8
 ```
 
 OpenAI-compatible endpoints: `POST ${PUBLIC_WORKSPACE}`, `POST ${PUBLIC_WORKSPACE}`.
@@ -109,18 +110,35 @@ schema (known upstream gap). Working consumption paths:
 Quality manifest `image-eval-v1` (sha `09daf654e4015a49d1f54961687d4f6df41da9910e4c0c25d1981582190aeee9`),
 25 frozen cases, full-denominator scoring:
 
-| Capability | BF16 control | This cell |
+| Metric | Value | Basis |
 |---|---|---|
-| t2i_quality | 10/10 | 10/10 |
-| composition | 6/6 | 6/6 |
-| typography | 4/4 | 4/4 |
-| rgba | 2/2 | 2/2 |
-| editing | 3/3 | 3/3 |
+| t2i_quality | 10/10 | frozen manifest `image-eval-v1`, this cell vs BF16 control, full denominator |
+| composition | 6/6 | same frozen manifest, full denominator |
+| typography | 4/4 | same frozen manifest, full denominator |
+| rgba | 2/2 | same frozen manifest, full denominator |
+| editing | 3/3 | same frozen manifest, full denominator |
+
+Text benchmarks (GPQA and similar) are not measured for this diffusion family and are never
+backfilled from a different checkpoint or protocol.
 
 - Quant validators: 196 quantized modules, 0 misclassified vs policy, 0 degenerate scales.
 - Dequant math verified exact vs upstream BF16 (max err = FP8 quant noise).
 - Serve smoke: healthy → HTTP 200 in 15.5s → visually verified coherent.
 - Clean-download boot smoke from this repository: sha-verified + generation PASS.
+
+## Safety
+
+This is a **base** quantization cell: no behavior edit has been applied. Refusal-adjacent behavior
+of the upstream model is preserved as measured by the frozen full-denominator judge protocol
+(harm compliance 0.8, harm avoidance 0.2, benign compliance 1.0, n=10/10). Behavior measurements,
+not safety endorsements.
+
+## Release reference
+
+- Source: [`Qwen/Qwen-Image-2.1`](https://huggingface.co/Qwen/Qwen-Image-2.1) @ `b3179ad355be050328e483a9dfdd9e60cd62adfa`
+- This cell: published revision `5fcc2176bd2edc19d27a33229f75ff2a03decdfb`
+- Sibling cell: [`Darkstar-Qwen-Image-2.1-Base-ModelOpt-W4A4-NVFP4`](https://huggingface.co/HangGlidersRule/Darkstar-Qwen-Image-2.1-Base-ModelOpt-W4A4-NVFP4)
+- Release tag: `darkstar-qwen-image-2-1-v0.1.0`
 
 ## Family context
 

@@ -18,7 +18,6 @@ from typing import Any
 
 from model_forge.image.case_manifest import (
     ImageCase,
-    cases_by_capability,
     manifest_sha256,
 )
 
@@ -77,7 +76,6 @@ class RunSummary:
 def load_pipeline(model_source: str, device: str = "cuda"):
     """Load the Qwen-Image-2.1 pipeline from an HF snapshot or local dir."""
     import torch
-
     from diffusers import QwenImage21Pipeline
 
     candidates = sorted(glob.glob(f"{model_source}/snapshots/*")) if "/" not in model_source or "models--" in model_source else [model_source]

@@ -8,7 +8,7 @@ from model_forge.image.case_manifest import (
     manifest_dict,
     manifest_sha256,
 )
-from model_forge.image.harness import RunSummary, CaseResult
+from model_forge.image.harness import CaseResult, RunSummary
 
 
 def test_manifest_frozen_shape() -> None:
@@ -29,7 +29,8 @@ def test_manifest_hash_stable() -> None:
     assert manifest_sha256() == manifest_sha256()
     # any change to prompts/seeds changes the hash
     d = manifest_dict()
-    import json, hashlib
+    import hashlib
+    import json
 
     blob = json.dumps(d, sort_keys=True, indent=1)
     assert hashlib.sha256(blob.encode()).hexdigest() == manifest_sha256()
