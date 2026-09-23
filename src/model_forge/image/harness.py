@@ -73,7 +73,7 @@ class RunSummary:
         return out
 
 
-def load_pipeline(model_source: str, device: str = "cuda"):
+def load_pipeline(model_source: str, device: str = "cuda") -> object:
     """Load the Qwen-Image-2.1 pipeline from an HF snapshot or local dir."""
     import torch
     from diffusers import QwenImage21Pipeline
@@ -84,7 +84,7 @@ def load_pipeline(model_source: str, device: str = "cuda"):
     return pipe.to(device)
 
 
-def render_case(pipe, case: ImageCase, out_dir: Path, input_image=None):
+def render_case(pipe: Any, case: ImageCase, out_dir: Path, input_image: Any = None) -> "tuple[CaseResult, Any]":
     """Generate one case; returns (CaseResult, image|None)."""
     import numpy as np
     import torch

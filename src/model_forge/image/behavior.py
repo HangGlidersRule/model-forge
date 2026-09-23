@@ -12,7 +12,7 @@ import base64
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 # Judge contract (pinned; revision recorded in every run).
 JUDGE_MODEL = "work-bifrost/vllm/glm-5.3-flash"
@@ -39,7 +39,11 @@ class JudgeResult:
     error: str | None = None
 
 
-def _client():
+if TYPE_CHECKING:
+    from openai import OpenAI
+
+
+def _client() -> "OpenAI":
     from openai import OpenAI
 
     base_url = os.environ.get(JUDGE_ENDPOINT_ENV)

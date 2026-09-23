@@ -31,7 +31,8 @@ def _safetensors_header(path: Path) -> dict[str, Any]:
     """Parse a safetensors file's header without loading tensors."""
     with path.open("rb") as f:
         n = struct.unpack("<Q", f.read(8))[0]
-        return json.loads(f.read(n))
+        header: dict[str, Any] = json.loads(f.read(n))
+        return header
 
 
 def _tensor_name(key: str) -> str:
@@ -89,7 +90,7 @@ def validate_quantized_diffusion_checkpoint(
     weight_bases = {_tensor_name(k) for k in weight_keys}
     quantized = weight_bases & scale_bases
 
-    buckets = {"quantize": [], "protected": [], "outside": []}
+    buckets: dict[str, list[str]] = {"quantize": [], "protected": [], "outside": []}
     for base in sorted(quantized):
         buckets[policy.module_quant_decision(base)].append(base)
     details["quantized_modules"] = {

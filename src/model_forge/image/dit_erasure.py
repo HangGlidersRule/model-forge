@@ -30,9 +30,9 @@ class ConceptEdit:
     """A per-layer, input-keyed projection edit for one concept direction."""
 
     concept: str
-    # per-layer edit spec: for each edited module name, (left_vectors, right_vectors)
-    # edit: W' = W - (V^T) applied so W @ c_sub → 0 for concept inputs c_sub.
-    edits: dict[str, dict[str, torch.Tensor]] = field(default_factory=dict)
+    # per-layer edit spec: for each edited module name, the projection matrix P
+    # edit: W' = W - strength * W @ P applied so concept inputs project away.
+    edits: dict[str, torch.Tensor] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -45,7 +45,7 @@ class ConceptEdit:
 
 
 def harvest_concept_subspace(
-    pipe,
+    pipe: Any,
     concept_prompts: list[str],
     neutral_prompts: list[str],
     *,
@@ -98,7 +98,7 @@ def harvest_concept_subspace(
 
 
 def apply_input_keyed_edit(
-    pipe,
+    pipe: Any,
     subspace: torch.Tensor,
     *,
     module_filter: tuple[str, ...] = ("txt_in",),

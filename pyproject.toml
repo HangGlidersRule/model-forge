@@ -44,5 +44,5 @@ strict = true
 files = ["src/model_forge"]
 
 [[tool.mypy.overrides]]
-module = ["torch", "torch.*", "safetensors.*", "transformers.*", "datasets.*", "huggingface_hub.*", "compressed_tensors.*", "llmcompressor.*"]
+module = ["torch", "torch.*", "safetensors.*", "transformers.*", "datasets.*", "huggingface_hub.*", "compressed_tensors.*", "llmcompressor.*", "openai", "openai.*", "PIL", "PIL.*", "diffusers", "diffusers.*", "numpy", "numpy.*"]
 ignore_missing_imports = true
