@@ -164,6 +164,7 @@ build/
 !/models/nemotron-3.5-lightning-r1/results/manifests/abliterated-modelopt-w4a16-nvfp4-manifest.sha256
 !/models/nemotron-3.5-lightning-r1/results/publication-readiness-ledger.json
 !/models/qwen-image-2.1/
+!/models/qwen-image-2.1/LICENSE
 !/models/qwen-image-2.1/README.md
 !/models/qwen-image-2.1/model-card/
 !/models/qwen-image-2.1/model-card/base-bf16.md

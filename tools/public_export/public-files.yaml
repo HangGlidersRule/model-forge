@@ -474,17 +474,16 @@ rules:
     precedence: 1000
     allow_empty: true
 
-  - id: private-qwenimage-license
+  - id: qwenimage-license
     source: "models/qwen-image-2.1/LICENSE"
-    disposition: exclude
-    public_destination: null
-    reason: License ships inside the published HF repositories; the public docs repo carries the obligation summary in the family record.
+    disposition: copy
+    public_destination: "{source}"
+    reason: The Qwen Research License Agreement text is already public in both published HF repositories; the family record and cards link it.
     transformation: null
-    owner: private-operations
+    owner: model-release
     max_size_bytes: 262144
     generated: false
-    precedence: 1000
-    allow_empty: true
+    precedence: 100
 
   - id: models-index
     source: "models/README.md"
