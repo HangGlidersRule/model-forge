@@ -192,6 +192,7 @@ build/
 !/models/qwen3-reranker-4b/eval/
 !/models/qwen3-reranker-4b/eval/build_evalset_bm25.py
 !/models/qwen3-reranker-4b/eval/reranker_eval.py
+!/models/qwen3-reranker-4b/eval/validate_artifact.py
 !/models/qwen3-reranker-4b/model-card/
 !/models/qwen3-reranker-4b/model-card/base-bf16.md
 !/models/qwen3-reranker-4b/model-card/base-nvfp4.md

@@ -26,6 +26,16 @@ _EMAIL = re.compile(
     r"(?<![A-Za-z0-9._+/-])[A-Za-z0-9]+(?:[._+-][A-Za-z0-9]+)*@"
     r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?(?![A-Za-z0-9.-])"
 )
+# Metric-at-k names (nDCG@10, MRR@10, recall@1000): the part after "@" is a bare integer.
+# These are the only "@" tokens exempt from the contact rewrite. Everything else the email
+# pattern matches is still rewritten, including user@host SSH targets such as user@192.0.2.10 (any IP)
+# or user@hostname, which must never reach a public export.
+_METRIC_AT_K = re.compile(r"[^@]+@[0-9]+")
+
+
+def _public_contact_rewrite(match: re.Match[str], contact: str) -> str:
+    token = match.group()
+    return token if _METRIC_AT_K.fullmatch(token) else contact
 _SHELL_PRIVATE_DEFAULT = re.compile(
     r'\$\{(?P<name>[A-Z][A-Z0-9_]*):-'
     r"(?P<value>(?:/(?:Users|home|Volumes)/|/[A-Za-z0-9._-]+/|[A-Za-z]:[\\/]|"
@@ -117,7 +127,7 @@ def _replace_private_values(text: str, context: TransformContext) -> str:
             text,
         )
     text = _ABSOLUTE_PATH.sub(_path_placeholder, text)
-    text = _EMAIL.sub(context.public_contact, text)
+    text = _EMAIL.sub(lambda match: _public_contact_rewrite(match, context.public_contact), text)
     return text
 
 

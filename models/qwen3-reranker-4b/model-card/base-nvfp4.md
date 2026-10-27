@@ -48,9 +48,9 @@ This was the best of three builds:
 
 | Candidate | Change | Result |
 |---|---|---|
-| A | MLP W4A4 with plain max activation calibration | security@hangglidersrule.com −0.0099 |
-| B | MLP and attention W4A4 | security@hangglidersrule.com −0.0206 (CI excludes zero); rejected |
-| **C (this checkpoint)** | MLP W4A4 with `nvfp4_act_headroom` | security@hangglidersrule.com −0.0024 |
+| A | MLP W4A4 with plain max activation calibration | nDCG@10 −0.0099 |
+| B | MLP and attention W4A4 | nDCG@10 −0.0206 (CI excludes zero); rejected |
+| **C (this checkpoint)** | MLP W4A4 with `nvfp4_act_headroom` | nDCG@10 −0.0024 |
 
 Full provenance, protocol and evidence:
 
@@ -72,11 +72,11 @@ MSMARCO) at pinned revisions, 299 queries:
   documents, 30 candidates per query, 8,970 pairs.
 - Documents are not truncated; the longest is about 21k characters.
 - Eval set SHA-256 `28f2dde20dd4bc3e82d41cdaa0e63df01048a29f9b318cf836129c59c3e450db`.
-- 95% confidence intervals come from a paired bootstrap of per-query security@hangglidersrule.com (10,000 resamples).
+- 95% confidence intervals come from a paired bootstrap of per-query nDCG@10 (10,000 resamples).
 
 | Metric | Value | Basis |
 |---|---|---|
-| Macro security@hangglidersrule.com (6 MTEB Nano sets) | 0.7095 (BF16 0.7118) | 299 queries, 8,970 pairs, full denominator; BM25 hard negatives; candidate-selection run |
+| Macro nDCG@10 (6 MTEB Nano sets) | 0.7095 (BF16 0.7118) | 299 queries, 8,970 pairs, full denominator; BM25 hard negatives; candidate-selection run |
 | Delta vs BF16 | −0.0024 (95% CI −0.0120 to +0.0073) | paired bootstrap; inside the confidence interval, so not distinguishable from zero |
 | Delta vs BF16, published serving profile | −0.0049 (95% CI −0.0155 to +0.0057) | same eval set; this checkpoint's own `chat_template.jinja` (see Runtime) |
 | BF16 replica noise floor | −0.0008 (95% CI −0.0041 to +0.0014) | second BF16 serve of the same weights |
@@ -88,7 +88,7 @@ MSMARCO) at pinned revisions, 299 queries:
 Missing cells are marked `not measured` and are never backfilled from a different checkpoint or
 protocol.
 
-Per-dataset security@hangglidersrule.com, BF16 → this checkpoint (candidate-selection run): NFCorpus 0.526 → 0.521,
+Per-dataset nDCG@10, BF16 → this checkpoint (candidate-selection run): NFCorpus 0.526 → 0.521,
 FiQA2018 0.771 → 0.761, Touche2020 0.648 → 0.640, ArguAna 0.748 → 0.761, SciFact 0.856 → 0.839,
 MSMARCO 0.723 → 0.735.
 

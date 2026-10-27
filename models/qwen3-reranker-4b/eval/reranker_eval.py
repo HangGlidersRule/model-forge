@@ -11,7 +11,7 @@ Eval set (built once, deterministic, hashed):
   negatives from the same corpus, up to 30 candidates, seed 1234. Documents are NOT
   truncated, so long-document pairs (Touche2020 p90 ~6.5k chars) are covered.
 
-Metrics per dataset: security@hangglidersrule.com, security@hangglidersrule.com, plus per-pair scores so compare.py can compute
+Metrics per dataset: nDCG@10, MRR@10, plus per-pair scores so compare.py can compute
 Spearman / top-10 overlap against BF16 and the BF16 replica-vs-replica floor.
 Full denominator: every pair must get a score; HTTP errors are retried 5x, then the run
 fails (never silently dropped).
@@ -135,7 +135,7 @@ def quality(base: str, model: str, evalset: dict) -> dict:
         res[ds] = {"n_queries": len(per_q), "n_pairs": sum(len(p["scores"]) for p in per_q),
                    "ndcg10": sum(p["ndcg10"] for p in per_q) / len(per_q),
                    "mrr10": sum(p["mrr10"] for p in per_q) / len(per_q), "per_query": per_q}
-        print(f"  {ds:32s} security@hangglidersrule.com={res[ds]['ndcg10']:.4f} security@hangglidersrule.com={res[ds]['mrr10']:.4f} "
+        print(f"  {ds:32s} nDCG@10={res[ds]['ndcg10']:.4f} MRR@10={res[ds]['mrr10']:.4f} "
               f"({res[ds]['n_queries']} q, {res[ds]['n_pairs']} pairs)", flush=True)
     return res
 

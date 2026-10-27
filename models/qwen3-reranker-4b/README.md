@@ -40,7 +40,7 @@ weights (group 16, MSE FP8-scale sweep) and dynamic NVFP4 activations. Each was 
 a second BF16 serve (the noise floor) on the same eval set: 6 MTEB Nano sets, 299 queries, 8,970 pairs,
 BM25 hard negatives, documents untruncated.
 
-| Candidate | Coverage | Activation calibration | Macro security@hangglidersrule.com | Delta vs BF16 (95% CI) | Pairs/s at c=8 |
+| Candidate | Coverage | Activation calibration | Macro nDCG@10 | Delta vs BF16 (95% CI) | Pairs/s at c=8 |
 |---|---|---|---|---|---|
 | BF16 control | — | — | 0.7118 | — | 45.9 |
 | BF16 replica | — | — | 0.7110 | −0.0008 (−0.0041, +0.0014) | 40.5\* |
@@ -50,19 +50,19 @@ BM25 hard negatives, documents untruncated.
 
 \*c=8 runs that overlapped another workload on the same GPU; their c=4 figures (46.8 and 119.4) are clean.
 
-C was published: its loss is within the noise and it doubles BF16 throughput. B is the fastest
+C was published: its loss is within the noise and it runs at 1.81x BF16 throughput. B is the fastest
 (2.5x BF16 at c=4) but loses measurable ranking quality.
 
 ## Gotchas
 
 - **Chat template.** In vLLM `v0.32.0`, `/v1/score` does not apply the checkpoint's
   `chat_template.jinja` on its own. Without `--chat-template`, pairs are scored without the judge prompt
-  and security@hangglidersrule.com collapses (to 0.15–0.41 on these sets). The card's serve command passes it explicitly.
+  and nDCG@10 collapses (to 0.15–0.41 on these sets). The card's serve command passes it explicitly.
 - **Classifier rows.** The model ties `lm_head` to `embed_tokens`, and vLLM builds the classifier from
   the `yes` / `no` rows. Keeping embeddings BF16 keeps the classifier BF16; no extra exclusion is needed.
 - **Activation outliers.** MLP `down_proj` inputs reach amax 8,380 (layer 6) against a median of 30.6.
   Plain max calibration (A) pays for that; `nvfp4_act_headroom` (C) recovers most of the loss.
-- **Eval-set difficulty.** With random negatives, BF16 sat at security@hangglidersrule.com 0.98–1.00 and candidates could
+- **Eval-set difficulty.** With random negatives, BF16 sat at nDCG@10 0.98–1.00 and candidates could
   not be separated. Hard negatives are required for this kind of gate.
 
 ## License

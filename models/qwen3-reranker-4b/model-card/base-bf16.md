@@ -35,8 +35,8 @@ second serve of the same weights to measure run-to-run noise.
 
 | Metric | Value | Basis |
 |---|---|---|
-| Macro security@hangglidersrule.com (6 MTEB Nano sets) | 0.7118 | 299 queries, 8,970 pairs, full denominator; BM25 hard negatives; documents untruncated |
-| Run-to-run noise (second BF16 serve) | −0.0008 (95% CI −0.0041 to +0.0014) | paired bootstrap of per-query security@hangglidersrule.com |
+| Macro nDCG@10 (6 MTEB Nano sets) | 0.7118 | 299 queries, 8,970 pairs, full denominator; BM25 hard negatives; documents untruncated |
+| Run-to-run noise (second BF16 serve) | −0.0008 (95% CI −0.0041 to +0.0014) | paired bootstrap of per-query nDCG@10 |
 | Throughput, 64 pairs per request | 42.2 pairs/s at c=1, 45.9 at c=8 | pairs of about 1k tokens; median of 3 runs after warmup; vLLM `v0.32.0`, RTX PRO 6000 Blackwell |
 | GPQA Diamond | not measured | not applicable to a reranker |
 
