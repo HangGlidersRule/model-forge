@@ -65,8 +65,8 @@ of the recipe:
 | Served API alias (`--served-model-name`) | Lowercase `darkstar-<family>-<behavior>-<format>` |
 | Recipe publication target (`outputs.publication.huggingface_nvfp4`) | Precision-encoded, or null when unresolved |
 
-An id must not contain both `W4A16` and `W4A4`; `Mixed-FP8` is valid only on a `W4A16` id; a uniform
-`W4A4` id never encodes FP8; and FP8 in an id is always spelled `Mixed-FP8`.
+An id must not contain both `W4A16` and `W4A4`; `Mixed-FP8` is valid on a `W4A16` id, and on a `W4A4` id only when the precision
+map serves FP8 weights (W4A4 NVFP4 plus FP8 W8A8); a uniform `W4A4` id never encodes FP8; and FP8 in an id is always spelled `Mixed-FP8`.
 
 **`Mixed-FP8` is derived, not declared.** Whether an artifact belongs to the mixed class is read off
 its precision map, not off the names it happens to carry. If any served **weight** path

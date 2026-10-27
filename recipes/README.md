@@ -18,6 +18,10 @@ Historical compressed-tensors recipes (rejected for publication, retained for li
 - `qwen3.8-27b/base-nvfp4.yaml`
 - `qwen3.8-27b/r3-nvfp4.yaml`
 
+## JEV-27B
+
+- `jev-27b/darkstar-jev-27b-decision-modelopt-w4a4-nvfp4-mixed-fp8.yaml` — Darkstar JEV-27B Decision ModelOpt W4A4 NVFP4 + FP8 (merged LoRA; NVIDIA's Qwen3.8-27B recipe with `lm_head` BF16; published). Operator recipe SHA-256 `901247d03387022f42b23cdfb699b0b6ab7084c2809db17054d38826a4358058`.
+
 ## Qwen3-Reranker-4B
 
 - `qwen3-reranker-4b/darkstar-qwen3-reranker-4b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (decoder MLP only, `nvfp4_act_headroom` calibration; published). Operator recipe SHA-256 `eb9a063a89cc527f58a0c68bcbc860427e9f3cf67c048033316da147c82686d6`.

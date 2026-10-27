@@ -388,9 +388,13 @@ def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
     has_w4a16 = "W4A16" in weights
     requires_mixed_fp8 = precision_map_requires_mixed_fp8(pmap, weight_components)
 
-    if pclass.startswith("W4A4") and (has_fp8 or has_w4a16):
+    # W4A4 never serves W4A16 weights. It may serve FP8 weights only as the declared Mixed-FP8 class
+    # (W4A4 NVFP4 on some linears plus FP8 W8A8 on others, e.g. NVIDIA's Qwen3.8-27B layout).
+    if pclass.startswith("W4A4") and has_w4a16:
+        errors.append(f"{cid}: named W4A4 but precision_map serves W4A16 weights (conflation)")
+    if pclass.startswith("W4A4") and has_fp8 and "Mixed-FP8" not in pclass:
         errors.append(
-            f"{cid}: named W4A4 but precision_map serves FP8/W4A16 weights (conflation)"
+            f"{cid}: named uniform W4A4 but precision_map serves FP8 weights (conflation)"
         )
 
     if requires_mixed_fp8:
@@ -423,8 +427,12 @@ def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
             errors.append(
                 f"{cid}: named Mixed-FP8 but precision_map is not NVFP4+FP8"
             )
-    elif "Mixed-FP8" in pclass and not (has_w4a16 and has_fp8):
-        errors.append(f"{cid}: named Mixed-FP8 but precision_map is not W4A16+FP8")
+    elif "Mixed-FP8" in pclass and not has_fp8:
+        errors.append(f"{cid}: named Mixed-FP8 but precision_map serves no FP8 weights")
+    elif "Mixed-FP8" in pclass and pclass.startswith("W4A16") and not has_w4a16:
+        errors.append(f"{cid}: named W4A16 Mixed-FP8 but precision_map is not W4A16+FP8")
+    elif "Mixed-FP8" in pclass and pclass.startswith("W4A4") and "W4A4" not in weights:
+        errors.append(f"{cid}: named W4A4 Mixed-FP8 but precision_map is not W4A4+FP8")
 
     return errors
 
@@ -478,9 +486,15 @@ def precision_encoded_id_errors(
         errors.append(f"{identifier}: id conflates W4A16 and W4A4")
     if "FP8" in name and not has_mixed_fp8:
         errors.append(f"{identifier}: FP8 in an id must be spelled Mixed-FP8")
-    if has_mixed_fp8 and not has_w4a16:
-        errors.append(f"{identifier}: Mixed-FP8 is only valid on a W4A16 id")
-    if has_w4a4 and "FP8" in name:
+    # Mixed-FP8 is valid on a W4A16 id (W4A16 NVFP4 + FP8) and on a W4A4 id (W4A4 NVFP4 + FP8), but
+    # on a W4A4 id only when the caller derived it from a precision map that serves FP8 weights: a
+    # W4A4 id with no such evidence reads as uniform W4A4 and must not encode FP8.
+    if has_w4a4 and has_mixed_fp8 and requires_mixed_fp8 is not True:
+        errors.append(
+            f"{identifier}: uniform W4A4 id must not encode FP8; Mixed-FP8 on a W4A4 id requires a "
+            "precision map that serves FP8 weights"
+        )
+    elif has_w4a4 and "FP8" in name and not has_mixed_fp8:
         errors.append(f"{identifier}: uniform W4A4 id must not encode FP8")
 
     if requires_mixed_fp8 is True and not has_mixed_fp8:

@@ -90,6 +90,26 @@ def _ledger() -> dict:
     return load_json(LEDGER_PATH)
 
 
+def _all_ledgers_mixed_fp8_requirements() -> dict[str, bool]:
+    """Mixed-FP8 requirements derived from every family's ledger, not only the Qwen3.8 one.
+
+    Publication surfaces carry repository ids from every family, and a W4A4 id may spell Mixed-FP8
+    only when its own ledger's precision map serves FP8, so each id has to be checked against the
+    ledger that owns it.
+    """
+    required: dict[str, bool] = {}
+    for path in sorted((REPO_ROOT / "models").glob("*/results/publication-readiness-ledger.json")):
+        ledger = load_json(path)
+        if not isinstance(ledger.get("products"), list):
+            continue
+        try:
+            required.update(ledger_mixed_fp8_requirements(ledger))
+        except (KeyError, TypeError):
+            continue
+    required.update(ledger_mixed_fp8_requirements(_ledger()))
+    return required
+
+
 def _markdown_files() -> list[Path]:
     ignore = {".git", ".venv", "node_modules", "__pycache__", "dist", "build"}
     return sorted(
@@ -601,7 +621,7 @@ def test_resolved_targets_never_name_an_unbuilt_candidate() -> None:
 
 
 def test_no_bare_nvfp4_repository_id_on_any_publication_surface() -> None:
-    required = ledger_mixed_fp8_requirements(_ledger())
+    required = _all_ledgers_mixed_fp8_requirements()
     violations: list[str] = []
     for path in _publication_surface_files():
         text = path.read_text(encoding="utf-8")
@@ -776,7 +796,7 @@ def test_alias_shell_wrapper_nesting_is_bounded() -> None:
 
 def test_serve_model_sources_remain_separately_precision_encoded() -> None:
     """Concise --served-model-name aliases never relax the actual model source."""
-    required = ledger_mixed_fp8_requirements(_ledger())
+    required = _all_ledgers_mixed_fp8_requirements()
     violations: list[str] = []
     found: set[str] = set()
     for path in _publication_surface_files():
@@ -1183,7 +1203,7 @@ def test_shortened_mixed_server_source_is_rejected_from_precision_map() -> None:
 
 
 def test_recipe_publication_targets_are_precision_encoded_or_unresolved() -> None:
-    required = ledger_mixed_fp8_requirements(_ledger())
+    required = _all_ledgers_mixed_fp8_requirements()
     violations: list[str] = []
     for path in sorted((REPO_ROOT / "recipes").rglob("*.yaml")):
         text = path.read_text(encoding="utf-8")
@@ -1224,6 +1244,62 @@ def test_bare_nvfp4_ids_are_rejected(identifier: str) -> None:
 def test_conflated_precision_ids_are_rejected(identifier: str, expected_error: str) -> None:
     errors = precision_encoded_id_errors(identifier)
     assert any(expected_error in error for error in errors), errors
+
+
+# A W4A4 id may carry Mixed-FP8 only when its precision map really serves FP8 weights: W4A4 NVFP4 on
+# some linears plus FP8 W8A8 on others (NVIDIA's Qwen3.8-27B layout: NVFP4 W4A4 MLP + FP8 attention).
+# Without that derived requirement the id still reads as uniform W4A4 and must not mention FP8.
+W4A4_MIXED_ID = "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8"
+
+
+def test_w4a4_mixed_fp8_id_is_accepted_when_the_map_serves_fp8() -> None:
+    assert not precision_encoded_id_errors(
+        f"{DARKSTAR_HF_NAMESPACE}/{W4A4_MIXED_ID}", requires_mixed_fp8=True
+    )
+
+
+@pytest.mark.parametrize("requires", [None, False])
+def test_w4a4_mixed_fp8_id_is_rejected_without_fp8_weights(requires: bool | None) -> None:
+    errors = precision_encoded_id_errors(f"{DARKSTAR_HF_NAMESPACE}/{W4A4_MIXED_ID}", requires_mixed_fp8=requires)
+    assert errors, "a W4A4 id may only spell Mixed-FP8 when the precision map serves FP8 weights"
+
+
+def test_w4a4_mixed_fp8_candidate_is_valid_with_a_w4a4_fp8_map() -> None:
+    candidate = {
+        "candidate_id": W4A4_MIXED_ID,
+        "precision_class": "W4A4-NVFP4-Mixed-FP8",
+        "selection": "selected",
+        "target_repository": f"{DARKSTAR_HF_NAMESPACE}/{W4A4_MIXED_ID}",
+        "precision_map": {
+            "language_mlp": "W4A4-NVFP4-g16",
+            "lm_head": "BF16",
+            "self_attention": "FP8-W8A8",
+            "gdn_projections": "FP8-W8A8",
+            "kv_cache": "BF16",
+            "protected": "BF16",
+        },
+    }
+    assert candidate_requires_mixed_fp8(candidate)
+    assert not candidate_precision_errors(candidate)
+
+
+def test_w4a4_mixed_fp8_candidate_rejects_w4a16_weights_in_its_map() -> None:
+    candidate = {
+        "candidate_id": W4A4_MIXED_ID,
+        "precision_class": "W4A4-NVFP4-Mixed-FP8",
+        "selection": "selected",
+        "target_repository": f"{DARKSTAR_HF_NAMESPACE}/{W4A4_MIXED_ID}",
+        "precision_map": {
+            "language_mlp": "W4A16-NVFP4-g16",
+            "lm_head": "BF16",
+            "self_attention": "FP8-W8A8",
+            "gdn_projections": "FP8-W8A8",
+            "kv_cache": "BF16",
+            "protected": "BF16",
+        },
+    }
+    errors = candidate_precision_errors(candidate)
+    assert any("W4A16" in e for e in errors), errors
 
 
 def test_precision_encoded_ids_are_accepted() -> None:

@@ -81,7 +81,7 @@
    ],
    "id_conflation_rules": [
     "An id must not contain both W4A16 and W4A4.",
-    "Mixed-FP8 is valid only on a W4A16 id.",
+    "Mixed-FP8 is valid on a W4A16 id, and on a W4A4 id only when its precision map serves FP8 weights (W4A4 NVFP4 plus FP8 W8A8, e.g. NVIDIA's Qwen3.8-27B layout).",
     "A uniform W4A4 id must not encode FP8.",
     "FP8 in an id is always spelled Mixed-FP8."
    ],

@@ -1333,3 +1333,64 @@ rules:
     precedence: 1000
     resolves:
       - modelopt-config-recipes
+
+  - id: jev-scripts-merge
+    source: "models/jev-27b/scripts/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The LoRA merge used to build the published JEV-27B checkpoint and its bit-exact check against PEFT, so the merge is reproducible.
+    transformation: sanitize_python_script
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: jev-calibration-builder
+    source: "models/jev-27b/calibration/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Deterministic builder for the published checkpoint's 512-sample calibration set.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: jev-eval-tools
+    source: "models/jev-27b/eval/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The /v1/decide evaluator, latency probe, frozen pass-bar script, artifact validator and the merged-model serving patch behind the published numbers.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: curated-jev-evidence
+    source: "models/jev-27b/results/*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated aggregate gate evidence, artifact validation, merge report and ledger for the published JEV-27B checkpoint (no per-row predictions or prompts).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 524288
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-readiness-ledger
+      - curated-gpqa-matrix
+      - curated-capacity-profiles
+
+  - id: hf-card-jev-27b-decision
+    source: "publication/huggingface/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the JEV-27B Decision ModelOpt W4A4 NVFP4 Mixed-FP8 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
