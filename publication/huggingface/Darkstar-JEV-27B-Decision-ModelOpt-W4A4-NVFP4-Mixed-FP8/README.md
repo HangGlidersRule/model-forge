@@ -29,7 +29,7 @@ options, `score` 0–5) come back as calibrated probabilities from one forward p
 [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B) at revision `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`.
 - **The adapter:** rank 32, alpha 64. 401 pairs over attention, linear attention (Gated DeltaNet), MLP and `lm_head`; the `lm_head` pair is the decision head.
 - **Base revision check:** JEV-27B's backbone is byte-identical to that revision on every tensor sampled (12, including embeddings and `lm_head`).
-- **Merge method:** `W + 2·(B·A)` is computed in FP32 and rounded once to BF16. The merge code reproduces PEFT `merge_and_unload` bit for bit.
+- **Merge method:** `W + 2·(B·A)` is computed in FP32 and rounded once to BF16. On a reduced random model with the adapter's exact LoRA config, the merge code matches PEFT `merge_and_unload` exactly (max abs diff 0.0 over 26 merged tensors; `results/merge-peft-check.json`).
 - **Unchanged:** the vision tower and MTP head are copied from the base.
 
 **Quantization.** ModelOpt `0.48.0rc1` at `ff2450c15eb5f1697ec0471704d5421d54fce4f4`, using NVIDIA's own Qwen3.8-27B recipe
@@ -84,7 +84,7 @@ whose teacher distribution has a single argmax.
 | Top-1 vs teacher | 0.9219 (BF16 reference 0.9270; deployed baseline 0.9200) | 27,324 single-argmax rows |
 | Top-1 deficit vs the deployed baseline | −0.19 pt (95% CI −0.41 to +0.02) | paired bootstrap; bar: upper bound at most 0.5 pt |
 | Choice top-1 / yes-no AUROC / score MAE | 0.9050 / 0.9954 / 0.104 | per decision kind |
-| Agreement with the BF16 reference | 0.940 (deployed baseline 0.943) | decision flips are near-ties: median BF16 top-2 margin 0.011 |
+| Agreement with the BF16 reference | 0.940 (deployed baseline 0.943) | decision flips are near-ties: median BF16 top-2 margin 0.011 on flipped rows (`flip_margins` in the gate summary) |
 | Throughput | 69.5 rows/s (deployed baseline 50.1; BF16 45.3) | 16 concurrent `/v1/decide` requests |
 | Latency p50 / p95, c=1 | 80 / 89 ms short (~314 tok), 270 / 330 ms long (~3,790 tok) | deployed baseline 107 / 126 and 365 / 441; long prompts are seeded concatenations, since the eval set's longest prompt is 702 tokens |
 | Weights / KV cache | 21.5 GiB / 814,421 tokens | `--gpu-memory-utilization 0.85`, 96 GB card |

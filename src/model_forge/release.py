@@ -429,6 +429,10 @@ def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
             )
     elif "Mixed-FP8" in pclass and not has_fp8:
         errors.append(f"{cid}: named Mixed-FP8 but precision_map serves no FP8 weights")
+    elif "Mixed-FP8" in pclass and not pclass.startswith(("W4A16", "W4A4")):
+        errors.append(
+            f"{cid}: text-model Mixed-FP8 precision_class {pclass!r} must start with W4A16 or W4A4"
+        )
     elif "Mixed-FP8" in pclass and pclass.startswith("W4A16") and not has_w4a16:
         errors.append(f"{cid}: named W4A16 Mixed-FP8 but precision_map is not W4A16+FP8")
     elif "Mixed-FP8" in pclass and pclass.startswith("W4A4") and "W4A4" not in weights:

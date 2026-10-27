@@ -5,8 +5,8 @@ For every row: POST /v1/decide {kind, state, question, options} (System 1 only, 
 strategy single, as the JEV-27B card evaluates), keep the full probability vector.
 Writes per-row probabilities (JSONL) plus a summary that matches the card's metrics:
   kl (to the row target), top1 (rows with a defined argmax), choice_top1, noul_auroc, score_mae_expected.
-compare_i15.py then computes paired metrics between configurations (reference, current NVFP4+LoRA,
-merged candidate) and the replica noise floor.
+gate_noninferiority.py then computes the paired metrics between configurations (reference, deployed
+NVFP4+LoRA, merged candidates) that the pass bar uses.
 
 Every row must get an answer: HTTP errors are retried 5x, then the run fails (full denominator).
 Rows are processed in file order with a fixed concurrency; results are keyed by row id.

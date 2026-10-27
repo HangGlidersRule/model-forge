@@ -1,7 +1,7 @@
 {
  "repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
- "hf_commit": "0bc99157c16a836a6c20f6efcd1bd2222b612d2a",
- "hf_commit_note": "Current head: card-only commit on top of 72a57324 (the clean-download-verified commit); weights, configs and every other file unchanged.",
+ "hf_commit": "4fa9b02d0dcd6d8abe94d1f803e97670531a9084",
+ "hf_commit_note": "Current head: card-only commits on top of 72a57324 (the clean-download-verified commit); weights, configs and every other file unchanged.",
  "verified_commit": "72a57324e193c4b51648af31d17f18b285dce043",
  "files": [
   ".gitattributes",
@@ -26,7 +26,7 @@
   "video_preprocessor_config.json",
   "vocab.json"
  ],
- "manifest_sha256_of_manifest_file": "a21daf1af1be8d0e610780d5da432baeb5e3b5de0ad23867c27705a388a97cd0",
+ "manifest_sha256_of_manifest_file": "8a54b3c542f31c112efbc44623bdd1475a2f6a6fca4f1939b225f5a7841ac73c",
  "lfs_sha256_matches_local": true,
  "clean_download_boot_smoke": {
   "download": "empty HF cache, snapshot_download at the verified commit; 19/19 manifest.sha256 entries verified, 0 mismatches",

@@ -31,7 +31,8 @@ text generation quality, which is neither measured nor claimed here: merging cos
   KV cache, both pass bars and the decision
 - [`results/artifact-validation.json`](results/artifact-validation.json), [`results/merge-report.json`](results/merge-report.json),
   [`results/publication-readiness-ledger.json`](results/publication-readiness-ledger.json)
-- [`scripts/`](scripts/): the LoRA merge (`merge_lora.py`) and its bit-exact check against PEFT `merge_and_unload`
+- [`scripts/`](scripts/): the LoRA merge (`merge_lora.py`) and its check against PEFT `merge_and_unload` on a reduced
+  model (max abs diff 0.0; [`results/merge-peft-check.json`](results/merge-peft-check.json))
 - [`calibration/`](calibration/): the deterministic 512-sample calibration-set builder
 - [`eval/`](eval/): the `/v1/decide` evaluator, latency probe, pass-bar script, artifact validator, and the two-line
   `serve_decide.py` patch for merged checkpoints
@@ -65,6 +66,8 @@ SHA-256 `75fcb814…`) before candidate B was evaluated, and requires all of:
 - teacher KL no worse than the deployed lane;
 - top-1 no more than 0.5 pt lower;
 - higher rows/s and lower single-request p50 latency.
+
+The frozen script ships byte-identical to the file that judged candidate B, so its SHA-256 still matches the one quoted above; its docstring keeps its working filename (`gate_i15_v2.py`).
 
 A passes (teacher KL −0.00039 vs the deployed lane, CI −0.00054 to −0.00024). B fails it (+0.00133, CI +0.00114 to +0.00152)
 despite being about 2× the deployed lane's throughput.

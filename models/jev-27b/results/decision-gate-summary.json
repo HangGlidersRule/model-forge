@@ -324,5 +324,28 @@
   },
   "winner": "merged"
  },
- "decision": "Candidate A (merged) ships: non-inferior to the deployed lane on teacher KL (-0.00039, CI below zero) and top-1, 1.39x rows/s, 25% lower c=1 latency. Candidate B (all-NVFP4) is 1.96x the deployed lane's rows/s but its teacher KL is worse (+0.00133, CI excludes 0); evaluated, not shipped."
+ "decision": "Candidate A (merged) ships: non-inferior to the deployed lane on teacher KL (-0.00039, CI below zero) and top-1, 1.39x rows/s, 25% lower c=1 latency. Candidate B (all-NVFP4) is 1.96x the deployed lane's rows/s but its teacher KL is worse (+0.00133, CI excludes 0); evaluated, not shipped.",
+ "flip_margins": {
+  "definition": "decisions whose argmax differs from the BF16 reference (ref); median of the reference's top-2 probability margin on those rows; count of flips where that margin exceeds 0.2",
+  "ref-rep": {
+   "flips": 299,
+   "median_ref_top2_margin_on_flips": 0.0037,
+   "flips_with_ref_margin_gt_0.2": 0
+  },
+  "current": {
+   "flips": 1696,
+   "median_ref_top2_margin_on_flips": 0.0078,
+   "flips_with_ref_margin_gt_0.2": 0
+  },
+  "merged": {
+   "flips": 1787,
+   "median_ref_top2_margin_on_flips": 0.0114,
+   "flips_with_ref_margin_gt_0.2": 2
+  },
+  "merged-b": {
+   "flips": 1919,
+   "median_ref_top2_margin_on_flips": 0.0134,
+   "flips_with_ref_margin_gt_0.2": 15
+  }
+ }
 }

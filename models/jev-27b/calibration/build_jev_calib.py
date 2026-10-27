@@ -13,7 +13,7 @@
     records, seeded reservoir sample), rendered with the Qwen3.8 chat template.
 Decision rows are filtered to <= 2048 tokens. No harmful-content sources are used.
 
-Usage: build_calib_i15.py --tokenizer DIR --out FILE
+Usage: build_jev_calib.py --tokenizer DIR --out FILE
 Prints a summary line with the file sha256.
 """
 from __future__ import annotations

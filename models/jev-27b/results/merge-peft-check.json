@@ -1,0 +1,37 @@
+{
+ "check": "merge_lora.py vs PEFT merge_and_unload on a reduced random Qwen3.5 text model",
+ "model": {
+  "layers": 4,
+  "hidden_size": 256,
+  "vocab_size": 1024,
+  "dtype": "bfloat16",
+  "seed": 1234
+ },
+ "lora": {
+  "r": 32,
+  "lora_alpha": 64,
+  "target_modules": [
+   "down_proj",
+   "gate_proj",
+   "in_proj_qkv",
+   "in_proj_z",
+   "k_proj",
+   "lm_head",
+   "o_proj",
+   "out_proj",
+   "q_proj",
+   "up_proj",
+   "v_proj"
+  ]
+ },
+ "tensors": 56,
+ "changed_by_merge": 26,
+ "max_abs_diff_vs_peft": 0.0,
+ "bit_identical": true,
+ "outside_tolerance": 0,
+ "versions": {
+  "torch": "2.8.0",
+  "transformers": "5.18.0",
+  "peft": "0.21.2"
+ }
+}

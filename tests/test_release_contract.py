@@ -1302,6 +1302,28 @@ def test_w4a4_mixed_fp8_candidate_rejects_w4a16_weights_in_its_map() -> None:
     assert any("W4A16" in e for e in errors), errors
 
 
+@pytest.mark.parametrize("pclass", ["NVFP4-Mixed-FP8", "Mixed-FP8", "W8A8-NVFP4-Mixed-FP8"])
+def test_text_mixed_fp8_class_must_start_with_w4a16_or_w4a4(pclass: str) -> None:
+    # A text-model Mixed-FP8 precision class has to name its NVFP4 activation class; a free-string class
+    # over an FP8 map that starts with neither W4A16 nor W4A4 must not pass the candidate-level check.
+    candidate = {
+        "candidate_id": f"Darkstar-JEV-27B-Decision-ModelOpt-{pclass}",
+        "precision_class": pclass,
+        "selection": "selected",
+        "target_repository": f"{DARKSTAR_HF_NAMESPACE}/Darkstar-JEV-27B-Decision-ModelOpt-{pclass}",
+        "precision_map": {
+            "language_mlp": "W4A4-NVFP4-g16",
+            "lm_head": "BF16",
+            "self_attention": "FP8-W8A8",
+            "gdn_projections": "FP8-W8A8",
+            "kv_cache": "BF16",
+            "protected": "BF16",
+        },
+    }
+    errors = candidate_precision_errors(candidate)
+    assert any("must start with W4A16 or W4A4" in e for e in errors), errors
+
+
 def test_precision_encoded_ids_are_accepted() -> None:
     for identifier in (
         f"{DARKSTAR_HF_NAMESPACE}/{MIXED_BASE_CANDIDATE}",

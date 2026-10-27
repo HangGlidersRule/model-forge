@@ -134,6 +134,7 @@ build/
 !/models/jev-27b/results/
 !/models/jev-27b/results/artifact-validation.json
 !/models/jev-27b/results/decision-gate-summary.json
+!/models/jev-27b/results/merge-peft-check.json
 !/models/jev-27b/results/merge-report.json
 !/models/jev-27b/results/publication-readiness-ledger.json
 !/models/jev-27b/results/publication-receipt.json

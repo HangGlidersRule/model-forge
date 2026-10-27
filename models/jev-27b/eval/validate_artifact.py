@@ -21,7 +21,7 @@ Checks on the exact directory to be uploaded:
     re-serialization of the same values (dtype/torch_dtype, transformers_version, and in vision_config
     model_type qwen3_5 -> qwen3_5_vision plus explicit default rope_parameters); NVIDIA's
     Qwen3.8-27B-NVFP4 config carries the same vision_config.model_type rewrite
-Usage: validate_jev_artifact.py --layout mixed|fp4 --artifact DIR --qwen DIR --jev DIR --report FILE
+Usage: validate_artifact.py --layout mixed|fp4 --artifact DIR --qwen DIR --jev DIR --report FILE
 """
 from __future__ import annotations
 

@@ -120,7 +120,7 @@
     {
      "id": "recipe_edit_manifest",
      "status": "verified",
-     "evidence": "Schema-2 recipe; operator recipe sha256 901247d0...; merge script bit-identical to PEFT merge_and_unload; ModelOpt 0.48.0rc1 pin",
+     "evidence": "Schema-2 recipe; operator recipe sha256 901247d0...; merge script matches PEFT merge_and_unload exactly on a reduced model (max abs diff 0.0, results/merge-peft-check.json); ModelOpt 0.48.0rc1 pin",
      "evidence_path": "recipes/jev-27b/darkstar-jev-27b-decision-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
      "next_missing_proof": "none - gate satisfied"
     },
@@ -183,7 +183,7 @@
     {
      "id": "publication_targets_hf_ghcr",
      "status": "verified",
-     "evidence": "HF target HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8 @ 0bc99157c16a836a6c20f6efcd1bd2222b612d2a; GHCR not required (pinned upstream vLLM image)",
+     "evidence": "HF target HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8 @ 4fa9b02d0dcd6d8abe94d1f803e97670531a9084; GHCR not required (pinned upstream vLLM image)",
      "evidence_path": "models/jev-27b/results/publication-receipt.json",
      "next_missing_proof": "none - gate satisfied"
     },

@@ -5,8 +5,9 @@ family: jev-27b
 # Build input: the BF16 merge of the autotrust/JEV-27B adapter_vllm LoRA
 # (revision 14b425269ed24452e0a5ad5a8f3e51d139647a88; rank 32, alpha 64, 401 pairs incl. lm_head)
 # into the source below, W + (alpha/r)·(B·A) in FP32, rounded once to BF16, made by
-# models/jev-27b/scripts/merge_lora.py (bit-identical to PEFT merge_and_unload on a reduced model:
-# models/jev-27b/scripts/test_merge_vs_peft.py). Report: models/jev-27b/results/merge-report.json.
+# models/jev-27b/scripts/merge_lora.py (matches PEFT merge_and_unload exactly on a reduced model, max abs diff
+# 0.0: models/jev-27b/scripts/test_merge_vs_peft.py, results/merge-peft-check.json).
+# Report: models/jev-27b/results/merge-report.json.
 # The schema-2 transform vocabulary has no LoRA-merge type, so the merge is recorded here, not as a transform.
 source:
   model_id: Qwen/Qwen3.8-27B

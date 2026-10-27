@@ -68,4 +68,16 @@ for k, v in ref.items():
 changed = sum(1 for k in ref if not torch.equal(ref[k], base_sd[k]))
 print(f"tensors {len(ref)} | changed by merge {changed} | max abs diff vs PEFT {worst:.3e} | outside tolerance {len(bad)}")
 print("PEFT-EQUIVALENT" if not bad and changed > 0 else f"MISMATCH {bad[:5]}")
+if len(sys.argv) > 1:
+    # Optional evidence record: the measured comparison, not just the pass/fail verdict.
+    import peft
+    import transformers
+    Path(sys.argv[1]).write_text(json.dumps({
+        "check": "merge_lora.py vs PEFT merge_and_unload on a reduced random Qwen3.5 text model",
+        "model": {"layers": 4, "hidden_size": 256, "vocab_size": 1024, "dtype": "bfloat16", "seed": 1234},
+        "lora": {"r": 32, "lora_alpha": 64, "target_modules": targets},
+        "tensors": len(ref), "changed_by_merge": changed, "max_abs_diff_vs_peft": worst,
+        "bit_identical": worst == 0.0, "outside_tolerance": len(bad),
+        "versions": {"torch": torch.__version__, "transformers": transformers.__version__, "peft": peft.__version__},
+    }, indent=1) + "\n")
 sys.exit(0 if not bad and changed > 0 else 1)
