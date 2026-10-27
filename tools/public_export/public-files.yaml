@@ -1188,3 +1188,148 @@ rules:
     max_size_bytes: 262144
     generated: false
     precedence: 100
+
+  - id: modelopt-campaign-pins
+    source: "configs/modelopt/pins/*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Per-campaign ModelOpt pins (wheel URL + SHA-256, tag commit) are reproducibility metadata, like the repository-wide pin.
+    transformation: null
+    owner: model-runtime
+    max_size_bytes: 16384
+    generated: false
+    precedence: 100
+
+  - id: reranker-modelopt-dockerfile
+    source: "containers/modelopt/issue14/Dockerfile"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Pinned ModelOpt 0.48.0rc1 build image for the Qwen3-Reranker-4B campaign; generic container build instructions.
+    transformation: sanitize_container_script
+    owner: container-runtime
+    max_size_bytes: 32768
+    generated: false
+    precedence: 100
+
+  - id: reranker-recon
+    source: "models/qwen3-reranker-4b/recon.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Upstream identity, shard hashes and tensor inventory for the published reranker family; contains no private metadata.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: reranker-calibration-and-eval-docs
+    source: "models/qwen3-reranker-4b/calibration/README.md"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Calibration-set provenance for the published reranker.
+    transformation: sanitize_public_markdown
+    owner: evaluation
+    max_size_bytes: 16384
+    generated: false
+    precedence: 100
+
+  - id: reranker-calibration-builder
+    source: "models/qwen3-reranker-4b/calibration/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Deterministic calibration-set builder, so the published calibration is reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: reranker-eval-builders
+    source: "models/qwen3-reranker-4b/eval/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Deterministic calibration and eval-set builders plus the gate harness, so the published numbers are reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: curated-reranker-evidence
+    source: "models/qwen3-reranker-4b/results/*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated aggregate gate evidence for the published reranker (no prompts or per-pair raw scores beyond the aggregates).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 524288
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-readiness-ledger
+      - curated-gpqa-matrix
+      - curated-capacity-profiles
+
+  - id: hf-card-qwen3-reranker-base-nvfp4
+    source: "publication/huggingface/Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Qwen3-Reranker-4B Base ModelOpt W4A4 NVFP4 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: issue14-campaign-scripts
+    source: "scripts/issue14/**"
+    disposition: exclude
+    public_destination: null
+    reason: Operator launchers for one host (scheduled tasks, host-local paths). The reproducible pieces ship under models/qwen3-reranker-4b/.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 100
+
+  - id: whisper-campaign-private
+    source: "models/whisper-large-v3-turbo/**"
+    disposition: exclude
+    public_destination: null
+    reason: Whisper NVFP4 failed its gate and is not shipped; the outcome is recorded on public issue 14, the raw record stays private.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    resolves:
+      - model-overview
+      - model-artifact-lineage
+      - model-benchmark-matrix
+      - model-gpqa-protocol
+      - model-publication-plan
+      - model-cards
+      - modelopt-model-notes
+      - model-private-data
+      - model-private-plans
+      - validation-inventory
+      - model-results-default-private
+      - curated-gpqa-matrix
+      - curated-readiness-ledger
+      - curated-capacity-profiles
+      - curated-artifact-manifests
+
+  - id: whisper-modelopt-recipe-private
+    source: "configs/modelopt/recipes/whisper-large-v3-turbo/**"
+    disposition: exclude
+    public_destination: null
+    reason: Recipe for the unshipped Whisper candidate.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 1000
+    resolves:
+      - modelopt-config-recipes

@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Qwen3-Reranker-4B, candidate C (activation headroom): candidate A's coverage with
+# ModelOpt's nvfp4_act_headroom calibration (added in 0.47.0).
+#
+# Built from NVIDIA/Model-Optimizer@ff2450c15eb5f1697ec0471704d5421d54fce4f4 (0.48.0rc1);
+# the algorithm block follows modelopt_recipes/general/ptq/nvfp4_act_headroom-kv_fp8_cast.yaml
+# at its documented defaults. The only change from candidate A is the calibration algorithm,
+# so the comparison isolates one axis.
+#
+# Why: with plain max calibration, an activation larger than anything seen in calibration
+# saturates the FP8 block scale. Reranking pairs can be much longer than calibration pairs.
+# act_headroom anchors the NVFP4 activation global scale to a low percentile of per-block
+# amaxes and keeps the rest of the FP8 range as headroom. Weights keep the MSE FP8-scale sweep.
+#
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+
+metadata:
+  recipe_type: ptq
+  description: >-
+    Qwen3-Reranker-4B candidate C: candidate A coverage (W4A4 NVFP4 on decoder MLP only) with
+    nvfp4_act_headroom activation calibration and MSE weight scales. KV cache BF16.
+quantize:
+  algorithm:
+    method: nvfp4_act_headroom
+    anchor_percentile: 1
+    upper_percentile: 99.99
+    rho: 16384
+    weight_scale_algorithm:
+      method: mse
+      fp8_scale_sweep: true
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*mlp*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mlp*input_quantizer'
+      cfg:
+        $import: nvfp4
+    - $import: default_disabled_quantizers

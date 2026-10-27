@@ -70,6 +70,10 @@ candidate ids or `null` with status `unresolved_pending_precision_winner`.
 
 ## Current records
 
+- [`qwen3-reranker-4b/`](qwen3-reranker-4b/) — reranker family: unchanged upstream
+  `Qwen/Qwen3-Reranker-4B` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base
+  ModelOpt W4A4 NVFP4), published. Abliterated cells do not apply to a scoring model.
+
 - [`qwen3.8-27b-r3/`](qwen3.8-27b-r3/) — four evaluated cells: unchanged upstream
   `Qwen/Qwen3.8-27B` BF16 as the external control, plus three HangGlidersRule-owned artifacts (clean
   ModelOpt NVFP4, abliterated BF16, and abliterated ModelOpt NVFP4). Only those three owned artifacts

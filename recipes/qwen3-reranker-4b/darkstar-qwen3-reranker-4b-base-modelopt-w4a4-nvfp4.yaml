@@ -1,0 +1,77 @@
+schema_version: "2.0"
+name: darkstar-qwen3-reranker-4b-base-modelopt-w4a4-nvfp4
+family: qwen3-reranker-4b
+
+source:
+  model_id: Qwen/Qwen3-Reranker-4B
+  revision: 22e683669bc0f0bd69640a1354a6d0aebcfeede5
+
+transforms: []
+
+datasets:
+  ms_marco_v1_1:
+    source: microsoft/ms_marco
+    revision: a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a
+    sha256: null
+
+quantization:
+  scheme: NVFP4
+  targets: Linear
+  group_size: 16
+  framework: nvidia-modelopt
+  framework_version: 0.48.0rc1
+  framework_pin_commit: ff2450c15eb5f1697ec0471704d5421d54fce4f4
+  algorithm: nvfp4_act_headroom
+  weight_scale_algorithm: mse
+  fp8_scale_sweep: true
+  operator_recipe: configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_mlp_only_act_headroom-kv_bf16.yaml
+  operator_recipe_sha256: eb9a063a89cc527f58a0c68bcbc860427e9f3cf67c048033316da147c82686d6
+  quant_grp:
+    mlp_gate_up_down: W4A4_NVFP4
+  protected_tensors:
+    - self_attn
+    - norms
+    - embeddings
+    - lm_head
+  keep_bf16:
+    - self_attn
+    - norms
+    - embeddings
+    - lm_head
+  ignore:
+    - lm_head
+    - "re:.*self_attn.*"
+    - "re:.*embed_tokens.*"
+    - "re:.*norm\\.weight$"
+  calibration:
+    dataset: microsoft/ms_marco v1.1 train (reranker judge-prompt pairs)
+    config: qwen3_reranker_judge_pairs_512
+    samples: 512
+    max_sequence_length: 512
+    batch_size: 8
+    kv_cache_qformat: none
+    pipeline: modelopt_hf_ptq
+    shard_size: 10GB
+
+validation:
+  max_refusal_leakage: 0.01
+  quantized_layers_count: 108
+  mtp_present: false
+
+runtime:
+  kv_dtype: bf16
+  context_length: 8192
+  flash_attention: true
+  spec_decode: none
+  vllm_pin: vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34
+
+performance:
+  prompt_lengths: [1100]
+  warmup_repeats: 1
+  measure_repeats: 3
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_nvfp4: HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4

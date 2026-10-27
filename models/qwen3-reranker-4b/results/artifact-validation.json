@@ -1,0 +1,39 @@
+{
+ "tensors": {
+  "total": 722,
+  "nvfp4_linears": 108,
+  "bf16_attention_projections": 144,
+  "dtypes": {
+   "BF16": 290,
+   "F32": 216,
+   "F8_E4M3": 108,
+   "U8": 108
+  },
+  "fp8_block_scale_elements": 168099840,
+  "fp8_block_scales_nonfinite": 0,
+  "fp8_block_scales_zero": 0,
+  "per_tensor_scales_bad": 0,
+  "fused_groups": "gate/up/down all NVFP4 in every layer; q/k/v/o all BF16 in every layer"
+ },
+ "hf_quant_config": {
+  "quant_algo": "NVFP4",
+  "group_size": 16,
+  "kv_cache_quant_algo": null,
+  "exclude_modules": 38
+ },
+ "drift_vs_upstream": {
+  "tokenizer.json": "identical",
+  "tokenizer_config.json": "identical",
+  "vocab.json": "identical",
+  "merges.txt": "identical",
+  "special_tokens_map.json": "identical",
+  "chat_template.jinja": "identical",
+  "config_sentence_transformers.json": "identical",
+  "modules.json": "identical",
+  "sentence_bert_config.json": "identical",
+  "1_LogitScore/config.json": "identical",
+  "config.json": "identical outside quantization_config; transformers 5 re-serialization: rope_theta=1000000 re-serialized as rope_parameters; layer_types made explicit (all full_attention; sliding window off upstream); torch_dtype=bfloat16 renamed to dtype"
+ },
+ "errors": [],
+ "result": "PASS"
+}
