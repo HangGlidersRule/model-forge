@@ -1,0 +1,47 @@
+{
+ "layout": "mixed",
+ "producer": {
+  "name": "modelopt",
+  "version": "0.48.0rc1"
+ },
+ "quantized_layers": {
+  "fp8_linear_attn": 144,
+  "nvfp4_mlp": 192,
+  "fp8_self_attn": 64
+ },
+ "nvfp4_block_scales": {
+  "elements": 1069547520,
+  "nonfinite": 0,
+  "zero": 0
+ },
+ "bad_per_tensor_scales": [],
+ "protected_tensors": {
+  "count": 393,
+  "mtp_tensors": 15,
+  "non_bf16": []
+ },
+ "fused_groups": {
+  "mlp:NVFP4:groups": 64,
+  "linear_attn:FP8:groups": 48,
+  "self_attn:FP8:groups": 16
+ },
+ "byte_identical": [
+  "tokenizer.json",
+  "tokenizer_config.json",
+  "chat_template.jinja",
+  "vocab.json",
+  "merges.txt",
+  "preprocessor_config.json",
+  "video_preprocessor_config.json",
+  "decision_head.json",
+  "calibration.json"
+ ],
+ "config_drift_accepted": [
+  "vision_config.model_type",
+  "vision_config.rope_parameters.rope_theta",
+  "vision_config.rope_parameters.rope_type"
+ ],
+ "config_drift_unexplained": [],
+ "errors": [],
+ "verdict": "PASS"
+}

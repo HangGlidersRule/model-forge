@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# JEV-27B merged (Qwen3.8-27B + JEV System 1 LoRA), Darkstar ModelOpt build for issue #15.
+#
+# Copied from NVIDIA/Model-Optimizer@ff2450c15eb5f1697ec0471704d5421d54fce4f4 (0.48.0rc1):
+#   modelopt_recipes/models/Qwen/Qwen3.8-27B/ptq/nvfp4_w4a4_mlp_fp8_attn_local_hessian.yaml
+#   (imports .../nvfp4_w4a4_mlp_fp8_attn_max.yaml for the quant_cfg)
+# the recipe NVIDIA publishes as reproducing nvidia/Qwen3.8-27B-NVFP4: the precision assignment
+# exported by a 5.5-bit NVFP4-max AutoQuantize sweep, NVFP4 weight scales from Local-Hessian,
+# layerwise calibration.
+#
+# Single delta from upstream: the two lm_head entries are disabled, so lm_head stays BF16. In the
+# merged model lm_head carries the JEV decision head (the System 1 lm_head LoRA), read out as a
+# 24-token logit comparison. NVIDIA quantizes lm_head to NVFP4.
+#
+# Result:
+#   NVFP4 W4A4 (static weights, dynamic activations): language-model MLP gate/up/down
+#   FP8 W8A8: self-attention q/k/v/o, linear-attention (DeltaNet) in_proj_qkv / in_proj_z / out_proj
+#   BF16: in_proj_a/in_proj_b, conv1d, norms, embeddings, lm_head, vision tower, MTP, KV cache
+#
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  fp8: configs/numerics/fp8
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+
+metadata:
+  recipe_type: ptq
+  description: >-
+    JEV-27B merged: NVIDIA's Qwen3.8-27B NVFP4 W4A4 MLP + FP8 attention assignment with
+    Local-Hessian layerwise calibration; lm_head kept BF16 for the decision head.
+quantize:
+  algorithm:
+    method: local_hessian
+    fp8_scale_sweep: true
+    layerwise:
+      enable: true
+      get_qdq_activations_from_prev_layer: true
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*language_model.layers.*.mlp.*.weight_quantizer'
+      cfg: {$import: nvfp4_static}
+    - quantizer_name: '*language_model.layers.*.mlp.*.input_quantizer'
+      cfg: {$import: nvfp4}
+    - quantizer_name: '*language_model.layers.*.self_attn.*_proj.weight_quantizer'
+      cfg: {$import: fp8}
+    - quantizer_name: '*language_model.layers.*.self_attn.*_proj.input_quantizer'
+      cfg: {$import: fp8}
+    - quantizer_name: '*language_model.layers.*.linear_attn.*_proj*.weight_quantizer'
+      cfg: {$import: fp8}
+    - quantizer_name: '*language_model.layers.*.linear_attn.*_proj*.input_quantizer'
+      cfg: {$import: fp8}
+    - quantizer_name: '*lm_head.weight_quantizer'
+      enable: false
+    - quantizer_name: '*lm_head.input_quantizer'
+      enable: false
+    - quantizer_name: '*linear_attn.in_proj_a*'
+      enable: false
+    - quantizer_name: '*linear_attn.in_proj_b*'
+      enable: false

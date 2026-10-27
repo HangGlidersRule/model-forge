@@ -70,6 +70,10 @@ candidate ids or `null` with status `unresolved_pending_precision_winner`.
 
 ## Current records
 
+- [`jev-27b/`](jev-27b/) — decision-model family: the `autotrust/JEV-27B` LoRA merged into
+  `Qwen/Qwen3.8-27B` BF16 and quantized for System 1 decisions (NVFP4 W4A4 MLP + FP8 attention), against the unmerged
+  BF16 + LoRA reference and the deployed NVFP4 + LoRA lane. Published. Abliterated cells do not apply.
+
 - [`qwen3-reranker-4b/`](qwen3-reranker-4b/) — reranker family: unchanged upstream
   `Qwen/Qwen3-Reranker-4B` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base
   ModelOpt W4A4 NVFP4), published. Abliterated cells do not apply to a scoring model.

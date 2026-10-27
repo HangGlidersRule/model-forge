@@ -16,6 +16,7 @@ TARGETS = {
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
     "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4",
+    "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -58,6 +59,10 @@ EXPECTED_METADATA = {
         "Qwen/Qwen3-Reranker-4B",
         "quantized",
     ),
+    "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8": (
+        ["Qwen/Qwen3.8-27B", "autotrust/JEV-27B"],
+        "quantized",
+    ),
 }
 SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -90,6 +95,9 @@ SOURCE_CARDS = {
     "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4": (
         REPO_ROOT / "models" / "qwen3-reranker-4b" / "model-card" / "base-nvfp4.md"
     ),
+    "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8": (
+        REPO_ROOT / "models" / "jev-27b" / "model-card" / "decision-nvfp4.md"
+    ),
 }
 EXPECTED_LICENSE = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
@@ -102,6 +110,7 @@ EXPECTED_LICENSE = {
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16": "other",
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4": "other",
     "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4": "apache-2.0",
+    "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8": "apache-2.0",
 }
 EXPECTED_PUBLIC_REVISIONS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8":
@@ -132,7 +141,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 10
+    assert len(cards) == 11
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
@@ -157,6 +166,10 @@ def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
             assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
             assert "--runner pooling" in text
             assert "--chat-template" in text
+        elif "JEV" in card.parent.name:
+            assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
+            assert "JEV_DECIDE_MERGED=1" in text
+            assert "--enable-lora" not in text.split("## Runtime", 1)[1].split("```")[1]
         elif "Qwen" in card.parent.name:
             assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
             assert "--max-num-seqs 16" in text
@@ -184,7 +197,11 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             "This immutable tag exists and the release contract is published." in text
             or "public on Hugging Face" in text
         )
-        if "Reranker" in target:
+        if "JEV" in target:
+            assert "darkstar-jev-27b-v1.0.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "JEV_DECIDE_MERGED=1" in text
+        elif "Reranker" in target:
             assert "darkstar-qwen3-reranker-4b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "--runner pooling" in text

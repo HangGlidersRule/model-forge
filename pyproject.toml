@@ -38,6 +38,8 @@ select = ["E4", "E7", "E9", "F", "I"]
 "tests/test_abliteration_corpus.py" = ["E402"]
 "tests/test_quantize_qwen38_nvfp4.py" = ["E402"]
 "scripts/qwen3_8/*.py" = ["E402"]
+# Frozen pass-bar script: its sha256 is quoted in the jev-27b gate evidence, so it stays byte-identical.
+"models/jev-27b/eval/gate_noninferiority.py" = ["E741"]
 
 [tool.mypy]
 strict = true

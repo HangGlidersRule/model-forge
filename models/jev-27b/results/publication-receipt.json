@@ -1,0 +1,65 @@
+{
+ "repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+ "hf_commit": "4fa9b02d0dcd6d8abe94d1f803e97670531a9084",
+ "hf_commit_note": "Current head: card-only commits on top of 72a57324 (the clean-download-verified commit); weights, configs and every other file unchanged.",
+ "verified_commit": "72a57324e193c4b51648af31d17f18b285dce043",
+ "files": [
+  ".gitattributes",
+  "LICENSE",
+  "README.md",
+  "calibration.json",
+  "chat_template.jinja",
+  "config.json",
+  "decision_head.json",
+  "generation_config.json",
+  "hf_quant_config.json",
+  "manifest.sha256",
+  "merges.txt",
+  "model-00001-of-00003.safetensors",
+  "model-00002-of-00003.safetensors",
+  "model-00003-of-00003.safetensors",
+  "model.safetensors.index.json",
+  "preprocessor_config.json",
+  "serve_decide.py",
+  "tokenizer.json",
+  "tokenizer_config.json",
+  "video_preprocessor_config.json",
+  "vocab.json"
+ ],
+ "manifest_sha256_of_manifest_file": "8a54b3c542f31c112efbc44623bdd1475a2f6a6fca4f1939b225f5a7841ac73c",
+ "lfs_sha256_matches_local": true,
+ "clean_download_boot_smoke": {
+  "download": "empty HF cache, snapshot_download at the verified commit; 19/19 manifest.sha256 entries verified, 0 mismatches",
+  "serve": "vLLM v0.32.0 by digest + serve_decide.py from the download with JEV_DECIDE_MERGED=1 and JEV_DECIDE_HEAD_DIR set, the card's exact flags (--max-model-len 32768 --max-num-seqs 32 --logprobs-mode processed_logprobs --trust-request-chat-template); FlashInferCutlassNvFp4LinearKernel (MLP) + FlashInferFP8ScaledMMLinearKernel (attention); weights 21.53 GiB; KV cache 814,421 tokens",
+  "health": 200,
+  "served_model": "darkstar-jev27b-base-nvfp4",
+  "card_example": {
+   "choice": "EUR",
+   "probability": 0.99999,
+   "prompt_tokens": 52
+  },
+  "per_kind_smoke": {
+   "noul_true_probability": 0.9833,
+   "score_argmax": 0
+  },
+  "fatal_markers_in_log": 0
+ },
+ "public": {
+  "anonymous_http_200": [
+   "README.md",
+   "calibration.json",
+   "card_page",
+   "config.json",
+   "decision_head.json",
+   "manifest.sha256",
+   "model-00001-of-00003.safetensors",
+   "model-00002-of-00003.safetensors",
+   "model-00003-of-00003.safetensors",
+   "model.safetensors.index.json",
+   "serve_decide.py"
+  ],
+  "card_read_back_identical": true,
+  "family_collection": "HangGlidersRule/darkstar-jev-27b-6ae12c8cd6eba44d1ab99a16",
+  "darkstar_releases_collection": "HangGlidersRule/darkstar-releases-6a8dfe8c2340f19e4f3e24c1"
+ }
+}

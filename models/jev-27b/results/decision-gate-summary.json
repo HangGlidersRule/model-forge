@@ -1,0 +1,351 @@
+{
+ "family": "jev-27b",
+ "issue": "https://github.com/HangGlidersRule/model-forge/issues/15",
+ "eval_set": {
+  "dataset": "SargeDev/jev-distill-corpus-v3",
+  "revision": "75111a13a8455032f0435050bfc7e0c9026ecfe8",
+  "split": "test_set_30k",
+  "rows": 29955,
+  "sha256": "53b044fa5bbcb22164d9a28811e56fabcd82ae29224d994c693b069eeb5d23ed",
+  "single_argmax_rows": 27324
+ },
+ "harness": {
+  "engine": "vllm/vllm-openai v0.32.0 (sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34)",
+  "server": "autotrust/JEV-27B serve_decide.py with the two-line merged-model patch (eval/patch_serve_decide.py)",
+  "request": "POST /v1/decide, System 1 only (thinking off, strategy single)",
+  "concurrency": 16,
+  "flags": "--max-model-len 32768 --max-num-seqs 32 --logprobs-mode processed_logprobs --gpu-memory-utilization 0.85",
+  "hardware": "RTX PRO 6000 Blackwell (SM120), 96 GB",
+  "bootstrap": "paired, 2,000 resamples, seed 1234, percentile 95% CI"
+ },
+ "configurations": {
+  "ref": "Qwen/Qwen3.8-27B BF16 + autotrust/JEV-27B adapter_vllm LoRA (the JEV-27B card's setup)",
+  "ref-rep": "the same reference, second serve (noise floor)",
+  "current": "nvidia/Qwen3.8-27B-NVFP4 @ 482ca0f3 + the same LoRA remapped to model.language_model.* (the deployed lane)",
+  "merged": "candidate A: merged BF16 quantized with NVIDIA's Qwen3.8-27B recipe (NVFP4 W4A4 MLP, FP8 W8A8 attention), lm_head BF16",
+  "merged-b": "candidate B: merged BF16, NVFP4 W4A4 on MLP, self-attention and linear-attention, lm_head BF16"
+ },
+ "summaries": {
+  "ref": {
+   "kl": 0.01856598639623676,
+   "top1": 0.9269872639437857,
+   "n_defined": 27324,
+   "choice_top1": 0.9124459714064058,
+   "noul_auroc": 0.9960806092737955,
+   "score_mae_expected": 0.09776001602268973,
+   "rows": 29955,
+   "rows_per_s": 45.33,
+   "latency_p50_ms": 304.2,
+   "latency_p95_ms": 701.1,
+   "concurrency": 16
+  },
+  "ref-rep": {
+   "kl": 0.018574633654428678,
+   "top1": 0.9272800468452642,
+   "n_defined": 27324,
+   "choice_top1": 0.9133325944807713,
+   "noul_auroc": 0.9960700598590153,
+   "score_mae_expected": 0.09768735566891172,
+   "rows": 29955,
+   "rows_per_s": 39.22,
+   "latency_p50_ms": 349.7,
+   "latency_p95_ms": 727.5,
+   "concurrency": 16
+  },
+  "current": {
+   "kl": 0.020705765894915525,
+   "top1": 0.92003367003367,
+   "n_defined": 27324,
+   "choice_top1": 0.908123683918874,
+   "noul_auroc": 0.9954934703736569,
+   "score_mae_expected": 0.1057776478329205,
+   "rows": 29955,
+   "rows_per_s": 50.12,
+   "latency_p50_ms": 269.6,
+   "latency_p95_ms": 516.8,
+   "concurrency": 16
+  },
+  "merged": {
+   "kl": 0.020319425644452216,
+   "top1": 0.9219367588932806,
+   "n_defined": 27324,
+   "choice_top1": 0.9050205031585947,
+   "noul_auroc": 0.9954363818904929,
+   "score_mae_expected": 0.10426643000835872,
+   "rows": 29955,
+   "rows_per_s": 69.55,
+   "latency_p50_ms": 196.3,
+   "latency_p95_ms": 342.6,
+   "concurrency": 16
+  },
+  "merged-b": {
+   "kl": 0.02203622888620239,
+   "top1": 0.9188625384277558,
+   "n_defined": 27324,
+   "choice_top1": 0.9025822897040896,
+   "noul_auroc": 0.9950099380520747,
+   "score_mae_expected": 0.11220887747162331,
+   "rows": 29955,
+   "rows_per_s": 98.46,
+   "latency_p50_ms": 146.5,
+   "latency_p95_ms": 262.1,
+   "concurrency": 16
+  }
+ },
+ "latency_probe": {
+  "current": {
+   "short": {
+    "c1": {
+     "requests": 32,
+     "concurrency": 1,
+     "wall_s": 3.5,
+     "req_per_s": 9.14,
+     "p50_ms": 107.4,
+     "p95_ms": 125.7,
+     "prompt_tokens_mean": 314
+    },
+    "c8": {
+     "requests": 64,
+     "concurrency": 8,
+     "wall_s": 2.02,
+     "req_per_s": 31.7,
+     "p50_ms": 239.0,
+     "p95_ms": 313.1,
+     "prompt_tokens_mean": 276
+    }
+   },
+   "long": {
+    "c1": {
+     "requests": 32,
+     "concurrency": 1,
+     "wall_s": 11.01,
+     "req_per_s": 2.91,
+     "p50_ms": 364.6,
+     "p95_ms": 440.6,
+     "prompt_tokens_mean": 3789
+    },
+    "c8": {
+     "requests": 64,
+     "concurrency": 8,
+     "wall_s": 10.73,
+     "req_per_s": 5.96,
+     "p50_ms": 1235.2,
+     "p95_ms": 2831.1,
+     "prompt_tokens_mean": 3777
+    }
+   }
+  },
+  "merged": {
+   "short": {
+    "c1": {
+     "requests": 32,
+     "concurrency": 1,
+     "wall_s": 2.6,
+     "req_per_s": 12.31,
+     "p50_ms": 80.1,
+     "p95_ms": 88.9,
+     "prompt_tokens_mean": 314
+    },
+    "c8": {
+     "requests": 64,
+     "concurrency": 8,
+     "wall_s": 1.83,
+     "req_per_s": 35.0,
+     "p50_ms": 210.8,
+     "p95_ms": 304.1,
+     "prompt_tokens_mean": 276
+    }
+   },
+   "long": {
+    "c1": {
+     "requests": 32,
+     "concurrency": 1,
+     "wall_s": 7.94,
+     "req_per_s": 4.03,
+     "p50_ms": 270.1,
+     "p95_ms": 329.7,
+     "prompt_tokens_mean": 3789
+    },
+    "c8": {
+     "requests": 64,
+     "concurrency": 8,
+     "wall_s": 8.52,
+     "req_per_s": 7.51,
+     "p50_ms": 873.6,
+     "p95_ms": 2124.4,
+     "prompt_tokens_mean": 3777
+    }
+   }
+  },
+  "merged-b": {
+   "short": {
+    "c1": {
+     "requests": 32,
+     "concurrency": 1,
+     "wall_s": 2.31,
+     "req_per_s": 13.84,
+     "p50_ms": 71.9,
+     "p95_ms": 89.5,
+     "prompt_tokens_mean": 314
+    },
+    "c8": {
+     "requests": 64,
+     "concurrency": 8,
+     "wall_s": 1.34,
+     "req_per_s": 47.9,
+     "p50_ms": 156.6,
+     "p95_ms": 206.1,
+     "prompt_tokens_mean": 276
+    }
+   },
+   "long": {
+    "c1": {
+     "requests": 32,
+     "concurrency": 1,
+     "wall_s": 6.51,
+     "req_per_s": 4.92,
+     "p50_ms": 219.3,
+     "p95_ms": 246.4,
+     "prompt_tokens_mean": 3789
+    },
+    "c8": {
+     "requests": 64,
+     "concurrency": 8,
+     "wall_s": 7.08,
+     "req_per_s": 9.04,
+     "p50_ms": 774.5,
+     "p95_ms": 1812.9,
+     "prompt_tokens_mean": 3777
+    }
+   }
+  }
+ },
+ "kv_cache_tokens": {
+  "ref": 389802,
+  "ref-rep": 389802,
+  "current": 832170,
+  "merged": 814421,
+  "merged-b": 857429
+ },
+ "weights_gib": {
+  "ref": 50.67,
+  "current": 20.39,
+  "merged": 21.53,
+  "merged-b": 18.66
+ },
+ "noise_floor": {
+  "kl_between_serves": 3.2e-05,
+  "top1_agreement": 0.99
+ },
+ "agreement_with_ref": {
+  "current": 0.9434,
+  "merged": 0.9403,
+  "merged-b": 0.9359
+ },
+ "confident_flips_vs_ref_margin_gt_0.2": {
+  "current": 0,
+  "merged": 2,
+  "merged-b": 15
+ },
+ "bar_v1": {
+  "definition": "statistically indistinguishable from the BF16 reference (teacher-KL CI includes 0; top-1 within 0.5 pt), plus agreement and speed vs current",
+  "result": "fail for every 4-bit configuration, including the deployed lane (current +0.0021, CI +0.0020..+0.0023); replaced before candidate B was evaluated"
+ },
+ "bar_v2": {
+  "definition": "non-inferior to current (NVIDIA NVFP4 + LoRA): teacher-KL CI upper <= 0; top-1 deficit CI upper <= 0.5 pt; faster rows/s and c=1 p50 short+long",
+  "frozen_utc": "2026-10-27T21:22:18Z",
+  "script": "models/jev-27b/eval/gate_noninferiority.py",
+  "script_sha256": "75fcb8147e10b1bb606d9c9cc80e6f8d88aa668cc4fac84c9354986b614222de",
+  "candidates": {
+   "merged": {
+    "verdict": "PASS",
+    "criteria": {
+     "teacher_kl_not_worse": true,
+     "top1_deficit_within_0p5pt": true,
+     "rows_per_s_ge_current": true,
+     "p50_c1_short_le_current": true,
+     "p50_c1_long_le_current": true
+    },
+    "teacher_kl_delta_vs_current": [
+     -0.0003863402504633096,
+     -0.0005374292116647156,
+     -0.00023599171252160114
+    ],
+    "top1_deficit_vs_current_pt": [
+     -0.19030888596105988,
+     -0.4062362758014932,
+     0.021958717610891524
+    ],
+    "rows_per_s": [
+     69.55,
+     50.12
+    ],
+    "p50_c1_short_ms": [
+     80.1,
+     107.4
+    ],
+    "p50_c1_long_ms": [
+     270.1,
+     364.6
+    ]
+   },
+   "merged-b": {
+    "verdict": "FAIL",
+    "criteria": {
+     "teacher_kl_not_worse": false,
+     "top1_deficit_within_0p5pt": true,
+     "rows_per_s_ge_current": true,
+     "p50_c1_short_le_current": true,
+     "p50_c1_long_le_current": true
+    },
+    "teacher_kl_delta_vs_current": [
+     0.0013304629912868683,
+     0.0011414183072356134,
+     0.0015206401774121216
+    ],
+    "top1_deficit_vs_current_pt": [
+     0.11711316059142146,
+     -0.12077294685990338,
+     0.36597862684819205
+    ],
+    "rows_per_s": [
+     98.46,
+     50.12
+    ],
+    "p50_c1_short_ms": [
+     71.9,
+     107.4
+    ],
+    "p50_c1_long_ms": [
+     219.3,
+     364.6
+    ]
+   }
+  },
+  "winner": "merged"
+ },
+ "decision": "Candidate A (merged) ships: non-inferior to the deployed lane on teacher KL (-0.00039, CI below zero) and top-1, 1.39x rows/s, 25% lower c=1 latency. Candidate B (all-NVFP4) is 1.96x the deployed lane's rows/s but its teacher KL is worse (+0.00133, CI excludes 0); evaluated, not shipped.",
+ "flip_margins": {
+  "definition": "decisions whose argmax differs from the BF16 reference (ref); median of the reference's top-2 probability margin on those rows; count of flips where that margin exceeds 0.2",
+  "ref-rep": {
+   "flips": 299,
+   "median_ref_top2_margin_on_flips": 0.0037,
+   "flips_with_ref_margin_gt_0.2": 0
+  },
+  "current": {
+   "flips": 1696,
+   "median_ref_top2_margin_on_flips": 0.0078,
+   "flips_with_ref_margin_gt_0.2": 0
+  },
+  "merged": {
+   "flips": 1787,
+   "median_ref_top2_margin_on_flips": 0.0114,
+   "flips_with_ref_margin_gt_0.2": 2
+  },
+  "merged-b": {
+   "flips": 1919,
+   "median_ref_top2_margin_on_flips": 0.0134,
+   "flips_with_ref_margin_gt_0.2": 15
+  }
+ }
+}
