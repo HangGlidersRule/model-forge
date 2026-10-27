@@ -1,0 +1,35 @@
+{
+  "package": "nvidia-modelopt",
+  "version": "0.48.0rc1",
+  "git_tag": "0.48.0rc1",
+  "git_commit": "ff2450c15eb5f1697ec0471704d5421d54fce4f4",
+  "release_date": "2026-10-17",
+  "release_channel": "pre-release (newest published build; 0.47.0 is the newest stable)",
+  "requires_python": ">=3.10,<3.15",
+  "wheel": {
+    "filename": "nvidia_modelopt-0.48.0rc1-py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/b1/b9/5888b69f463f2a5246485d2f85a03d138226d849cdd18297f68e717caaac/nvidia_modelopt-0.48.0rc1-py3-none-any.whl",
+    "sha256": "2b874d94c198d72a1ca299a9d2a45ea5ff61f860ca0bd4ed7656465ce5b5f588"
+  },
+  "dependency_versions": {
+    "nvidia-modelopt": "0.48.0rc1",
+    "torch": "2.8.0 (cu128)",
+    "transformers": ">=5.5,<5.19",
+    "datasets": ">=3.0.0,<4.0.0",
+    "PyYAML": ">=6.0",
+    "omegaconf": ">=2.3.0"
+  },
+  "extra_pip_specs": "datasets>=3.0.0,<4.0.0 soundfile librosa pyarrow psutil zstandard fire nvidia-ml-py requests",
+  "extra_pip_specs_reason": "Whisper calibration streams MLCommons/peoples_speech audio, which datasets 3.x decodes with soundfile (datasets 4.x would need torchcodec + FFmpeg). pyarrow loads the reranker calibration JSONL; requests is imported by modelopt.torch.utils.dataset_utils; psutil/zstandard/fire/nvidia-ml-py come from examples/hf_ptq.",
+  "entry_point": "examples/hf_ptq/hf_ptq.py",
+  "export": "unified_hf_hf_quant_config_json",
+  "image_dockerfile": "containers/modelopt/issue14/Dockerfile",
+  "scope": "Campaign for public issue HangGlidersRule/model-forge#14 (Qwen3-Reranker-4B, whisper-large-v3-turbo). configs/modelopt/pin.json (0.46.0rc2) still governs the earlier families and their shipped artifacts.",
+  "why_this_release": "Newest published ModelOpt (Devin asked for the latest). Fixes over 0.47.0 that matter here: hf_ptq no longer overwrites an existing pad_token with eos_token; export copies the source checkpoint's non-model files unchanged; calibration no longer silently drops samples on an OOM batch split; FP8 fake-quant no longer zeroes tiny static NVFP4 weight blocks. Recipe units used here (nvfp4, nvfp4_static, base_disable_all) are byte-identical to 0.47.0; default_disabled_quantizers only adds two GatedDeltaNet emulation exclusions.",
+  "verified": {
+    "wheel_sha256": "computed locally from the downloaded wheel, matches PyPI",
+    "tag_commit": "gh api repos/NVIDIA/Model-Optimizer/commits/0.48.0rc1",
+    "recipes": "all four issue-14 recipes load with modelopt.recipe.load_recipe under 0.48.0rc1 and 0.47.0",
+    "speech_calibration": "MLCommons/peoples_speech clean streams and decodes with datasets 3.6.0 + soundfile"
+  }
+}

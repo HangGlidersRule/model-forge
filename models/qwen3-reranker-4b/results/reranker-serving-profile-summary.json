@@ -1,0 +1,63 @@
+{
+ "evalset_sha256": "28f2dde20dd4bc3e82d41cdaa0e63df01048a29f9b318cf836129c59c3e450db",
+ "control": "bf16-ship",
+ "rows": {
+  "bf16-ship": {
+   "macro_ndcg10": 0.7100363443412616,
+   "per_dataset": {
+    "mteb/NanoNFCorpusRetrieval": 0.5265957154982529,
+    "mteb/NanoFiQA2018Retrieval": 0.7698575122924324,
+    "mteb/NanoTouche2020Retrieval": 0.6458806888029724,
+    "mteb/NanoArguAnaRetrieval": 0.7447860963332975,
+    "mteb/NanoSciFactRetrieval": 0.8550158657040932,
+    "mteb/NanoMSMARCORetrieval": 0.718082187416521
+   },
+   "delta": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "spearman": 1.0,
+   "top10_overlap": 1.0,
+   "n_queries": 299,
+   "n_pairs": 8970,
+   "throughput_pairs_per_s": {
+    "c1": 41.90794837837026,
+    "c4": 45.64867461134544,
+    "c8": 45.78267893254862
+   }
+  },
+  "C-ship": {
+   "macro_ndcg10": 0.7051870790821193,
+   "per_dataset": {
+    "mteb/NanoNFCorpusRetrieval": 0.525622506034247,
+    "mteb/NanoFiQA2018Retrieval": 0.7577570929399771,
+    "mteb/NanoTouche2020Retrieval": 0.6466599049845528,
+    "mteb/NanoArguAnaRetrieval": 0.7577676986379487,
+    "mteb/NanoSciFactRetrieval": 0.8361843154920614,
+    "mteb/NanoMSMARCORetrieval": 0.7071309564039285
+   },
+   "delta": -0.004868089611786918,
+   "ci95": [
+    -0.015480757687857487,
+    0.005695257997501663
+   ],
+   "spearman": 0.9501000735939006,
+   "top10_overlap": 0.899665551839465,
+   "n_queries": 299,
+   "n_pairs": 8970,
+   "throughput_pairs_per_s": {
+    "c1": 53.67970850754665,
+    "c4": 63.234375406139335,
+    "c8": 79.6142502574084
+   }
+  }
+ },
+ "provenance": {
+  "purpose": "Re-run of the selected candidate (C) and the BF16 control with the published serving profile: the checkpoint's own chat_template.jinja passed via --chat-template, max-model-len 32768 for the untruncated eval set.",
+  "vllm_image": "vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34 (v0.32.0)",
+  "gpu": "RTX PRO 6000 Blackwell (SM120), shared with another workload during the C throughput runs",
+  "evalset_sha256": "28f2dde20dd4bc3e82d41cdaa0e63df01048a29f9b318cf836129c59c3e450db",
+  "finding": "vLLM v0.32.0 /v1/score does not apply the checkpoint chat_template.jinja unless --chat-template is passed; without it nDCG@10 collapses (NFCorpus 0.41, SciFact 0.15). The card's serve block passes it explicitly."
+ }
+}

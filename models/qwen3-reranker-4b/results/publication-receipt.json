@@ -1,0 +1,40 @@
+{
+ "repository": "HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4",
+ "hf_commit": "8878e4b6f8a2a6f3edbdf713e2d74167968be0cd",
+ "files": [
+  ".gitattributes",
+  ".quant_summary.txt",
+  "1_LogitScore/config.json",
+  "LICENSE",
+  "README.md",
+  "SOURCE_REVISION",
+  "chat_template.jinja",
+  "config.json",
+  "config_sentence_transformers.json",
+  "generation_config.json",
+  "hf_quant_config.json",
+  "manifest.sha256",
+  "merges.txt",
+  "model.safetensors",
+  "modules.json",
+  "sentence_bert_config.json",
+  "special_tokens_map.json",
+  "tokenizer.json",
+  "tokenizer_config.json",
+  "vocab.json"
+ ],
+ "manifest_sha256_of_manifest_file": "182c991a349cbf405915791c5366fde091b8be6233539e33ae9db3599d0085b7",
+ "lfs_sha256_matches_local": true,
+ "clean_download_boot_smoke": {
+  "download": "empty HF cache, snapshot_download at the commit above; 18/18 manifest.sha256 entries verified, 0 mismatches",
+  "serve": "vLLM v0.32.0 by digest, the card's exact flags (pooling runner, Qwen3ForSequenceClassification overrides, --chat-template chat_template.jinja from the download, --max-model-len 8192), FlashInferCutlassNvFp4LinearKernel, weights 3.92 GiB",
+  "health": 200,
+  "served_model": "darkstar-qwen3reranker4b-base-nvfp4",
+  "card_example": {
+   "relevant_score": 0.9656,
+   "irrelevant_score": 5.3e-06,
+   "prompt_tokens": 173
+  },
+  "fatal_markers_in_log": 0
+ }
+}

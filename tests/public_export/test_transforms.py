@@ -311,3 +311,41 @@ def test_registry_implements_every_pr_a_transform_contract() -> None:
         "sanitize_serving_capacity_profiles",
         "sanitize_validation_inventory",
     }
+
+
+
+@pytest.mark.parametrize("token", ["nDCG@10", "MRR@10", "recall@1000", "Precision@5"])
+def test_metric_at_k_names_are_not_rewritten_to_the_public_contact(token: str) -> None:
+    # nDCG@10 and friends match the email pattern but name a metric; they must survive export.
+    source = f"| {token} | 0.7095 |\n".encode()
+
+    result = apply_transform("sanitize_public_markdown", source, context())
+
+    assert result.data == source
+
+
+@pytest.mark.parametrize(
+    ("token", "expected"),
+    [
+        ("alice@corp.example", "security@example.com"),
+        ("operator@192.0.2.10", "security@example.com"),
+        ("operator@gpu-node", "security@example.com"),
+        ("owner@localhost", "security@example.com"),
+    ],
+)
+def test_addresses_and_ssh_targets_are_still_rewritten(token: str, expected: str) -> None:
+    # Only bare-integer metric suffixes are exempt; email addresses and user@host SSH targets
+    # (IP or hostname) must keep being replaced so private hosts never reach the export.
+    source = f"target {token}\n".encode()
+
+    result = apply_transform("sanitize_public_markdown", source, context())
+
+    assert result.data == f"target {expected}\n".encode()
+
+
+def test_conventional_emails_are_still_rewritten_next_to_metric_names() -> None:
+    source = b"nDCG@10 measured by alice@corp.example\n"
+
+    result = apply_transform("sanitize_public_markdown", source, context())
+
+    assert result.data == b"nDCG@10 measured by security@example.com\n"

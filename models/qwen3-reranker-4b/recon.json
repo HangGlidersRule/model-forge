@@ -1,0 +1,95 @@
+{
+  "family": "qwen3-reranker-4b",
+  "recon_date": "2026-10-27",
+  "status": "recon complete; campaign kicked off from public issue HangGlidersRule/model-forge#14",
+  "policy": "Quantize from the upstream BF16 weights only. Third-party quantized checkpoints are evidence and serving probes, never build inputs. No abliteration.",
+  "source": {
+    "model_id": "Qwen/Qwen3-Reranker-4B",
+    "revision": "22e683669bc0f0bd69640a1354a6d0aebcfeede5",
+    "last_modified": "2026-04-16T08:56:07Z"
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "declared_in": "model card metadata (the repo ships no LICENSE file)",
+    "redistribution": "Modified weights may be redistributed. Ship the Apache-2.0 text and mark modified files."
+  },
+  "files": {
+    "shards": {
+      "model-00001-of-00002.safetensors": {
+        "size": 4058781760,
+        "lfs_sha256": "cf2e87cbf71fa628961532232e04dd6c19702a0a057f5e2aff95ea1aca4fd488"
+      },
+      "model-00002-of-00002.safetensors": {
+        "size": 3984833200,
+        "lfs_sha256": "78946d22b7f6456ea7a5358dbdf3982de36c5bac1f166a5fd58e18e31db8048a"
+      }
+    },
+    "tensor_count": 398,
+    "dtypes": {
+      "BF16": 398
+    },
+    "total_params": 4021784576
+  },
+  "architecture": {
+    "class": "Qwen3ForCausalLM",
+    "model_type": "qwen3",
+    "kind": "dense decoder used as a cross-encoder reranker",
+    "num_hidden_layers": 36,
+    "hidden_size": 2560,
+    "intermediate_size": 9728,
+    "num_attention_heads": 32,
+    "num_key_value_heads": 8,
+    "head_dim": 128,
+    "max_position_embeddings": 40960,
+    "vocab_size": 151669,
+    "tie_word_embeddings": true,
+    "linear_groups": {
+      "model.layers.N.mlp.down_proj.weight": 36,
+      "model.layers.N.mlp.gate_proj.weight": 36,
+      "model.layers.N.mlp.up_proj.weight": 36,
+      "model.layers.N.self_attn.k_proj.weight": 36,
+      "model.layers.N.self_attn.o_proj.weight": 36,
+      "model.layers.N.self_attn.q_proj.weight": 36,
+      "model.layers.N.self_attn.v_proj.weight": 36
+    },
+    "linear_params": 3633315840,
+    "linear_share_of_params": 0.9034,
+    "non_linear_groups": {
+      "model.embed_tokens.weight": 1,
+      "model.layers.N.input_layernorm.weight": 36,
+      "model.layers.N.post_attention_layernorm.weight": 36,
+      "model.layers.N.self_attn.k_norm.weight": 36,
+      "model.layers.N.self_attn.q_norm.weight": 36,
+      "model.norm.weight": 1
+    }
+  },
+  "serving_facts": {
+    "runtime": "vLLM v0.32.0, --runner pooling",
+    "hf_overrides": {
+      "architectures": [
+        "Qwen3ForSequenceClassification"
+      ],
+      "classifier_from_token": [
+        "no",
+        "yes"
+      ],
+      "is_original_qwen3_reranker": true
+    },
+    "chat_template": "Qwen3-Reranker yes/no judge template (required: without it scores are flat and wrong)",
+    "classifier": "vLLM builds the score row from the lm_head rows for 'yes' and 'no'; lm_head is tied to embed_tokens, so an unquantized embedding table keeps the classifier BF16 (load_weights_using_from_2_way_softmax, vllm/model_executor/models/adapters.py at v0.32.0).",
+    "sequence_unit": "one query-document pair per sequence; long requests are many pairs, not one long sequence"
+  },
+  "prior_art_on_hub": [
+    "KoliaNik/Qwen3-Reranker-4B-NVFP4 (llm-compressor W4A4, lm_head BF16; eval on 150-query MTEB subsets, docs truncated to 800 chars)",
+    "KoliaNik/Qwen3-Reranker-4B-NVFP4A16 (weight-only)",
+    "throwerdopey0/Qwen3-Reranker-4B-seq-cls-NVFP4 (llm-compressor W4A4 from a seq-cls conversion, score head BF16)",
+    "Forturne/Qwen3-Reranker-4B-NVFP4 (llm-compressor W4A4, no card)"
+  ],
+  "candidates": {
+    "A_primary": "configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_mlp_only_mse-kv_bf16.yaml",
+    "B_compute": "configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_attn_mlp_mse-kv_bf16.yaml",
+    "C_act_headroom": "configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_mlp_only_act_headroom-kv_bf16.yaml"
+  },
+  "proposed_product": "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4 (final id set at publication from the winning candidate)",
+  "fallback": "FP8 cell if NVFP4 activations fail the reranking gate"
+}

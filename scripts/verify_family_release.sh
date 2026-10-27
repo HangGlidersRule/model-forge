@@ -2,7 +2,8 @@
 # verify_family_release.sh — post-release surface reconciliation for one Darkstar family.
 #
 # Verifies ALL publication surfaces are live and consistent, not just the weights repo:
-#   1. Each owned HF repo resolves publicly (200) and carries README.md + model.safetensors.index.json
+#   1. Each owned HF repo resolves publicly (200) and carries README.md plus model.safetensors.index.json
+#      (sharded) or model.safetensors (single file)
 #   2. The catalog row for the family exists on the PUBLIC repo's README.md on main
 #   3. An HF collection page contains every owned repo id
 #   4. The GitHub release tag exists on the public repo and is reachable
@@ -44,10 +45,15 @@ for repo in "${repos[@]}"; do
   say "repo $repo"
   code=$(curl -s -o /dev/null -w '%{http_code}' "https://huggingface.co/$repo")
   if [[ "$code" != "200" ]]; then report "FAIL" "repo not public/200 ($code)"; status=1; else report "ok" "repo public 200"; fi
-  for file in README.md model.safetensors.index.json; do
-    code=$(curl -sL -o /dev/null -w '%{http_code}' "https://huggingface.co/$repo/resolve/main/$file")
-    if [[ "$code" != "200" ]]; then report "FAIL" "$file missing ($code)"; status=1; else report "ok" "$file"; fi
+  code=$(curl -sL -o /dev/null -w '%{http_code}' "https://huggingface.co/$repo/resolve/main/README.md")
+  if [[ "$code" != "200" ]]; then report "FAIL" "README.md missing ($code)"; status=1; else report "ok" "README.md"; fi
+  # Sharded checkpoints carry model.safetensors.index.json; single-file checkpoints carry model.safetensors.
+  weights_ok=""
+  for file in model.safetensors.index.json model.safetensors; do
+    code=$(curl -sI -L -o /dev/null -w '%{http_code}' "https://huggingface.co/$repo/resolve/main/$file")
+    if [[ "$code" == "200" ]]; then weights_ok=$file; break; fi
   done
+  if [[ -z "$weights_ok" ]]; then report "FAIL" "no model.safetensors.index.json or model.safetensors"; status=1; else report "ok" "$weights_ok"; fi
 done
 
 ## 2. Catalog row on the public main README

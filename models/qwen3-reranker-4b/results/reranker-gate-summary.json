@@ -1,0 +1,144 @@
+{
+ "evalset_sha256": "28f2dde20dd4bc3e82d41cdaa0e63df01048a29f9b318cf836129c59c3e450db",
+ "control": "bf16",
+ "rows": {
+  "bf16": {
+   "macro_ndcg10": 0.7118407625325957,
+   "per_dataset": {
+    "mteb/NanoNFCorpusRetrieval": 0.5256982918769912,
+    "mteb/NanoFiQA2018Retrieval": 0.7706499363942555,
+    "mteb/NanoTouche2020Retrieval": 0.64814720964785,
+    "mteb/NanoArguAnaRetrieval": 0.7476933890271618,
+    "mteb/NanoSciFactRetrieval": 0.855553273900159,
+    "mteb/NanoMSMARCORetrieval": 0.7233024743491565
+   },
+   "delta": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "spearman": 1.0,
+   "top10_overlap": 1.0,
+   "n_queries": 299,
+   "n_pairs": 8970,
+   "throughput_pairs_per_s": {
+    "c1": 42.194160500894405,
+    "c4": 46.896950186396346,
+    "c8": 45.8577543838153
+   }
+  },
+  "bf16-replica": {
+   "macro_ndcg10": 0.7110173767088533,
+   "per_dataset": {
+    "mteb/NanoNFCorpusRetrieval": 0.5288540592533696,
+    "mteb/NanoFiQA2018Retrieval": 0.7708892397811775,
+    "mteb/NanoTouche2020Retrieval": 0.6499661665477311,
+    "mteb/NanoArguAnaRetrieval": 0.7463069201886295,
+    "mteb/NanoSciFactRetrieval": 0.855553273900159,
+    "mteb/NanoMSMARCORetrieval": 0.7145346005820535
+   },
+   "delta": -0.0008322230903765093,
+   "ci95": [
+    -0.00408899413330692,
+    0.0014252640357353566
+   ],
+   "spearman": 0.998627600641618,
+   "top10_overlap": 0.9869565217391304,
+   "n_queries": 299,
+   "n_pairs": 8970,
+   "throughput_pairs_per_s": {
+    "c1": 41.93075518238974,
+    "c4": 46.81907054816202,
+    "c8": 40.47375147038148
+   }
+  },
+  "A": {
+   "macro_ndcg10": 0.7020192714942096,
+   "per_dataset": {
+    "mteb/NanoNFCorpusRetrieval": 0.514572183310386,
+    "mteb/NanoFiQA2018Retrieval": 0.7595832818242279,
+    "mteb/NanoTouche2020Retrieval": 0.651337708491854,
+    "mteb/NanoArguAnaRetrieval": 0.7426581326882189,
+    "mteb/NanoSciFactRetrieval": 0.8325075121302724,
+    "mteb/NanoMSMARCORetrieval": 0.7114568105202984
+   },
+   "delta": -0.009865009399196763,
+   "ci95": [
+    -0.020586367929659365,
+    0.00021675031778476956
+   ],
+   "spearman": 0.9544969813695796,
+   "top10_overlap": 0.9060200668896321,
+   "n_queries": 299,
+   "n_pairs": 8970,
+   "throughput_pairs_per_s": {
+    "c1": 73.076405948211,
+    "c4": 84.6493068471931,
+    "c8": 82.80249500155011
+   }
+  },
+  "B": {
+   "macro_ndcg10": 0.6913437302854889,
+   "per_dataset": {
+    "mteb/NanoNFCorpusRetrieval": 0.5171946985439064,
+    "mteb/NanoFiQA2018Retrieval": 0.7394281430064186,
+    "mteb/NanoTouche2020Retrieval": 0.6469620019352432,
+    "mteb/NanoArguAnaRetrieval": 0.7452943722402207,
+    "mteb/NanoSciFactRetrieval": 0.8385050197456637,
+    "mteb/NanoMSMARCORetrieval": 0.6606781462414808
+   },
+   "delta": -0.0205616202890282,
+   "ci95": [
+    -0.03230786719459003,
+    -0.009443728052603961
+   ],
+   "spearman": 0.927094492293882,
+   "top10_overlap": 0.8795986622073578,
+   "n_queries": 299,
+   "n_pairs": 8970,
+   "throughput_pairs_per_s": {
+    "c1": 96.7720836827727,
+    "c4": 119.35006844677513,
+    "c8": 69.26819785046798
+   }
+  },
+  "C": {
+   "macro_ndcg10": 0.7094678100905778,
+   "per_dataset": {
+    "mteb/NanoNFCorpusRetrieval": 0.5205618731358694,
+    "mteb/NanoFiQA2018Retrieval": 0.760598086704475,
+    "mteb/NanoTouche2020Retrieval": 0.6403742833583614,
+    "mteb/NanoArguAnaRetrieval": 0.7607694611740845,
+    "mteb/NanoSciFactRetrieval": 0.8392172384021752,
+    "mteb/NanoMSMARCORetrieval": 0.7352859177685012
+   },
+   "delta": -0.002354892328815614,
+   "ci95": [
+    -0.012044789898970922,
+    0.007331230901301672
+   ],
+   "spearman": 0.9485973551618565,
+   "top10_overlap": 0.8976588628762542,
+   "n_queries": 299,
+   "n_pairs": 8970,
+   "throughput_pairs_per_s": {
+    "c1": 72.95748160438629,
+    "c4": 84.83197238244499,
+    "c8": 82.83299177570737
+   }
+  }
+ },
+ "provenance": {
+  "modelopt": "0.48.0rc1 (ff2450c15eb5, wheel sha256 2b874d94...)",
+  "vllm_image": "vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34 (v0.32.0)",
+  "gpu": "RTX PRO 6000 Blackwell (SM120), shared with another workload",
+  "evalset": "models/qwen3-reranker-4b/eval/build_evalset_bm25.py, sha256 28f2dde20dd4bc3e82d41cdaa0e63df01048a29f9b318cf836129c59c3e450db",
+  "throughput_caveat": "B c=8 and bf16-replica c=8 overlapped another workload on the same GPU; c=4 figures are clean. Re-measure on an idle card before publication.",
+  "candidates": {
+   "A": "configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_mlp_only_mse-kv_bf16.yaml",
+   "B": "configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_attn_mlp_mse-kv_bf16.yaml",
+   "C": "configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_mlp_only_act_headroom-kv_bf16.yaml"
+  },
+  "decision": "C carried forward: 1.81x BF16 at c=8, macro nDCG@10 -0.0024 (95% CI -0.0120..+0.0073). B rejected: -0.0206 (CI excludes 0)."
+ }
+}

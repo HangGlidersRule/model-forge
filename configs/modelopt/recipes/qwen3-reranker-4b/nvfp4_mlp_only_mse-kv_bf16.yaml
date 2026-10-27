@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Qwen3-Reranker-4B, candidate A (primary): W4A4 NVFP4 on the decoder MLP only.
+#
+# Derived from NVIDIA/Model-Optimizer@ff2450c15eb5f1697ec0471704d5421d54fce4f4 (0.48.0rc1):
+#   modelopt_recipes/general/ptq/nvfp4_mlp_only_mse-kv_fp8_cast.yaml
+# Delta from upstream: the kv_fp8_cast import is dropped, so the KV cache stays BF16
+# (run hf_ptq.py with --kv_cache_qformat none), and the patterns for MoE/Mamba layouts
+# that Qwen3 dense does not have are left out.
+#
+# Quantized: model.layers.*.mlp.{gate,up,down}_proj. Static NVFP4 weights (group 16,
+# FP8 E4M3 block scales from an MSE FP8-scale sweep), dynamic NVFP4 activations.
+# BF16: attention q/k/v/o, embed_tokens (tied to lm_head; vLLM builds the classifier from
+# its "yes"/"no" rows), all norms.
+#
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+
+metadata:
+  recipe_type: ptq
+  description: >-
+    Qwen3-Reranker-4B candidate A: W4A4 NVFP4 on decoder MLP gate/up/down with MSE static
+    weight scales and dynamic NVFP4 activations. Attention, embeddings and norms stay BF16;
+    KV cache BF16.
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+    layerwise:
+      enable: false
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*mlp*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mlp*input_quantizer'
+      cfg:
+        $import: nvfp4
+    - $import: default_disabled_quantizers
