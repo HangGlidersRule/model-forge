@@ -14,6 +14,7 @@ pass with a one-token readout. Proposed and tracked in [issue #15](https://githu
 | Abliterated cells | — | not applicable: a decision scorer is not a refusal-edit target |
 
 Release: tag [`darkstar-jev-27b-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-jev-27b-v1.0.0).
+Family collection: [Darkstar JEV-27B](https://huggingface.co/collections/HangGlidersRule/darkstar-jev-27b-6ae12c8cd6eba44d1ab99a16).
 
 ## Why merge
 

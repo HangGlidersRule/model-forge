@@ -136,6 +136,7 @@ build/
 !/models/jev-27b/results/decision-gate-summary.json
 !/models/jev-27b/results/merge-report.json
 !/models/jev-27b/results/publication-readiness-ledger.json
+!/models/jev-27b/results/publication-receipt.json
 !/models/jev-27b/scripts/
 !/models/jev-27b/scripts/merge_lora.py
 !/models/jev-27b/scripts/test_merge_vs_peft.py

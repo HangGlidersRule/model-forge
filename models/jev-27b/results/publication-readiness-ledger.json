@@ -6,7 +6,7 @@
  "family_display": "Darkstar JEV-27B",
  "source_revision": "Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
  "note": "Decision-model family: autotrust/JEV-27B (adapter_vllm LoRA + decision head in lm_head, revision 14b42526) merged into Qwen/Qwen3.8-27B BF16 and quantized with ModelOpt for System 1 decisions only. The BF16 cell is the unchanged upstream reference (base + LoRA, unmerged). No refusal edit applies to a decision scorer, so the two abliterated roles are not_applicable placeholders. GPQA does not apply; the matched full-denominator quality gate for this family is the JEV-27B card's own test_set_30k (29,955 rows), scored against the BF16 reference and the deployed NVFP4 + LoRA lane.",
- "any_publication_claim": false,
+ "any_publication_claim": true,
  "products": [
   {
    "product_id": "Darkstar-JEV-27B-Base-BF16",
@@ -47,14 +47,14 @@
   {
    "product_id": "Darkstar-JEV-27B-Base-ModelOpt-NVFP4",
    "role": "base-modelopt-nvfp4",
-   "lifecycle": "locally_complete_unpublished",
+   "lifecycle": "published",
    "target_repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
    "target_repository_status": "resolved",
    "served_model_alias": "darkstar-jev27b-base-nvfp4",
    "runtime_container_name": "vllm-darkstar-jev27b-base-nvfp4",
    "model_card": "models/jev-27b/model-card/decision-nvfp4.md",
    "recipe": "recipes/jev-27b/darkstar-jev-27b-decision-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
-   "publication_claim": false,
+   "publication_claim": true,
    "candidates": [
     {
      "candidate_id": "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
@@ -175,31 +175,31 @@
     },
     {
      "id": "model_card_final",
-     "status": "in_progress",
+     "status": "verified",
      "evidence": "Gold-standard card with measured gates, decisions-only scope, license and the release tag reference",
      "evidence_path": "models/jev-27b/model-card/decision-nvfp4.md",
-     "next_missing_proof": "completes at publication"
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "publication_targets_hf_ghcr",
-     "status": "in_progress",
-     "evidence": "HF target HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8; GHCR not required (pinned upstream vLLM image)",
+     "status": "verified",
+     "evidence": "HF target HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8 @ 0bc99157c16a836a6c20f6efcd1bd2222b612d2a; GHCR not required (pinned upstream vLLM image)",
      "evidence_path": "models/jev-27b/results/publication-receipt.json",
-     "next_missing_proof": "completes at publication"
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "clean_download_boot_smoke",
-     "status": "in_progress",
+     "status": "verified",
      "evidence": "Clean re-download from the hub, every manifest.sha256 entry checked, served with the card's exact command, card example answered",
      "evidence_path": "models/jev-27b/results/publication-receipt.json",
-     "next_missing_proof": "completes at publication"
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "release_tag",
-     "status": "in_progress",
+     "status": "verified",
      "evidence": "darkstar-jev-27b-v1.0.0",
      "evidence_path": "models/jev-27b/README.md",
-     "next_missing_proof": "completes at publication"
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "no_inherited_unverified_results",
