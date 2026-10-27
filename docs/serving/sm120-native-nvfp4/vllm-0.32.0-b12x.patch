@@ -1,0 +1,149 @@
+--- a/vllm/model_executor/layers/fused_moe/experts/flashinfer_b12x_moe.py
++++ b/vllm/model_executor/layers/fused_moe/experts/flashinfer_b12x_moe.py
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
++import weakref
+ from typing import Any
+ 
+ import torch
+@@ -26,6 +27,76 @@
+     has_flashinfer_b12x_moe,
+ )
+ 
++# MoE layers run sequentially, so identically-shaped B12xMoEWrappers can share
++# one set of workspaces and output buffer: the first wrapper per shape owns
++# them and the rest borrow. Weak values free them together with the model.
++_buffer_owners: weakref.WeakValueDictionary[tuple, Any] = weakref.WeakValueDictionary()
++
++
++def _b12x_buffer_key(
++    *,
++    num_experts: int,
++    top_k: int,
++    hidden_size: int,
++    intermediate_size: int,
++    max_num_tokens: int,
++    num_local_experts: int,
++    activation: str,
++    quant_mode: str,
++    out_dtype: torch.dtype,
++    device_index: int,
++) -> tuple:
++    """Key under which B12xMoEWrappers may share workspaces.
++
++    ``intermediate_size`` must be the padded size the wrapper is built with
++    (see ``_resolve_padded_intermediate_size``): FlashInfer does not validate
++    a shared dynamic workspace against the wrapper's shape, so a key on the
++    configured size would let differently-padded layers alias undersized
++    buffers.
++    """
++    return (
++        num_experts,
++        top_k,
++        hidden_size,
++        intermediate_size,
++        max_num_tokens,
++        num_local_experts,
++        activation,
++        quant_mode,
++        out_dtype,
++        device_index,
++    )
++
++
++def _resolve_padded_intermediate_size(
++    configured_intermediate_size: int,
++    is_gated: bool,
++    w13_weight: torch.Tensor,
++) -> int:
++    """Return the intermediate size actually present in the prepared FC1
++    weight, which can be wider than ``configured_intermediate_size``.
++
++    vLLM's non-gated NVFP4 b12x weight-prep path
++    (``prepare_nvfp4_moe_layer_for_b12x`` in
++    ``vllm/model_executor/layers/quantization/utils/b12x_moe.py``) swizzles
++    ``w13_scale``, which rounds the row count up to a multiple of 128, then
++    pads ``w13`` rows (and ``w2`` / ``w2_scale`` columns) to match. The
++    padded channels are zero, so the padded width is numerically equivalent
++    to the original -- but ``B12xMoEWrapper`` must be constructed with that
++    padded width. Otherwise it still treats ``n`` as the original, smaller
++    ``intermediate_size_per_partition`` and re-pads scale tensors that are
++    already padded, which corrupts FlashInfer's MMA-layout reshape
++    (``_pad_intermediate_to_tile`` -> ``convert_sf_from_mma_layout``).
++
++    When the configured size is already a multiple of 128, vLLM performs no
++    padding and this returns the input unchanged. Gated models are padded to
++    a different (64-row) boundary upstream by a separate, already-correct
++    code path and are intentionally left untouched here.
++    """
++    if is_gated:
++        return configured_intermediate_size
++    return w13_weight.shape[1]
++
+ 
+ class FlashInferB12xExperts(mk.FusedMoEExpertsModular):
+     """FlashInfer CuteDSL fused MoE expert for SM12x (SM120/SM121,
+@@ -135,6 +206,17 @@
+                 dtype=torch.float32,
+             )
+ 
++        # Record the padded intermediate size actually present in the
++        # prepared weights (see _resolve_padded_intermediate_size). This
++        # must happen before B12xMoEWrapper is constructed in
++        # _ensure_wrapper(), which is the sole consumer of
++        # intermediate_size_per_partition.
++        self.intermediate_size_per_partition = _resolve_padded_intermediate_size(
++            self.intermediate_size_per_partition,
++            is_gated=self._activation_str != "relu2",
++            w13_weight=layer.w13_weight,
++        )
++
+         # Precompute MMA-layout views of the weight scale factors once here
+         # rather than recomputing on every forward pass.
+         assert self.w1_scale is not None
+@@ -238,6 +320,32 @@
+             return
+ 
+         from flashinfer.fused_moe import B12xMoEWrapper
++        from flashinfer.fused_moe.cute_dsl.blackwell_sm12x.moe_dispatch import (
++            _normalize_quant_mode,
++        )
++
++        buffer_key = _b12x_buffer_key(
++            num_experts=self.global_num_experts,
++            top_k=self.topk,
++            hidden_size=self.hidden_dim,
++            intermediate_size=self.intermediate_size_per_partition,
++            max_num_tokens=self.max_num_tokens,
++            num_local_experts=self.num_local_experts,
++            activation=self._activation_str,
++            # Same resolution B12xMoEWrapper applies to its default
++            # quant_mode=None / activation_precision="fp4" arguments.
++            quant_mode=_normalize_quant_mode(None, "fp4"),
++            out_dtype=self.out_dtype,
++            device_index=torch.cuda.current_device(),
++        )
++        owner = _buffer_owners.get(buffer_key)
++        shared_buffers: dict[str, Any] = {}
++        if owner is not None:
++            shared_buffers = {
++                "shared_static_workspace": owner._static_workspace,
++                "shared_dynamic_workspace": owner._dynamic_workspace,
++                "shared_output": owner._moe_output,
++            }
+ 
+         self._wrapper = B12xMoEWrapper(
+             num_experts=self.global_num_experts,
+@@ -248,7 +356,10 @@
+             max_num_tokens=self.max_num_tokens,
+             num_local_experts=self.num_local_experts,
+             activation=self._activation_str,
++            **shared_buffers,
+         )
++        if owner is None:
++            _buffer_owners[buffer_key] = self._wrapper
+ 
+     def apply(
+         self,

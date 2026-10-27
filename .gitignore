@@ -100,6 +100,10 @@ build/
 !/docs/hf-publication-runbook.md
 !/docs/model-card-gold-standard.md
 !/docs/pull-request-risk.md
+!/docs/serving/
+!/docs/serving/sm120-native-nvfp4/
+!/docs/serving/sm120-native-nvfp4/README.md
+!/docs/serving/sm120-native-nvfp4/vllm-0.32.0-b12x.patch
 !/docs/speed-tuning.md
 !/models/
 !/models/README.md
