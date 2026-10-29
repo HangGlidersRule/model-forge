@@ -9,13 +9,37 @@
   "data": "SargeDev/jev-distill-corpus-v3 train split @ 75111a13a8455032f0435050bfc7e0c9026ecfe8 (no id or content overlap with test_set_30k); validation split 2,000-row subset for checkpointing",
   "schedule": "AdamW lr 1e-4, warmup 50, cosine to 10%, grad clip 1.0, ~16k prompt tokens/step",
   "toolchain": "ModelOpt main @ b6b0ff5249109729c515cdc739a50d518e9cbec0 (0.48.0rc1.dev229), torch 2.14.1+cu132, transformers 5.18.0, flash-linear-attention 0.6.0",
+  "trainer_args": {
+   "recipe": "recipe_b.yaml (= configs/modelopt/recipes/jev-27b/jev27b_nvfp4_w4a4_mlp_attn_local_hessian_lmhead_bf16.yaml)",
+   "max_steps": 1500,
+   "max_hours": 6.0,
+   "tokens_per_step": 16384,
+   "micro_tokens": 4096,
+   "val_rows": 2000,
+   "eval_every": 100,
+   "patience": 4,
+   "lr": 0.0001,
+   "warmup": 50,
+   "objective": "distill",
+   "amax_dtype": "fp32",
+   "max_grad_norm": 1.0,
+   "mem_fraction": 0.94,
+   "distill_val_rows": 400
+  },
+  "qad_train_py_sha256": "470517574373797efcd069355dfd9233639fa983d83ad73f8a5e3f9849d5bb8f",
+  "preregistration": {
+   "run1": "https://github.com/HangGlidersRule/model-forge/issues/20#issuecomment-6475866657",
+   "run2": "https://github.com/HangGlidersRule/model-forge/issues/20#issuecomment-6478693234",
+   "run2_amendments": "https://github.com/HangGlidersRule/model-forge/issues/20#issuecomment-6489396236",
+   "run2_amendments_note": "R2-A1..R2-A3 were written in the pre-registration file before the results they could affect (file sha256 4d10d669..., last modified 2026-10-29 02:24:55 UTC, before the 02:54:56 UTC result comment) and posted to the issue after the result"
+  },
   "scripts": {
    "models/jev-27b/scripts/qad_train.py": "470517574373797efcd069355dfd9233639fa983d83ad73f8a5e3f9849d5bb8f",
    "models/jev-27b/eval/verify_export_scales.py": "94ff315d826675797451c08de508b76bdb277925383179029432d76a9a14c0d9",
-   "models/jev-27b/eval/build_qad_summary.py": "c63a46aed1c0fcd8bb7423bf39d967b37b772b3fd6f8bee691ce249200996685",
+   "models/jev-27b/eval/count_changed_block_scales.py": "1c5aae7cd3f2dae9d724c594b2e29003ca5b74c768be2800fdce2cee7cebbc82",
+   "models/jev-27b/eval/build_qad_summary.py": "f864af0e9dba7930096037d6e926c36a97cd9947a82a2f67fec3babc569bc2c6",
    "operator_recipe (stage 1)": "2c2dd90a60140140f4992a705c34fa58048a61935cd3dbd19904ef8bd0b25e41"
-  },
-  "preregistration": "https://github.com/HangGlidersRule/model-forge/issues/20 (run 1 pre-registration; run 2 delta with amendments R2-A1..R2-A3)"
+  }
  },
  "training": {
   "steps": 596,
@@ -58,12 +82,69 @@
     "teacher_kl": 0.022538,
     "distill_kl_vs_bf16": 0.086836
    }
-  ],
-  "fp8_block_scales_changed_vs_start": "24% at step 550"
+  ]
  },
  "export_check": {
   "untrained_tensors_identical_to_start": 1588,
   "trained_tensors": 800,
+  "fp8_block_scales_changed_vs_start": {
+   "linears": 400,
+   "fp8_block_scales": 1520435200,
+   "changed": 358744823,
+   "fraction_changed": 0.23594877506124562
+  },
+  "fp8_block_scales_changed_by_projection": {
+   "linear_attn.in_proj_qkv": {
+    "blocks": 157286400,
+    "changed": 26581548,
+    "fraction": 0.16900093078613282
+   },
+   "linear_attn.in_proj_z": {
+    "blocks": 94371840,
+    "changed": 18583426,
+    "fraction": 0.19691706763373482
+   },
+   "linear_attn.out_proj": {
+    "blocks": 94371840,
+    "changed": 16837933,
+    "fraction": 0.17842115826076932
+   },
+   "mlp.down_proj": {
+    "blocks": 356515840,
+    "changed": 91990942,
+    "fraction": 0.2580276433159323
+   },
+   "mlp.gate_proj": {
+    "blocks": 356515840,
+    "changed": 94818239,
+    "fraction": 0.26595799782696894
+   },
+   "mlp.up_proj": {
+    "blocks": 356515840,
+    "changed": 92788721,
+    "fraction": 0.26026535314672133
+   },
+   "self_attn.k_proj": {
+    "blocks": 5242880,
+    "changed": 878409,
+    "fraction": 0.16754322052001952
+   },
+   "self_attn.o_proj": {
+    "blocks": 31457280,
+    "changed": 4800517,
+    "fraction": 0.15260432561238607
+   },
+   "self_attn.q_proj": {
+    "blocks": 62914560,
+    "changed": 10944198,
+    "fraction": 0.17395334243774413
+   },
+   "self_attn.v_proj": {
+    "blocks": 5242880,
+    "changed": 520890,
+    "fraction": 0.09935188293457031
+   }
+  },
   "block_scale_mismatches_vs_trained_forward": 355,
   "block_scales_total": 1520435200,
   "mismatch_classes": {
@@ -71,11 +152,12 @@
    "sat": 0,
    "other": 0
   },
-  "note": "every mismatch is an E4M3 midpoint tie rounded to the adjacent code (pre-registered rule R2-A3)",
+  "note": "every mismatch vs the trained forward is an E4M3 midpoint tie rounded to the adjacent code (amendment R2-A3)",
   "artifact_validation": "PASS"
  },
  "test_set_30k": {
   "rows": 29955,
+  "single_argmax_rows": 27324,
   "summaries": {
    "merged-qad": {
     "kl": 0.020719205441915696,
@@ -104,8 +186,17 @@
     "choice_top1": 0.9025822897040896,
     "noul_auroc": 0.9950099380520747,
     "score_mae_expected": 0.11220887747162331
+   },
+   "ref": {
+    "kl": 0.01856598639623676,
+    "top1": 0.9269872639437857,
+    "choice_top1": 0.9124459714064058,
+    "noul_auroc": 0.9960806092737955,
+    "score_mae_expected": 0.09776001602268973
    }
   },
+  "summaries_note": "ref = unmerged BF16 + LoRA reference (issue #15); current = the deployed NVIDIA NVFP4 + LoRA lane; merged = the mixed W4A4+FP8 cell; merged-b = the PTQ start point",
+  "teacher_kl_vs_mixed_cell_pct": 2.0,
   "agreement_with_bf16_reference": {
    "merged-qad": 0.9459,
    "merged": 0.9403,
@@ -132,11 +223,12 @@
     -0.28,
     0.18
    ],
-   "speed_criteria_note": "the gate window measured this export at 60.2 rows/s and 147/272 ms; back-to-back re-measurements (below) put it at the speed of its identical-layout start point"
+   "speed_criteria_note": "the gate window measured this export at 60.2 rows/s and 147/272 ms c=1 p50; the back-to-back re-measurements (speed_back_to_back) do not reproduce it"
   }
  },
  "ood": {
   "rows": 13058,
+  "single_argmax_rows": 12775,
   "summaries": {
    "ood-merged-qad": {
     "kl": 0.11918460413722334,
@@ -153,6 +245,7 @@
     "score_mae_expected": 0.5331959780109192
    }
   },
+  "teacher_kl_vs_mixed_cell_pct": 17.0,
   "teacher_kl_delta_vs_shipped_cell": [
    0.01728,
    0.0123,
@@ -316,7 +409,37 @@
   }
  },
  "speed_note": "same GPU, same window per power limit, vLLM v0.32.0, identical serve flags; rows/s on the first 6,000 test rows (longer than average), so it ranks cells but is not comparable to full-set rows/s",
+ "c1_p50_reduction_vs_mixed_cell_pct": {
+  "450W_short": 21.6,
+  "450W_long": 16.0,
+  "600W_short": 31.3,
+  "600W_long": 15.9
+ },
+ "c1_p50_reduction_vs_mixed_cell_range": "15-32%",
+ "vs_ptq_start_point_pct": {
+  "450W_short_c1_p50_pct": -1.0,
+  "450W_long_c1_p50_pct": -1.4,
+  "450W_rows_per_s_pct": -3.0,
+  "600W_short_c1_p50_pct": -16.4,
+  "600W_long_c1_p50_pct": 0.2,
+  "600W_rows_per_s_pct": 2.3
+ },
+ "vs_ptq_start_point_note": "identical layout: within 4% of the start point everywhere except 600 W short c=1 p50 (single-request short prompts are the noisiest cell; 32 requests per cell)",
  "kv_cache_tokens": 857429,
  "weights_gib": 18.66,
- "decision": "Shipped by owner decision (Devin, 2026-10-29) alongside the mixed W4A4+FP8 cell, under a looser tolerance than the frozen bar: the bar's teacher-KL criterion requires the 95% CI upper bound <= 0, and this cell's CI straddles 0 (a statistical tie with the deployed lane). It is 2.0% behind the shipped cell on test-set teacher KL, 15-20% faster at c=1, and 17% behind it on ood teacher KL."
+ "publication_smoke": {
+  "repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
+  "commit": "96f8c159827209af1fca7fba354b9b3009169c26",
+  "download": "empty HF cache; 21 files; 19/19 manifest.sha256 entries verified, 0 mismatches",
+  "serve": "vLLM v0.32.0 by digest + serve_decide.py from the download, the card's exact flags; FlashInferCutlassNvFp4LinearKernel; weights 18.66 GiB; KV cache 857,429 tokens; up after 270 s",
+  "card_example": {
+   "choice": "EUR",
+   "probability": 0.999996,
+   "prompt_tokens": 52
+  },
+  "noul_true_probability": 0.9872,
+  "score_argmax": 0,
+  "fatal_markers_in_log": 0
+ },
+ "decision": "Shipped by owner decision (2026-10-29) alongside the mixed W4A4+FP8 cell, under a looser tolerance than the frozen bar: the bar's teacher-KL criterion requires the 95% CI upper bound <= 0, and this cell's CI straddles 0 (a statistical tie with the deployed lane). Against the mixed cell it is 2.0% higher on test-set teacher KL, 15-32% lower c=1 p50 latency, and 17.0% higher on ood teacher KL."
 }

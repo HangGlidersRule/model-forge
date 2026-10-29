@@ -228,7 +228,7 @@
      "target_repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
      "selection": "selected",
      "promotion_status": "promoted",
-     "promotion_note": "Issue #20 run 2: candidate B's per-block NVFP4 weight scales trained with ModelOpt QAD (full-vocabulary self-distillation from the merged BF16). Test-set teacher KL 0.0207 vs the deployed lane 0.0207 (delta +0.00001, 95% CI -0.00018..+0.00019): a tie, so it FAILS the frozen non-inferiority bar (upper bound must be <= 0). Shipped alongside the mixed W4A4+FP8 cell by owner decision (Devin, 2026-10-29) for 15-30% lower c=1 latency at 2.0% higher teacher KL; ood teacher KL is 17% higher than the mixed cell's.",
+     "promotion_note": "Issue #20 run 2: candidate B's per-block NVFP4 weight scales trained with ModelOpt QAD (full-vocabulary self-distillation from the merged BF16). Test-set teacher KL 0.0207 vs the deployed lane 0.0207 (delta +0.00001, 95% CI -0.00018..+0.00019): a tie, so it FAILS the frozen non-inferiority bar (upper bound must be <= 0). Shipped alongside the mixed W4A4+FP8 cell by owner decision (2026-10-29) for 15-32% lower c=1 p50 latency at 2.0% higher teacher KL; ood teacher KL is 17% higher than the mixed cell's.",
      "recipe": "configs/modelopt/recipes/jev-27b/jev27b_nvfp4_w4a4_mlp_attn_local_hessian_lmhead_bf16.yaml",
      "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
      "immutable_hashes": {
@@ -287,14 +287,14 @@
     {
      "id": "nvfp4_tensor_scale_validation",
      "status": "verified",
-     "evidence": "400 NVFP4 W4A4 linears (192 MLP, 64 self-attention, 144 linear-attention; group 16); 0 non-finite and 0 zero block scales over 1,520,435,200; fused groups uniform; 355 export-vs-trained block-scale differences, all E4M3 midpoint ties",
-     "evidence_path": "models/jev-27b/results/qad-artifact-validation.json",
+     "evidence": "400 NVFP4 W4A4 linears (192 MLP, 64 self-attention, 144 linear-attention; group 16); 0 non-finite and 0 zero block scales over 1,520,435,200; fused groups uniform (qad-artifact-validation.json). QAD changed 23.6% of the FP8 block scales from the start point; 355 export-vs-trained block-scale differences, all E4M3 midpoint ties (qad-gate-summary.json export_check)",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
      "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "performance_profile",
      "status": "verified",
-     "evidence": "Single-request /v1/decide p50, back to back with the mixed cell: 64 / 210 ms at 600 W (mixed 94 / 250), 78 / 253 ms at 450 W (mixed 100 / 302); ~314 / ~3.8k-token prompts",
+     "evidence": "Single-request /v1/decide p50, back to back with the mixed cell: 64 / 210 ms at 600 W (mixed 94 / 250), 78 / 253 ms at 450 W (mixed 100 / 302); ~314 / ~3.8k-token prompts; 15-32% lower",
      "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
      "next_missing_proof": "none - gate satisfied"
     },
@@ -308,7 +308,7 @@
     {
      "id": "gpqa_matched_full_denominator",
      "status": "verified",
-     "evidence": "Decision family: JEV test_set_30k replaces GPQA; teacher KL 0.0207 (BF16 0.0186, mixed 0.0203, deployed 0.0207), 29,955/29,955 rows answered; ood 13,058/13,058",
+     "evidence": "Decision family: JEV test_set_30k replaces GPQA; teacher KL 0.0207 (BF16 reference 0.0186, mixed 0.0203, deployed 0.0207), 29,955/29,955 rows answered; ood 13,058/13,058 (qad-gate-summary.json test_set_30k.summaries and ood)",
      "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
      "next_missing_proof": "none - gate satisfied"
     },
@@ -329,7 +329,7 @@
     {
      "id": "publication_targets_hf_ghcr",
      "status": "verified",
-     "evidence": "HF target HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4 @ 96f8c159827209af1fca7fba354b9b3009169c26; GHCR not required (pinned upstream vLLM image)",
+     "evidence": "HF target HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4 @ 7159403d48d9ad8884659e1f18debc353e1fa4a1 (card-only commit on the verified 96f8c159; weights identical); GHCR not required (pinned upstream vLLM image)",
      "evidence_path": "models/jev-27b/results/qad-publication-receipt.json",
      "next_missing_proof": "none - gate satisfied"
     },

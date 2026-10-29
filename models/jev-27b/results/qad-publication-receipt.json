@@ -1,8 +1,8 @@
 {
  "repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
- "hf_commit": "96f8c159827209af1fca7fba354b9b3009169c26",
+ "hf_commit": "7159403d48d9ad8884659e1f18debc353e1fa4a1",
  "verified_commit": "96f8c159827209af1fca7fba354b9b3009169c26",
- "hf_commit_note": "The public head is the uploaded commit itself; no card-only commits since the clean-download smoke.",
+ "hf_commit_note": "Current head: a card-only commit on top of 96f8c159 (the clean-download-verified commit); the three safetensors shards' LFS oids are identical at both commits (hf_publish.py same-weights).",
  "files": [
   ".gitattributes",
   "LICENSE",
@@ -26,7 +26,7 @@
   "video_preprocessor_config.json",
   "vocab.json"
  ],
- "manifest_sha256_of_manifest_file": "d3526cede11b370a5a29cf1bfc951fd1e9164f1ea3735d6acad9bfaffae01cca",
+ "manifest_sha256_of_manifest_file": "4812ed31c45864fdac085a6e80433ce051de3aac8e32f9f48892e795029c6a35",
  "lfs_sha256_matches_local": true,
  "clean_download_boot_smoke": {
   "download": "empty HF cache, snapshot_download at the verified commit; 19/19 manifest.sha256 entries verified, 0 mismatches",

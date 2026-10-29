@@ -85,8 +85,8 @@ per-block NVFP4 weight scales with ModelOpt quantization-aware distillation:
   is the same weights with quantization bypassed.
 - **Data:** the corpus `train` split, which has no overlap with `test_set_30k`.
 - **Schedule:** 596 steps, ~9.8M tokens, lr 1e-4. Checkpoint chosen by validation teacher KL.
-- **Pre-registration:** the run was pre-registered on the issue, and every change to it was recorded there as an
-  amendment before the results it could affect.
+- **Pre-registration:** the run was pre-registered on the issue. Its three amendments (R2-A1 to R2-A3) were written into
+  the pre-registration file before the results they could affect, and posted to the issue after the result.
 
 | Configuration (29,955 rows) | Teacher KL | Top-1 | Agreement with BF16 | `ood` teacher KL | p50 c=1 short / long (600 W) |
 |---|---|---|---|---|---|
@@ -100,15 +100,15 @@ per-block NVFP4 weight scales with ModelOpt quantization-aware distillation:
 - That is a tie, and the frozen bar requires the CI's upper bound to be at or below zero. It fails.
 - Out of distribution its teacher KL is 17% above A's (CI +0.0123 to +0.0227 absolute), with top-1 within 0.5 pt.
 
-**Why it ships anyway.** Devin shipped it alongside A by owner decision: 15–30% lower single-request latency for 2.0%
+**Why it ships anyway.** It ships alongside A by owner decision: 15–32% lower single-request p50 latency for 2.0%
 higher test-set teacher KL. A remains the closer match to the teacher.
 
 Speed numbers come from back-to-back runs in one window per power limit. The gate window's own speed reading for the QAD
 build was a measurement fault, identified by that re-measurement. Evidence:
 [`results/qad-gate-summary.json`](results/qad-gate-summary.json) and
 [`results/qad-artifact-validation.json`](results/qad-artifact-validation.json). Scripts:
-[`scripts/qad_train.py`](scripts/qad_train.py) (byte-identical to the run), [`eval/verify_export_scales.py`](eval/verify_export_scales.py)
-and [`eval/build_qad_summary.py`](eval/build_qad_summary.py).
+[`scripts/qad_train.py`](scripts/qad_train.py) (byte-identical to the run), [`eval/verify_export_scales.py`](eval/verify_export_scales.py),
+[`eval/count_changed_block_scales.py`](eval/count_changed_block_scales.py) and [`eval/build_qad_summary.py`](eval/build_qad_summary.py).
 
 ## Gotchas
 

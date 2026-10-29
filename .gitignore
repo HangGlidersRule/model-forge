@@ -124,6 +124,7 @@ build/
 !/models/jev-27b/calibration/build_jev_calib.py
 !/models/jev-27b/eval/
 !/models/jev-27b/eval/build_qad_summary.py
+!/models/jev-27b/eval/count_changed_block_scales.py
 !/models/jev-27b/eval/decide_eval.py
 !/models/jev-27b/eval/gate_noninferiority.py
 !/models/jev-27b/eval/latency_probe.py

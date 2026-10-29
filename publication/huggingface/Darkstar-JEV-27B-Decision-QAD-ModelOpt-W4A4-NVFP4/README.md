@@ -30,8 +30,9 @@ The fastest Darkstar build of the [`autotrust/JEV-27B`](https://huggingface.co/a
   `noul` (yes/no), `choice` (up to 16 native options) and `score` (0–5).
 
 **Which JEV-27B build to use.** The family ships two decision builds:
-- **This checkpoint** trades a little calibration for speed. At one request at a time it is 15–30% faster than the
-  mixed build: 64 against 94 ms on ~314-token prompts and 210 against 250 ms on ~3.8k-token prompts, both at 600 W.
+- **This checkpoint** trades a little calibration for speed. At one request at a time its p50 latency is 15–32% lower
+  than the mixed build's: 64 against 94 ms on ~314-token prompts and 210 against 250 ms on ~3.8k-token prompts at 600 W,
+  78 against 100 ms and 253 against 302 ms at 450 W.
 - Its test-set teacher KL is 2.0% higher than the mixed build's, and its out-of-distribution teacher KL is 17% higher.
   Decisions agree: top-1 is within 0.15 pt in distribution and 0.5 pt out of it.
 - **[`Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8`](https://huggingface.co/HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8)**
@@ -68,6 +69,7 @@ BF16 weights, every per-tensor scale, the activation scales and every BF16 modul
   teacher KL went from 0.0245 to 0.0222.
 - **Export:** the trained scales are folded back into the standard ModelOpt NVFP4 format.
   - All 1,588 untrained tensors are byte-identical to the start point.
+  - QAD changed 23.6% of the 1.52B FP8 block scales from the start point.
   - 355 of 1.52B block scales differ from the trained forward. Each one is a value on the exact midpoint between two
     FP8 codes, rounded to the other neighbour (`results/qad-gate-summary.json`).
 
@@ -105,7 +107,7 @@ Provenance, protocol and evidence:
 | Choice top-1 / yes-no AUROC / score MAE | 0.9067 / 0.9953 / 0.105 | per decision kind |
 | Agreement with the BF16 reference | 0.946 (mixed build 0.940; deployed baseline 0.943) | all 29,955 rows |
 | `ood` teacher KL | 0.1192 (mixed build 0.1019) | 13,058 rows; delta +0.0173 (95% CI +0.0123 to +0.0227) |
-| `ood` top-1 / choice top-1 / yes-no AUROC | 0.9538 / 0.9104 / 0.9954 (mixed build 0.9584 / 0.9152 / 0.9965) | 13,058 rows |
+| `ood` top-1 / choice top-1 / yes-no AUROC | 0.9538 / 0.9104 / 0.9954 (mixed build 0.9584 / 0.9152 / 0.9965) | top-1 on the 12,775 single-argmax `ood` rows; choice top-1 and AUROC per decision kind |
 | Latency p50, c=1, 600 W | 64 ms short (~314 tok), 210 ms long (~3.8k tok) | mixed build 94 / 250 ms, QAD start point 77 / 209 ms; same window |
 | Latency p50, c=1, 450 W | 78 ms short, 253 ms long | mixed build 100 / 302 ms, QAD start point 79 / 257 ms; same window |
 | Throughput, first 6,000 test rows, c=16 | 66.8 rows/s at 600 W, 60.9 at 450 W | mixed build 60.1 / 54.5; this subset's prompts are about twice the set average |
