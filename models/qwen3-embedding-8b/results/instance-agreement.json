@@ -1,0 +1,50 @@
+{
+ "documents": 64,
+ "set": "NanoSciFactRetrieval",
+ "request_pattern": "two requests of 32 documents",
+ "labels": {
+  "detc": "stable profile (batch-invariant + shared persisted cache)",
+  "defc": "default profile + shared persisted cache",
+  "det": "batch-invariant, fresh cache per container",
+  "clean": "default profile, clean download",
+  "orig": "default profile, evaluated export"
+ },
+ "pairs": {
+  "detc1 vs detc2": {
+   "mean": 1.0,
+   "min": 1.0
+  },
+  "detc1 vs detc3": {
+   "mean": 1.0,
+   "min": 1.0
+  },
+  "detc2 vs detc3": {
+   "mean": 1.0,
+   "min": 1.0
+  },
+  "defc1 vs defc2": {
+   "mean": 0.992445,
+   "min": 0.982774
+  },
+  "det1 vs det2": {
+   "mean": 0.985245,
+   "min": 0.976677
+  },
+  "orig1 vs orig2": {
+   "mean": 0.994078,
+   "min": 0.981485
+  },
+  "clean1 vs orig1": {
+   "mean": 0.985329,
+   "min": 0.980349
+  },
+  "detc1 vs det1": {
+   "mean": 0.987732,
+   "min": 0.9814
+  },
+  "detc1 vs clean1": {
+   "mean": 0.985569,
+   "min": 0.98134
+  }
+ }
+}

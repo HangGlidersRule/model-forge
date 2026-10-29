@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Qwen3-Embedding-8B, candidate B (issue #18, amendment R18-A1): candidate A's recipe with the self-attention projections
+# also W4A4 NVFP4, so every decoder linear (252) runs FP4. Same algorithm block (nvfp4_act_headroom activations, MSE
+# FP8-scale-sweep weights); embeddings, norms and the KV cache stay BF16. Mirrors the Qwen3-Reranker-4B candidate B
+# coverage (configs/modelopt/recipes/qwen3-reranker-4b/nvfp4_attn_mlp_mse-kv_bf16.yaml) with candidate C's calibration.
+#
+# Built from NVIDIA/Model-Optimizer@ff2450c15eb5f1697ec0471704d5421d54fce4f4 (0.48.0rc1).
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+
+metadata:
+  recipe_type: ptq
+  description: >-
+    Qwen3-Embedding-8B candidate B: W4A4 NVFP4 on every decoder linear (MLP and self-attention), nvfp4_act_headroom
+    activation calibration and MSE weight scales. Embeddings and norms BF16. KV cache BF16.
+quantize:
+  algorithm:
+    method: nvfp4_act_headroom
+    anchor_percentile: 1
+    upper_percentile: 99.99
+    rho: 16384
+    weight_scale_algorithm:
+      method: mse
+      fp8_scale_sweep: true
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*mlp*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mlp*input_quantizer'
+      cfg:
+        $import: nvfp4
+    - quantizer_name: '*self_attn*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*self_attn*input_quantizer'
+      cfg:
+        $import: nvfp4
+    - $import: default_disabled_quantizers

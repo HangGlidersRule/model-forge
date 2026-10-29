@@ -1,0 +1,86 @@
+{
+ "source": "build and serve logs of the issue-18 containers (pinned images), and scripts/precision_coverage.py over the shipped export's safetensors headers",
+ "build": {
+  "nvfp4-A": {
+   "toolchain": "modelopt 0.48.0rc1 torch 2.8.0+cu128 transformers 5.18.0",
+   "modelopt_commit": "ff2450c15eb5f1697ec0471704d5421d54fce4f4",
+   "operator_recipe_sha256": "6168b616690caf05c8e89174248213c1016e8ec89fa9fc5c25af83f44817859d",
+   "calibration_sha256": "d643f77fecf055ca31e2da5829f86ba90aa925d151154f6ddfcb49446bbb11c6",
+   "quantizers_inserted": 906,
+   "nvfp4_activation_quantizers_calibrated": 108,
+   "act_headroom_blocks_without_headroom_warnings": 0,
+   "export_seconds": 43.1
+  },
+  "nvfp4-B": {
+   "toolchain": "modelopt 0.48.0rc1 torch 2.8.0+cu128 transformers 5.18.0",
+   "modelopt_commit": "ff2450c15eb5f1697ec0471704d5421d54fce4f4",
+   "operator_recipe_sha256": "2a5f6acb073072af0808ee7218bf6d870dcb569d4a241719d06be267de38381c",
+   "calibration_sha256": "d643f77fecf055ca31e2da5829f86ba90aa925d151154f6ddfcb49446bbb11c6",
+   "quantizers_inserted": 906,
+   "nvfp4_activation_quantizers_calibrated": 252,
+   "act_headroom_blocks_without_headroom_warnings": 0,
+   "export_seconds": 31.9
+  }
+ },
+ "serve": {
+  "bf16": {
+   "vllm": "0.32.0",
+   "weights_gib": 14.11,
+   "nvfp4_gemm_kernel": null,
+   "kv_cache_tokens": 29120
+  },
+  "nvfp4-A": {
+   "vllm": "0.32.0",
+   "weights_gib": 6.83,
+   "nvfp4_gemm_kernel": "FlashInferCutlassNvFp4LinearKernel",
+   "kv_cache_tokens": 29120
+  },
+  "nvfp4-B": {
+   "vllm": "0.32.0",
+   "weights_gib": 4.81,
+   "nvfp4_gemm_kernel": "FlashInferCutlassNvFp4LinearKernel",
+   "kv_cache_tokens": 29120
+  }
+ },
+ "precision_coverage_shipped": {
+  "per_linear": {
+   "mlp.down_proj": {
+    "dtype": "NVFP4",
+    "params": "1.81B",
+    "share": "26.1%"
+   },
+   "mlp.gate_proj": {
+    "dtype": "NVFP4",
+    "params": "1.81B",
+    "share": "26.1%"
+   },
+   "mlp.up_proj": {
+    "dtype": "NVFP4",
+    "params": "1.81B",
+    "share": "26.1%"
+   },
+   "self_attn.o_proj": {
+    "dtype": "NVFP4",
+    "params": "0.60B",
+    "share": "8.7%"
+   },
+   "self_attn.q_proj": {
+    "dtype": "NVFP4",
+    "params": "0.60B",
+    "share": "8.7%"
+   },
+   "self_attn.k_proj": {
+    "dtype": "NVFP4",
+    "params": "0.15B",
+    "share": "2.2%"
+   },
+   "self_attn.v_proj": {
+    "dtype": "NVFP4",
+    "params": "0.15B",
+    "share": "2.2%"
+   }
+  },
+  "total_decoder_linear_params": "6.95B",
+  "per_dtype": "NVFP4 100.0%"
+ }
+}

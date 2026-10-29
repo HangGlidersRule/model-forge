@@ -1294,6 +1294,67 @@ rules:
     generated: false
     precedence: 100
 
+  - id: embedding-recon
+    source: "models/qwen3-embedding-8b/recon.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Upstream identity, shard hashes and architecture for the published embedding family; contains no private metadata.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: embedding-calibration-builder
+    source: "models/qwen3-embedding-8b/calibration/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Deterministic calibration-set builder, so the published calibration is reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: embedding-eval-harnesses
+    source: "models/qwen3-embedding-8b/eval/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Retrieval benchmark, store-compatibility comparison, throughput probe, artifact validator and the gate-summary builder, so the published numbers are reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: curated-embedding-evidence
+    source: "models/qwen3-embedding-8b/results/*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated aggregate gate evidence for the published embedder (aggregates only; no texts, vectors or row ids from the measured stores).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 524288
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-readiness-ledger
+      - curated-gpqa-matrix
+      - curated-capacity-profiles
+
+  - id: hf-card-qwen3-embedding-base-nvfp4
+    source: "publication/huggingface/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Qwen3-Embedding-8B Base ModelOpt W4A4 NVFP4 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
   - id: whisper-campaign-private
     source: "models/whisper-large-v3-turbo/**"
     disposition: exclude

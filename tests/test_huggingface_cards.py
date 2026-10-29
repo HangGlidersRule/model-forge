@@ -18,6 +18,7 @@ TARGETS = {
     "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4",
     "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
     "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
+    "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -68,6 +69,10 @@ EXPECTED_METADATA = {
         ["Qwen/Qwen3.8-27B", "autotrust/JEV-27B"],
         "quantized",
     ),
+    "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4": (
+        "Qwen/Qwen3-Embedding-8B",
+        "quantized",
+    ),
 }
 SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -106,6 +111,9 @@ SOURCE_CARDS = {
     "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4": (
         REPO_ROOT / "models" / "jev-27b" / "model-card" / "decision-qad-nvfp4.md"
     ),
+    "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4": (
+        REPO_ROOT / "models" / "qwen3-embedding-8b" / "model-card" / "base-nvfp4.md"
+    ),
 }
 EXPECTED_LICENSE = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
@@ -120,6 +128,7 @@ EXPECTED_LICENSE = {
     "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4": "apache-2.0",
     "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8": "apache-2.0",
     "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4": "apache-2.0",
+    "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4": "apache-2.0",
 }
 EXPECTED_PUBLIC_REVISIONS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8":
@@ -150,7 +159,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 12
+    assert len(cards) == 13
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
@@ -175,6 +184,10 @@ def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
             assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
             assert "--runner pooling" in text
             assert "--chat-template" in text
+        elif "Embedding" in card.parent.name:
+            assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
+            assert "--runner pooling" in text
+            assert '"is_matryoshka": true' in text
         elif "JEV" in card.parent.name:
             assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
             assert "JEV_DECIDE_MERGED=1" in text
@@ -216,6 +229,10 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             assert "JEV_DECIDE_MERGED=1" in text
         elif "Reranker" in target:
             assert "darkstar-qwen3-reranker-4b-v1.0.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "--runner pooling" in text
+        elif "Embedding" in target:
+            assert "darkstar-qwen3-embedding-8b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "--runner pooling" in text
         elif "Qwen" in target:
