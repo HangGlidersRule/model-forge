@@ -103,6 +103,11 @@ summary = {
                  "production engine that had 0 running requests when each run started (the stable-profile run also "
                  "sampled it every 2 s: 0 throughout); single-input requests, unique prefixes",
         "stable_profile_run_production_engine_load": stable_speed_file.get("production_engine_running_requests_during_run"),
+        "load_logging_vs_amendment_R18_A1": "R18-A1 said the production engine's load would be logged for each throughput "
+                                            "cell. Only the stable-profile run sampled it during the run (every 2 s, 0 "
+                                            "running requests throughout). The BF16, A and B runs checked it once at the "
+                                            "start of each run (0 running requests each time); their per-cell load was "
+                                            "not logged.",
         "tok_per_s_ratio_vs_bf16": ratios,
         "short_range": {c: rng([v for k, v in ratios[c].items() if k.startswith("short")]) for c in ratios},
         "long_range": {c: rng([v for k, v in ratios[c].items() if k.startswith("long")]) for c in ratios},
@@ -154,10 +159,15 @@ summary = {
         "verdicts": verdicts,
         "mixed_corpus": {c: {"self_gap_mean": round(m["self_gap_mean"], 4),
                              "nvfp4_rows_recall@1": [round(m["stored"]["N"]["recall@1"], 4), round(m["mixed"]["N"]["recall@1"], 4)],
-                             "bf16_rows_recall@1": [round(m["stored"]["B"]["recall@1"], 4), round(m["mixed"]["B"]["recall@1"], 4)]}
+                             "bf16_rows_recall@1": [round(m["stored"]["B"]["recall@1"], 4), round(m["mixed"]["B"]["recall@1"], 4)],
+                             "nvfp4_rows_top1_count": [round(m["stored"]["N"]["recall@1"] * m["group_n"]),
+                                                       round(m["mixed"]["N"]["recall@1"] * m["group_n"]), m["group_n"]],
+                             "bf16_rows_top1_count": [round(m["stored"]["B"]["recall@1"] * m["group_b"]),
+                                                      round(m["mixed"]["B"]["recall@1"] * m["group_b"]), m["group_b"]]}
                          for c, m in mixed.items()},
         "mixed_corpus_note": "post-hoc (not pre-registered): half of the sampled corpus rows re-embedded with NVFP4; "
-                             "[stored corpus, mixed corpus] recall@1 for NVFP4 questions per row group",
+                             "[stored corpus, mixed corpus] recall@1 for NVFP4 questions per row group; top1_count is "
+                             "[stored, mixed, rows]",
     },
     "artifact_validation": validation["result"],
 }

@@ -177,14 +177,14 @@
     {
      "id": "model_card_final",
      "status": "verified",
-     "evidence": "Gold-standard card; every number checked against the gate summary by eval/check_card_numbers.py (36/36); hub README read back identical at 744fb177",
+     "evidence": "Gold-standard card; every number checked against the gate summary by eval/check_card_numbers.py (37/37); hub README read back identical at 9c143511",
      "evidence_path": "models/qwen3-embedding-8b/model-card/base-nvfp4.md",
      "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "publication_targets_hf_ghcr",
      "status": "verified",
-     "evidence": "HF target HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4 public @ 744fb1778f222986304b5106de4993f60627afcf (card-only commit on the clean-download-smoked efb78193; weights identical); GHCR not required (pinned upstream vLLM image)",
+     "evidence": "HF target HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4 public @ 9c1435111bdd0ae1ccd6edd7f58a630d303a1b62 (card-only commits on the clean-download-smoked efb78193; weights identical); GHCR not required (pinned upstream vLLM image)",
      "evidence_path": "models/qwen3-embedding-8b/results/publication-receipt.json",
      "next_missing_proof": "none - gate satisfied"
     },

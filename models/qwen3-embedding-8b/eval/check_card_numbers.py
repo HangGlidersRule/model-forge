@@ -78,6 +78,12 @@ expect += [
     f"{stp['throughput_long_range']} BF16 tokens/s on long inputs and {stp['throughput_short_range']} on short inputs",
     "every cosine was within 2e-15 of 1" if fr["one_minus_cosine_max"] < 2e-15 else "COSINE-WITHIN-2E-15-NOT-SUPPORTED",
 ]
+mc = g["store_compatibility"]["mixed_corpus"]["nvfp4-B"]
+gain = mc["nvfp4_rows_top1_count"][1] - mc["nvfp4_rows_top1_count"][0]
+loss = mc["bf16_rows_top1_count"][0] - mc["bf16_rows_top1_count"][1]
+words = {1: "one", 2: "two", 3: "three"}
+expect.append(f"they gained {gain} of {mc['nvfp4_rows_top1_count'][2]} top-1 placements, and the BF16 rows\n  lost "
+              f"{words.get(loss, str(loss))} of {mc['bf16_rows_top1_count'][2]:,}")
 missing = [e for e in expect if e not in card]
 for e in missing:
     print("NOT ON CARD:", e)

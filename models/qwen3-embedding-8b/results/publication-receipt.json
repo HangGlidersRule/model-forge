@@ -1,8 +1,8 @@
 {
  "repository": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
  "uploaded_commit": "efb78193a22c247395c47ecf44137ff290168d5c",
- "hf_commit": "744fb1778f222986304b5106de4993f60627afcf",
- "hf_commit_note": "Current head: a card-only commit on top of efb78193 (the clean-download-smoked commit); the safetensors LFS oid is identical at both commits (hf_publish.py same-weights).",
+ "hf_commit": "9c1435111bdd0ae1ccd6edd7f58a630d303a1b62",
+ "hf_commit_note": "Current head: card-only commits on top of efb78193 (the clean-download-smoked commit); the safetensors LFS oid is identical at both commits (hf_publish.py same-weights). Public since 744fb177.",
  "model_safetensors_sha256": "e2ddcc42fcd77d8c2a34e5d7e1b04d41b6cc45edc2370961b2a2fcb91c672eff",
  "manifest_entries": 16,
  "clean_download_smoke": {

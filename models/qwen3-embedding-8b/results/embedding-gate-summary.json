@@ -87,6 +87,7 @@
    "mean": 0.0,
    "zero_share": 1.0
   },
+  "load_logging_vs_amendment_R18_A1": "R18-A1 said the production engine's load would be logged for each throughput cell. Only the stable-profile run sampled it during the run (every 2 s, 0 running requests throughout). The BF16, A and B runs checked it once at the start of each run (0 running requests each time); their per-cell load was not logged.",
   "tok_per_s_ratio_vs_bf16": {
    "nvfp4-A": {
     "short_c1": 1.26,
@@ -418,6 +419,16 @@
     "bf16_rows_recall@1": [
      0.7302,
      0.7283
+    ],
+    "nvfp4_rows_top1_count": [
+     731,
+     764,
+     988
+    ],
+    "bf16_rows_top1_count": [
+     739,
+     737,
+     1012
     ]
    },
    "nvfp4-B": {
@@ -429,10 +440,20 @@
     "bf16_rows_recall@1": [
      0.7243,
      0.7233
+    ],
+    "nvfp4_rows_top1_count": [
+     728,
+     769,
+     988
+    ],
+    "bf16_rows_top1_count": [
+     733,
+     732,
+     1012
     ]
    }
   },
-  "mixed_corpus_note": "post-hoc (not pre-registered): half of the sampled corpus rows re-embedded with NVFP4; [stored corpus, mixed corpus] recall@1 for NVFP4 questions per row group"
+  "mixed_corpus_note": "post-hoc (not pre-registered): half of the sampled corpus rows re-embedded with NVFP4; [stored corpus, mixed corpus] recall@1 for NVFP4 questions per row group; top1_count is [stored, mixed, rows]"
  },
  "artifact_validation": "PASS"
 }

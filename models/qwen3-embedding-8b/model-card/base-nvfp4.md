@@ -123,7 +123,8 @@ BF16 vectors:
 - **Hard thresholds need checking.** If you act on a hard threshold, expect NVFP4-to-BF16 similarities to run lower.
   Re-embed, or re-tune the threshold.
 - **Mixed corpora are slightly biased.** In a mixed corpus (old BF16 rows, new NVFP4 rows), an NVFP4 query scores its
-  NVFP4 rows slightly higher (mean +0.012 cosine). They gain top-1 placements; the BF16 rows lost none in our test.
+  NVFP4 rows slightly higher (mean +0.012 cosine). In our test they gained 41 of 988 top-1 placements, and the BF16 rows
+  lost one of 1,012.
 
 **Vectors vary between serving instances.** With the default serve command, two separate vLLM instances of this
 checkpoint return slightly different vectors for the same text. Over the 24,893 public documents the cosine between
