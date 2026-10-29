@@ -1,0 +1,322 @@
+{
+ "family": "jev-27b",
+ "issue": "https://github.com/HangGlidersRule/model-forge/issues/20",
+ "cell": "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
+ "method": {
+  "start_point": "candidate B (all-NVFP4 W4A4 PTQ, lm_head BF16), byte-identical untrained tensors",
+  "trained": "per-block NVFP4 weight scales only (ModelOpt LSQ, tied pre/post amax, fp32 master values); BF16 weights, per-tensor scales, activation scales, lm_head, embeddings and norms frozen",
+  "objective": "full-vocabulary KL(BF16 teacher || NVFP4 student) at every prompt position (NVIDIA QAD logits loss); teacher = the same merged BF16 weights with every quantizer bypassed",
+  "data": "SargeDev/jev-distill-corpus-v3 train split @ 75111a13a8455032f0435050bfc7e0c9026ecfe8 (no id or content overlap with test_set_30k); validation split 2,000-row subset for checkpointing",
+  "schedule": "AdamW lr 1e-4, warmup 50, cosine to 10%, grad clip 1.0, ~16k prompt tokens/step",
+  "toolchain": "ModelOpt main @ b6b0ff5249109729c515cdc739a50d518e9cbec0 (0.48.0rc1.dev229), torch 2.14.1+cu132, transformers 5.18.0, flash-linear-attention 0.6.0",
+  "scripts": {
+   "models/jev-27b/scripts/qad_train.py": "470517574373797efcd069355dfd9233639fa983d83ad73f8a5e3f9849d5bb8f",
+   "models/jev-27b/eval/verify_export_scales.py": "94ff315d826675797451c08de508b76bdb277925383179029432d76a9a14c0d9",
+   "models/jev-27b/eval/build_qad_summary.py": "c63a46aed1c0fcd8bb7423bf39d967b37b772b3fd6f8bee691ce249200996685",
+   "operator_recipe (stage 1)": "2c2dd90a60140140f4992a705c34fa58048a61935cd3dbd19904ef8bd0b25e41"
+  },
+  "preregistration": "https://github.com/HangGlidersRule/model-forge/issues/20 (run 1 pre-registration; run 2 delta with amendments R2-A1..R2-A3)"
+ },
+ "training": {
+  "steps": 596,
+  "hours": 5.84,
+  "prompt_tokens": 9814434,
+  "best_step": 500,
+  "validation": [
+   {
+    "step": 0,
+    "teacher_kl": 0.024491,
+    "distill_kl_vs_bf16": 0.156177
+   },
+   {
+    "step": 100,
+    "teacher_kl": 0.023033,
+    "distill_kl_vs_bf16": 0.109353
+   },
+   {
+    "step": 200,
+    "teacher_kl": 0.023269,
+    "distill_kl_vs_bf16": 0.101209
+   },
+   {
+    "step": 300,
+    "teacher_kl": 0.022659,
+    "distill_kl_vs_bf16": 0.09475
+   },
+   {
+    "step": 400,
+    "teacher_kl": 0.022501,
+    "distill_kl_vs_bf16": 0.089338
+   },
+   {
+    "step": 500,
+    "teacher_kl": 0.022194,
+    "distill_kl_vs_bf16": 0.086661
+   },
+   {
+    "step": 596,
+    "teacher_kl": 0.022538,
+    "distill_kl_vs_bf16": 0.086836
+   }
+  ],
+  "fp8_block_scales_changed_vs_start": "24% at step 550"
+ },
+ "export_check": {
+  "untrained_tensors_identical_to_start": 1588,
+  "trained_tensors": 800,
+  "block_scale_mismatches_vs_trained_forward": 355,
+  "block_scales_total": 1520435200,
+  "mismatch_classes": {
+   "tie": 355,
+   "sat": 0,
+   "other": 0
+  },
+  "note": "every mismatch is an E4M3 midpoint tie rounded to the adjacent code (pre-registered rule R2-A3)",
+  "artifact_validation": "PASS"
+ },
+ "test_set_30k": {
+  "rows": 29955,
+  "summaries": {
+   "merged-qad": {
+    "kl": 0.020719205441915696,
+    "top1": 0.9205460401112575,
+    "choice_top1": 0.9066829214230301,
+    "noul_auroc": 0.995295422413878,
+    "score_mae_expected": 0.10533419265816411
+   },
+   "merged": {
+    "kl": 0.020319425644452216,
+    "top1": 0.9219367588932806,
+    "choice_top1": 0.9050205031585947,
+    "noul_auroc": 0.9954363818904929,
+    "score_mae_expected": 0.10426643000835872
+   },
+   "current": {
+    "kl": 0.020705765894915525,
+    "top1": 0.92003367003367,
+    "choice_top1": 0.908123683918874,
+    "noul_auroc": 0.9954934703736569,
+    "score_mae_expected": 0.1057776478329205
+   },
+   "merged-b": {
+    "kl": 0.02203622888620239,
+    "top1": 0.9188625384277558,
+    "choice_top1": 0.9025822897040896,
+    "noul_auroc": 0.9950099380520747,
+    "score_mae_expected": 0.11220887747162331
+   }
+  },
+  "agreement_with_bf16_reference": {
+   "merged-qad": 0.9459,
+   "merged": 0.9403,
+   "merged-b": 0.9359,
+   "current": 0.9434
+  },
+  "frozen_bar": {
+   "script_sha256": "75fcb8147e10b1bb606d9c9cc80e6f8d88aa668cc4fac84c9354986b614222de",
+   "verdict": "FAIL",
+   "criteria": {
+    "teacher_kl_not_worse": false,
+    "top1_deficit_within_0p5pt": true,
+    "rows_per_s_ge_current": true,
+    "p50_c1_short_le_current": false,
+    "p50_c1_long_le_current": true
+   },
+   "teacher_kl_delta_vs_deployed_lane": [
+    1e-05,
+    -0.00018,
+    0.00019
+   ],
+   "top1_deficit_vs_deployed_lane_pt": [
+    -0.05,
+    -0.28,
+    0.18
+   ],
+   "speed_criteria_note": "the gate window measured this export at 60.2 rows/s and 147/272 ms; back-to-back re-measurements (below) put it at the speed of its identical-layout start point"
+  }
+ },
+ "ood": {
+  "rows": 13058,
+  "summaries": {
+   "ood-merged-qad": {
+    "kl": 0.11918460413722334,
+    "top1": 0.953816046966732,
+    "choice_top1": 0.9104223433242506,
+    "noul_auroc": 0.9954167469614683,
+    "score_mae_expected": 0.5416938128900713
+   },
+   "ood-merged": {
+    "kl": 0.10190798551414401,
+    "top1": 0.9584344422700587,
+    "choice_top1": 0.9151907356948229,
+    "noul_auroc": 0.996459846278599,
+    "score_mae_expected": 0.5331959780109192
+   }
+  },
+  "teacher_kl_delta_vs_shipped_cell": [
+   0.01728,
+   0.0123,
+   0.02267
+  ]
+ },
+ "speed_back_to_back": {
+  "450W": {
+   "run2_qad": {
+    "latency": {
+     "short": {
+      "c1": {
+       "p50_ms": 78.3,
+       "p95_ms": 82.3
+      },
+      "c8": {
+       "p50_ms": 198.5,
+       "p95_ms": 286.6
+      }
+     },
+     "long": {
+      "c1": {
+       "p50_ms": 253.4,
+       "p95_ms": 285.8
+      },
+      "c8": {
+       "p50_ms": 910.2,
+       "p95_ms": 2126.8
+      }
+     }
+    },
+    "rows_per_s_first_6000_rows_c16": 60.88
+   },
+   "A_shipped": {
+    "latency": {
+     "short": {
+      "c1": {
+       "p50_ms": 99.9,
+       "p95_ms": 174.0
+      },
+      "c8": {
+       "p50_ms": 272.3,
+       "p95_ms": 306.3
+      }
+     },
+     "long": {
+      "c1": {
+       "p50_ms": 301.7,
+       "p95_ms": 343.0
+      },
+      "c8": {
+       "p50_ms": 968.6,
+       "p95_ms": 2535.7
+      }
+     }
+    },
+    "rows_per_s_first_6000_rows_c16": 54.46
+   },
+   "B_ptq_start": {
+    "latency": {
+     "short": {
+      "c1": {
+       "p50_ms": 79.1,
+       "p95_ms": 159.0
+      },
+      "c8": {
+       "p50_ms": 219.6,
+       "p95_ms": 304.2
+      }
+     },
+     "long": {
+      "c1": {
+       "p50_ms": 256.9,
+       "p95_ms": 290.9
+      },
+      "c8": {
+       "p50_ms": 844.1,
+       "p95_ms": 2134.5
+      }
+     }
+    },
+    "rows_per_s_first_6000_rows_c16": 62.77
+   }
+  },
+  "600W": {
+   "run2_qad": {
+    "latency": {
+     "short": {
+      "c1": {
+       "p50_ms": 64.4,
+       "p95_ms": 144.2
+      },
+      "c8": {
+       "p50_ms": 238.5,
+       "p95_ms": 293.8
+      }
+     },
+     "long": {
+      "c1": {
+       "p50_ms": 209.9,
+       "p95_ms": 275.6
+      },
+      "c8": {
+       "p50_ms": 713.9,
+       "p95_ms": 1722.8
+      }
+     }
+    },
+    "rows_per_s_first_6000_rows_c16": 66.8
+   },
+   "A_shipped": {
+    "latency": {
+     "short": {
+      "c1": {
+       "p50_ms": 93.7,
+       "p95_ms": 102.9
+      },
+      "c8": {
+       "p50_ms": 219.6,
+       "p95_ms": 256.7
+      }
+     },
+     "long": {
+      "c1": {
+       "p50_ms": 249.7,
+       "p95_ms": 283.6
+      },
+      "c8": {
+       "p50_ms": 828.9,
+       "p95_ms": 2065.0
+      }
+     }
+    },
+    "rows_per_s_first_6000_rows_c16": 60.05
+   },
+   "B_ptq_start": {
+    "latency": {
+     "short": {
+      "c1": {
+       "p50_ms": 77.0,
+       "p95_ms": 153.2
+      },
+      "c8": {
+       "p50_ms": 161.1,
+       "p95_ms": 197.3
+      }
+     },
+     "long": {
+      "c1": {
+       "p50_ms": 209.4,
+       "p95_ms": 235.6
+      },
+      "c8": {
+       "p50_ms": 731.7,
+       "p95_ms": 1735.2
+      }
+     }
+    },
+    "rows_per_s_first_6000_rows_c16": 65.3
+   }
+  }
+ },
+ "speed_note": "same GPU, same window per power limit, vLLM v0.32.0, identical serve flags; rows/s on the first 6,000 test rows (longer than average), so it ranks cells but is not comparable to full-set rows/s",
+ "kv_cache_tokens": 857429,
+ "weights_gib": 18.66,
+ "decision": "Shipped by owner decision (Devin, 2026-10-29) alongside the mixed W4A4+FP8 cell, under a looser tolerance than the frozen bar: the bar's teacher-KL criterion requires the 95% CI upper bound <= 0, and this cell's CI straddles 0 (a statistical tie with the deployed lane). It is 2.0% behind the shipped cell on test-set teacher KL, 15-20% faster at c=1, and 17% behind it on ood teacher KL."
+}

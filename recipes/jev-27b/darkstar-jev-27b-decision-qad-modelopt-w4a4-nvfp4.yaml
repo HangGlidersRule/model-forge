@@ -1,0 +1,110 @@
+schema_version: "2.0"
+name: darkstar-jev-27b-decision-qad-modelopt-w4a4-nvfp4
+family: jev-27b
+
+# Build input: the BF16 merge of the autotrust/JEV-27B adapter_vllm LoRA
+# (revision 14b425269ed24452e0a5ad5a8f3e51d139647a88; rank 32, alpha 64, 401 pairs incl. lm_head)
+# into the source below, W + (alpha/r)·(B·A) in FP32, rounded once to BF16, made by
+# models/jev-27b/scripts/merge_lora.py (matches PEFT merge_and_unload exactly on a reduced model, max abs diff
+# 0.0: models/jev-27b/scripts/test_merge_vs_peft.py, results/merge-peft-check.json).
+# Report: models/jev-27b/results/merge-report.json.
+# The schema-2 transform vocabulary has no LoRA-merge or QAD type, so both are recorded here, not as transforms.
+#
+# Two stages:
+#   1. PTQ start point: ModelOpt 0.48.0rc1, the all-NVFP4 W4A4 operator recipe below, Local-Hessian weight scales with
+#      the FP8-scale sweep, layerwise, 512 calibration samples (candidate B of issue #15).
+#   2. QAD (issue #20, run 2): per-block NVFP4 weight scales trained with ModelOpt LSQ (ModelOpt main @
+#      b6b0ff5249109729c515cdc739a50d518e9cbec0; tied pre/post amax, fp32 master values). Objective: full-vocabulary
+#      KL(BF16 teacher || NVFP4 student) at every prompt position; the teacher is the same merged weights with every
+#      quantizer bypassed. Data: jev-distill-corpus-v3 train split. AdamW lr 1e-4, warmup 50, cosine to 10%, grad clip
+#      1.0, 596 steps of ~16k prompt tokens; checkpoint = step 500 (lowest validation teacher KL on a fixed 2,000-row
+#      validation subset). Everything else frozen: BF16 weights, per-tensor weight scales, activation scales,
+#      lm_head, embeddings, norms, vision tower, MTP. Export folds the trained scales back into the standard ModelOpt
+#      NVFP4 format; all 1,588 untrained tensors are byte-identical to the stage-1 export.
+#      Evidence: models/jev-27b/results/qad-gate-summary.json; pre-registration and amendments on issue #20.
+source:
+  model_id: Qwen/Qwen3.8-27B
+  revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+
+transforms: []
+
+datasets:
+  jev_distill_corpus_v3:
+    source: SargeDev/jev-distill-corpus-v3
+    revision: 75111a13a8455032f0435050bfc7e0c9026ecfe8
+    sha256: null
+  nemotron_sft_if_chat_v2:
+    source: nvidia/Nemotron-SFT-Instruction-Following-Chat-v2
+    revision: 1a9454ed054b8544503ab8d8c0a519d141a44c5b
+    sha256: null
+
+quantization:
+  scheme: NVFP4
+  targets: Linear
+  group_size: 16
+  framework: nvidia-modelopt
+  framework_version: 0.48.0rc1
+  framework_pin_commit: ff2450c15eb5f1697ec0471704d5421d54fce4f4
+  algorithm: local_hessian
+  weight_scale_algorithm: local_hessian
+  fp8_scale_sweep: true
+  operator_recipe: configs/modelopt/recipes/jev-27b/jev27b_nvfp4_w4a4_mlp_attn_local_hessian_lmhead_bf16.yaml
+  operator_recipe_sha256: 2c2dd90a60140140f4992a705c34fa58048a61935cd3dbd19904ef8bd0b25e41
+  quant_grp:
+    mlp_gate_up_down: W4A4_NVFP4
+    self_attn_qkvo: W4A4_NVFP4
+    linear_attn_qkv_z_out: W4A4_NVFP4
+  protected_tensors:
+    - lm_head
+    - embed_tokens
+    - norm.weight
+    - linear_attn.in_proj_a
+    - linear_attn.in_proj_b
+    - linear_attn.conv1d
+    - model.visual.blocks
+    - mtp.layers
+  keep_bf16:
+    - lm_head
+    - embed_tokens
+    - norm.weight
+    - model.visual.blocks
+    - mtp.layers
+  ignore:
+    - lm_head
+    - "re:.*embed_tokens.*"
+    - "re:.*norm\\.weight$"
+    - "re:.*linear_attn\\.(in_proj_a|in_proj_b|conv1d).*"
+    - "re:^model\\.visual\\..*"
+    - "re:^mtp\\..*"
+  calibration:
+    dataset: 256 JEV decision prompts (jev-distill-corpus-v3 calibration split, rendered as serve_decide.py builds them) + 256 Nemotron SFT instruction-following chat samples
+    config: jev_calib_512
+    samples: 512
+    max_sequence_length: 2048
+    batch_size: 1
+    kv_cache_qformat: none
+    pipeline: modelopt_hf_ptq
+    shard_size: 10GB
+
+validation:
+  max_refusal_leakage: 0.01
+  quantized_layers_count: 400
+  mtp_present: true
+
+runtime:
+  kv_dtype: bf16
+  context_length: 32768
+  flash_attention: true
+  spec_decode: none
+  vllm_pin: vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34
+
+performance:
+  prompt_lengths: [314, 3789]
+  warmup_repeats: 1
+  measure_repeats: 1
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_nvfp4: HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4
