@@ -1,0 +1,77 @@
+{
+ "repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
+ "hf_commit": "7159403d48d9ad8884659e1f18debc353e1fa4a1",
+ "verified_commit": "96f8c159827209af1fca7fba354b9b3009169c26",
+ "hf_commit_note": "Current head: a card-only commit on top of 96f8c159 (the clean-download-verified commit); the three safetensors shards' LFS oids are identical at both commits (hf_publish.py same-weights).",
+ "files": [
+  ".gitattributes",
+  "LICENSE",
+  "README.md",
+  "calibration.json",
+  "chat_template.jinja",
+  "config.json",
+  "decision_head.json",
+  "generation_config.json",
+  "hf_quant_config.json",
+  "manifest.sha256",
+  "merges.txt",
+  "model-00001-of-00003.safetensors",
+  "model-00002-of-00003.safetensors",
+  "model-00003-of-00003.safetensors",
+  "model.safetensors.index.json",
+  "preprocessor_config.json",
+  "serve_decide.py",
+  "tokenizer.json",
+  "tokenizer_config.json",
+  "video_preprocessor_config.json",
+  "vocab.json"
+ ],
+ "manifest_sha256_of_manifest_file": "4812ed31c45864fdac085a6e80433ce051de3aac8e32f9f48892e795029c6a35",
+ "lfs_sha256_matches_local": true,
+ "clean_download_boot_smoke": {
+  "download": "empty HF cache, snapshot_download at the verified commit; 19/19 manifest.sha256 entries verified, 0 mismatches",
+  "serve": "vLLM v0.32.0 by digest + serve_decide.py from the download with JEV_DECIDE_MERGED=1 and JEV_DECIDE_HEAD_DIR set, the card's exact flags (--max-model-len 32768 --max-num-seqs 32 --logprobs-mode processed_logprobs --trust-request-chat-template); FlashInferCutlassNvFp4LinearKernel; weights 18.66 GiB; KV cache 857,429 tokens",
+  "health": 200,
+  "served_model": "darkstar-jev27bqad-base-nvfp4",
+  "card_example": {
+   "choice": "EUR",
+   "probability": 0.999996,
+   "prompt_tokens": 52
+  },
+  "per_kind_smoke": {
+   "noul_true_probability": 0.9872,
+   "score_argmax": 0
+  },
+  "fatal_markers_in_log": 0
+ },
+ "public": {
+  "anonymous_http_200": [
+   "LICENSE",
+   "README.md",
+   "calibration.json",
+   "card_page",
+   "chat_template.jinja",
+   "config.json",
+   "decision_head.json",
+   "generation_config.json",
+   "hf_quant_config.json",
+   "manifest.sha256",
+   "merges.txt",
+   "model-00001-of-00003.safetensors",
+   "model-00002-of-00003.safetensors",
+   "model-00003-of-00003.safetensors",
+   "model.safetensors.index.json",
+   "preprocessor_config.json",
+   "serve_decide.py",
+   "tokenizer.json",
+   "tokenizer_config.json",
+   "video_preprocessor_config.json",
+   "vocab.json"
+  ],
+  "anonymous_http_non_200": [],
+  "card_read_back_identical": true,
+  "family_collection": "HangGlidersRule/darkstar-jev-27b-6ae12c8cd6eba44d1ab99a16",
+  "darkstar_releases_collection": null,
+  "darkstar_releases_note": "Darkstar Releases features one selected checkpoint per family; for JEV-27B that stays the mixed cell, which passed the frozen bar."
+ }
+}

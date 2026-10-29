@@ -11,9 +11,11 @@ pass with a one-token readout. Proposed and tracked in [issue #15](https://githu
 |---|---|---|
 | BF16 reference (control) | [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B) @ `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0` + [`autotrust/JEV-27B`](https://huggingface.co/autotrust/JEV-27B) `adapter_vllm` @ `14b425269ed24452e0a5ad5a8f3e51d139647a88` | unchanged upstream reference; no HangGlidersRule repository |
 | Merged W4A4-NVFP4 + FP8 (decisions) | [`Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8`](https://huggingface.co/HangGlidersRule/Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8) | published |
+| Merged all-W4A4-NVFP4, QAD scales (decisions, speed variant) | [`Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4`](https://huggingface.co/HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4) | published by owner decision; fails the frozen bar on a teacher-KL tie ([QAD](#qad-speed-variant-issue-20)) |
 | Abliterated cells | — | not applicable: a decision scorer is not a refusal-edit target |
 
-Release: tag [`darkstar-jev-27b-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-jev-27b-v1.0.0).
+Releases: tags [`darkstar-jev-27b-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-jev-27b-v1.0.0)
+(mixed cell) and [`darkstar-jev-27b-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-jev-27b-v1.1.0) (adds the QAD cell).
 Family collection: [Darkstar JEV-27B](https://huggingface.co/collections/HangGlidersRule/darkstar-jev-27b-6ae12c8cd6eba44d1ab99a16).
 
 ## Why merge
@@ -25,7 +27,8 @@ text generation quality, which is neither measured nor claimed here: merging cos
 
 ## Documents
 
-- [`model-card/decision-nvfp4.md`](model-card/decision-nvfp4.md): source card for the published checkpoint
+- [`model-card/decision-nvfp4.md`](model-card/decision-nvfp4.md): source card for the published mixed checkpoint
+- [`model-card/decision-qad-nvfp4.md`](model-card/decision-qad-nvfp4.md): source card for the published QAD checkpoint
 - [`model-card/base-bf16.md`](model-card/base-bf16.md): the unmerged BF16 + LoRA reference
 - [`results/decision-gate-summary.json`](results/decision-gate-summary.json): all five configurations, the noise floor, latency,
   KV cache, both pass bars and the decision
@@ -40,7 +43,9 @@ text generation quality, which is neither measured nor claimed here: merging cos
 ## Recipes
 
 - [`../../recipes/jev-27b/darkstar-jev-27b-decision-modelopt-w4a4-nvfp4-mixed-fp8.yaml`](../../recipes/jev-27b/darkstar-jev-27b-decision-modelopt-w4a4-nvfp4-mixed-fp8.yaml):
-  schema-2 build recipe for the published cell
+  schema-2 build recipe for the published mixed cell
+- [`../../recipes/jev-27b/darkstar-jev-27b-decision-qad-modelopt-w4a4-nvfp4.yaml`](../../recipes/jev-27b/darkstar-jev-27b-decision-qad-modelopt-w4a4-nvfp4.yaml):
+  schema-2 build recipe for the published QAD cell (PTQ start point plus the QAD stage)
 - [`../../configs/modelopt/recipes/jev-27b/`](../../configs/modelopt/recipes/jev-27b/): the two ModelOpt operator recipes compared
   (A: NVIDIA's Qwen3.8-27B recipe with `lm_head` BF16; B: everything NVFP4 W4A4 with `lm_head` BF16)
 - [`../../configs/modelopt/pins/modelopt-0.48.0rc1.json`](../../configs/modelopt/pins/modelopt-0.48.0rc1.json): the ModelOpt pin
@@ -71,6 +76,39 @@ The frozen script ships byte-identical to the file that judged candidate B, so i
 
 A passes (teacher KL −0.00039 vs the deployed lane, CI −0.00054 to −0.00024). B fails it (+0.00133, CI +0.00114 to +0.00152)
 despite being about 2× the deployed lane's throughput.
+
+## QAD speed variant (issue #20)
+
+Issue #20 asked whether training could recover B's quality while keeping its all-FP4 speed. Run 2 trained only B's
+per-block NVFP4 weight scales with ModelOpt quantization-aware distillation:
+- **Objective:** full-vocabulary KL from the merged BF16 model to the NVFP4 student at every prompt position. The teacher
+  is the same weights with quantization bypassed.
+- **Data:** the corpus `train` split, which has no overlap with `test_set_30k`.
+- **Schedule:** 596 steps, ~9.8M tokens, lr 1e-4. Checkpoint chosen by validation teacher KL.
+- **Pre-registration:** the run was pre-registered on the issue. Its three amendments (R2-A1 to R2-A3) were written into
+  the pre-registration file before the results they could affect, and posted to the issue after the result.
+
+| Configuration (29,955 rows) | Teacher KL | Top-1 | Agreement with BF16 | `ood` teacher KL | p50 c=1 short / long (600 W) |
+|---|---|---|---|---|---|
+| Deployed: NVIDIA NVFP4 + LoRA | 0.0207 | 0.9200 | 0.943 | — | — |
+| A: NVFP4 MLP + FP8 attention | 0.0203 | 0.9219 | 0.940 | 0.1019 | 94 / 250 ms |
+| B: everything NVFP4 W4A4 (PTQ) | 0.0220 | 0.9189 | 0.936 | — | 77 / 209 ms |
+| **QAD: B with trained scales** | **0.0207** | **0.9205** | **0.946** | **0.1192** | **64 / 210 ms** |
+
+**Result against the frozen bar.**
+- QAD removed about 99% of B's teacher-KL gap to the deployed lane: delta +0.00001, 95% CI −0.00018 to +0.00019.
+- That is a tie, and the frozen bar requires the CI's upper bound to be at or below zero. It fails.
+- Out of distribution its teacher KL is 17% above A's (CI +0.0123 to +0.0227 absolute), with top-1 within 0.5 pt.
+
+**Why it ships anyway.** It ships alongside A by owner decision: 15–32% lower single-request p50 latency for 2.0%
+higher test-set teacher KL. A remains the closer match to the teacher.
+
+Speed numbers come from back-to-back runs in one window per power limit. The gate window's own speed reading for the QAD
+build was a measurement fault, identified by that re-measurement. Evidence:
+[`results/qad-gate-summary.json`](results/qad-gate-summary.json) and
+[`results/qad-artifact-validation.json`](results/qad-artifact-validation.json). Scripts:
+[`scripts/qad_train.py`](scripts/qad_train.py) (byte-identical to the run), [`eval/verify_export_scales.py`](eval/verify_export_scales.py),
+[`eval/count_changed_block_scales.py`](eval/count_changed_block_scales.py) and [`eval/build_qad_summary.py`](eval/build_qad_summary.py).
 
 ## Gotchas
 

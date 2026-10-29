@@ -1394,3 +1394,13 @@ rules:
     max_size_bytes: 65536
     generated: false
     precedence: 100
+  - id: hf-card-jev-27b-decision-qad
+    source: "publication/huggingface/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the JEV-27B Decision QAD ModelOpt W4A4 NVFP4 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100

@@ -211,6 +211,152 @@
    ]
   },
   {
+   "product_id": "Darkstar-JEV-27B-Base-ModelOpt-NVFP4-QAD",
+   "role": "base-modelopt-nvfp4",
+   "lifecycle": "published",
+   "target_repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
+   "target_repository_status": "resolved",
+   "served_model_alias": "darkstar-jev27bqad-base-nvfp4",
+   "runtime_container_name": "vllm-darkstar-jev27bqad-base-modelopt",
+   "model_card": "models/jev-27b/model-card/decision-qad-nvfp4.md",
+   "recipe": "recipes/jev-27b/darkstar-jev-27b-decision-qad-modelopt-w4a4-nvfp4.yaml",
+   "publication_claim": true,
+   "candidates": [
+    {
+     "candidate_id": "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
+     "precision_class": "W4A4-NVFP4",
+     "target_repository": "HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
+     "selection": "selected",
+     "promotion_status": "promoted",
+     "promotion_note": "Issue #20 run 2: candidate B's per-block NVFP4 weight scales trained with ModelOpt QAD (full-vocabulary self-distillation from the merged BF16). Test-set teacher KL 0.0207 vs the deployed lane 0.0207 (delta +0.00001, 95% CI -0.00018..+0.00019): a tie, so it FAILS the frozen non-inferiority bar (upper bound must be <= 0). Shipped alongside the mixed W4A4+FP8 cell by owner decision (2026-10-29) for 15-32% lower c=1 p50 latency at 2.0% higher teacher KL; ood teacher KL is 17% higher than the mixed cell's.",
+     "recipe": "configs/modelopt/recipes/jev-27b/jev27b_nvfp4_w4a4_mlp_attn_local_hessian_lmhead_bf16.yaml",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "immutable_hashes": {
+      "operator_recipe": "2c2dd90a60140140f4992a705c34fa58048a61935cd3dbd19904ef8bd0b25e41",
+      "calibration_jsonl": "58566c6e3d42ef0927fbb9c49005f8b703b257c23ab9dd78509c4dbb87fa30de",
+      "qad_train_py": "470517574373797efcd069355dfd9233639fa983d83ad73f8a5e3f9849d5bb8f",
+      "frozen_bar": "75fcb8147e10b1bb606d9c9cc80e6f8d88aa668cc4fac84c9354986b614222de",
+      "manifest_sha256": "see the published repository's manifest.sha256"
+     },
+     "precision_map": {
+      "language_mlp": "W4A4-NVFP4-g16",
+      "lm_head": "BF16",
+      "self_attention": "W4A4-NVFP4-g16",
+      "gdn_projections": "W4A4-NVFP4-g16 (in_proj_qkv/in_proj_z/out_proj); in_proj_a/in_proj_b/conv1d BF16",
+      "kv_cache": "BF16",
+      "protected": "embeddings, lm_head, all norms, in_proj_a/b, conv1d, vision tower, MTP (BF16)"
+     }
+    }
+   ],
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Built from Qwen/Qwen3.8-27B@1d4bf0f2 BF16 + autotrust/JEV-27B adapter_vllm@14b42526 (both Apache-2.0); start point is this family's own all-NVFP4 PTQ build; QAD data is the jev-distill-corpus-v3 train split",
+     "evidence_path": "models/jev-27b/README.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "artifact_manifest",
+     "status": "verified",
+     "evidence": "manifest.sha256 over every shipped file; shard sha256 identical between build host and upload host",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "recipe_edit_manifest",
+     "status": "verified",
+     "evidence": "Schema-2 recipe; stage-1 operator recipe sha256 2c2dd90a...; QAD script qad_train.py sha256 47051757...; ModelOpt 0.48.0rc1 pin (stage 1) and main @ b6b0ff5 (QAD)",
+     "evidence_path": "recipes/jev-27b/darkstar-jev-27b-decision-qad-modelopt-w4a4-nvfp4.yaml",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "artifact_validation",
+     "status": "verified",
+     "evidence": "Tokenizer, template and processor files byte-identical to the Qwen base; decision_head.json and calibration.json byte-identical to JEV-27B; config.json identical outside quantization metadata and transformers-5 re-serialization; 1,588 untrained tensors byte-identical to the start point",
+     "evidence_path": "models/jev-27b/results/qad-artifact-validation.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "modelopt_candidate_comparison",
+     "status": "verified",
+     "evidence": "Compared on the same 29,955 rows and the 13,058-row ood split against the mixed W4A4+FP8 cell, its PTQ start point and the deployed lane; fails the frozen bar on the teacher-KL tie, shipped by owner decision as the speed variant",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "nvfp4_tensor_scale_validation",
+     "status": "verified",
+     "evidence": "400 NVFP4 W4A4 linears (192 MLP, 64 self-attention, 144 linear-attention; group 16); 0 non-finite and 0 zero block scales over 1,520,435,200; fused groups uniform (qad-artifact-validation.json). QAD changed 23.6% of the FP8 block scales from the start point; 355 export-vs-trained block-scale differences, all E4M3 midpoint ties (qad-gate-summary.json export_check)",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "performance_profile",
+     "status": "verified",
+     "evidence": "Single-request /v1/decide p50, back to back with the mixed cell: 64 / 210 ms at 600 W (mixed 94 / 250), 78 / 253 ms at 450 W (mixed 100 / 302); ~314 / ~3.8k-token prompts; 15-32% lower",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "serving_capacity_profile",
+     "status": "verified",
+     "evidence": "c=16 on the first 6,000 test rows: 66.8 rows/s at 600 W, 60.9 at 450 W (mixed 60.1 / 54.5); c=8 latency recorded; KV cache 857,429 tokens at --gpu-memory-utilization 0.85",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "gpqa_matched_full_denominator",
+     "status": "verified",
+     "evidence": "Decision family: JEV test_set_30k replaces GPQA; teacher KL 0.0207 (BF16 reference 0.0186, mixed 0.0203, deployed 0.0207), 29,955/29,955 rows answered; ood 13,058/13,058 (qad-gate-summary.json test_set_30k.summaries and ood)",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "serve_profile_frozen",
+     "status": "verified",
+     "evidence": "vLLM v0.32.0 by digest; serve_decide.py with JEV_DECIDE_MERGED=1; --max-model-len 32768 --max-num-seqs 32 --logprobs-mode processed_logprobs; BF16 KV; FlashInfer CUTLASS NVFP4 kernels",
+     "evidence_path": "models/jev-27b/model-card/decision-qad-nvfp4.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "model_card_final",
+     "status": "verified",
+     "evidence": "Gold-standard card with measured gates, the failed frozen bar stated, owner decision, decisions-only scope, license and the release tag reference",
+     "evidence_path": "models/jev-27b/model-card/decision-qad-nvfp4.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "publication_targets_hf_ghcr",
+     "status": "verified",
+     "evidence": "HF target HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4 @ 7159403d48d9ad8884659e1f18debc353e1fa4a1 (card-only commit on the verified 96f8c159; weights identical); GHCR not required (pinned upstream vLLM image)",
+     "evidence_path": "models/jev-27b/results/qad-publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "clean_download_boot_smoke",
+     "status": "verified",
+     "evidence": "Clean re-download from the hub, every manifest.sha256 entry checked, served with the card's exact command, card example answered",
+     "evidence_path": "models/jev-27b/results/qad-publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "release_tag",
+     "status": "verified",
+     "evidence": "darkstar-jev-27b-v1.1.0",
+     "evidence_path": "models/jev-27b/README.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "no_inherited_unverified_results",
+     "status": "verified",
+     "evidence": "Every number on the card was measured on this exact artifact",
+     "evidence_path": "models/jev-27b/results/qad-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    }
+   ]
+  },
+  {
    "product_id": "Darkstar-JEV-27B-Abliterated-BF16",
    "role": "abliterated-bf16",
    "lifecycle": "in_progress",
@@ -276,6 +422,7 @@
  ],
  "rejected_historical": [],
  "related_issues": [
-  "HangGlidersRule/model-forge#15"
+  "HangGlidersRule/model-forge#15",
+  "HangGlidersRule/model-forge#20"
  ]
 }

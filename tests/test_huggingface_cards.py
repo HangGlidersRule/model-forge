@@ -17,6 +17,7 @@ TARGETS = {
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
     "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4",
     "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+    "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -63,6 +64,10 @@ EXPECTED_METADATA = {
         ["Qwen/Qwen3.8-27B", "autotrust/JEV-27B"],
         "quantized",
     ),
+    "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4": (
+        ["Qwen/Qwen3.8-27B", "autotrust/JEV-27B"],
+        "quantized",
+    ),
 }
 SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -98,6 +103,9 @@ SOURCE_CARDS = {
     "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8": (
         REPO_ROOT / "models" / "jev-27b" / "model-card" / "decision-nvfp4.md"
     ),
+    "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4": (
+        REPO_ROOT / "models" / "jev-27b" / "model-card" / "decision-qad-nvfp4.md"
+    ),
 }
 EXPECTED_LICENSE = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
@@ -111,6 +119,7 @@ EXPECTED_LICENSE = {
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4": "other",
     "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4": "apache-2.0",
     "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8": "apache-2.0",
+    "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4": "apache-2.0",
 }
 EXPECTED_PUBLIC_REVISIONS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8":
@@ -141,7 +150,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 11
+    assert len(cards) == 12
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
@@ -197,7 +206,11 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             "This immutable tag exists and the release contract is published." in text
             or "public on Hugging Face" in text
         )
-        if "JEV" in target:
+        if "JEV" in target and "QAD" in target:
+            assert "darkstar-jev-27b-v1.1.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "JEV_DECIDE_MERGED=1" in text
+        elif "JEV" in target:
             assert "darkstar-jev-27b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "JEV_DECIDE_MERGED=1" in text
