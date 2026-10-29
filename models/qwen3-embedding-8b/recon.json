@@ -1,0 +1,64 @@
+{
+ "family": "qwen3-embedding-8b",
+ "recon_date": "2026-10-29",
+ "status": "recon complete; campaign tracked in public issue HangGlidersRule/model-forge#18",
+ "policy": "Quantize from the upstream BF16 weights only. Third-party quantized checkpoints are evidence only, never build inputs. No abliteration (an embedding model has no refusal behavior).",
+ "source": {
+  "model_id": "Qwen/Qwen3-Embedding-8B",
+  "revision": "1d8ad4ca9b3dd8059ad90a75d4983776a23d44af"
+ },
+ "license": {
+  "spdx": "Apache-2.0",
+  "declared_in": "LICENSE file in the upstream repository",
+  "redistribution": "Modified weights may be redistributed. Ship the Apache-2.0 text and mark modified files."
+ },
+ "files": {
+  "shards": {
+   "model-00001-of-00004.safetensors": {
+    "size": 4900037024,
+    "lfs_sha256": "99b343597fe840706146144699a8b9188dd3387e43eb61faf0231b70b249d451"
+   },
+   "model-00002-of-00004.safetensors": {
+    "size": 4915959512,
+    "lfs_sha256": "dff635b0f6dbbaad2a2d633ef037ec0a39bc165cc1806c712fbd6fcbcb4526c0"
+   },
+   "model-00003-of-00004.safetensors": {
+    "size": 4983067656,
+    "lfs_sha256": "30b1d4c53d84eb018f642cad7b373f0aabf79699872d8702c1f38577c0a59a2f"
+   },
+   "model-00004-of-00004.safetensors": {
+    "size": 335570376,
+    "lfs_sha256": "36cbc9c60375693629f25743c1e77ebb1724af58e671b2376463193c7fd21ef6"
+   }
+  },
+  "tensor_count": 398,
+  "dtypes": {
+   "BF16": 398
+  },
+  "total_size_bytes": 15134590976,
+  "lm_head": "absent: the checkpoint is the decoder only; embeddings are the last-token hidden state"
+ },
+ "architecture": {
+  "class": "Qwen3ForCausalLM",
+  "model_type": "qwen3",
+  "kind": "dense Qwen3 decoder used as a text embedder (last-token pooling, L2-normalized)",
+  "num_hidden_layers": 36,
+  "hidden_size": 4096,
+  "intermediate_size": 12288,
+  "num_attention_heads": 32,
+  "num_key_value_heads": 8,
+  "head_dim": 128,
+  "max_position_embeddings": 40960,
+  "vocab_size": 151665,
+  "embedding_dimension": 4096,
+  "matryoshka": "truncation to smaller dimensions supported (renormalize after truncation)",
+  "pooling": "1_Pooling/config.json: pooling_mode_lasttoken",
+  "query_prompt": "config_sentence_transformers.json prompts.query (documents take no prompt)"
+ },
+ "decoder_linear_work_share": {
+  "mlp_gate_up_down": "78.3%",
+  "self_attention_qkvo": "21.7%",
+  "source": "parameter counts of the decoder linears (6.95B), computed from the export headers"
+ },
+ "related_issue": "https://github.com/HangGlidersRule/model-forge/issues/18"
+}

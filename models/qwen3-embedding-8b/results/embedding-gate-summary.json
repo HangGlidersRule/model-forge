@@ -1,0 +1,438 @@
+{
+ "family": "qwen3-embedding-8b",
+ "issue": "https://github.com/HangGlidersRule/model-forge/issues/18",
+ "preregistration": {
+  "compatibility": "https://github.com/HangGlidersRule/model-forge/issues/18#issuecomment-6501857585",
+  "amendment_R18_A1": "https://github.com/HangGlidersRule/model-forge/issues/18#issuecomment-6504231012"
+ },
+ "candidates": {
+  "nvfp4-A": "decoder MLP W4A4 NVFP4 (108 linears); attention BF16",
+  "nvfp4-B": "every decoder linear W4A4 NVFP4 (252 linears: MLP + self-attention)"
+ },
+ "public_benchmark": {
+  "sets": [
+   "NanoNFCorpusRetrieval",
+   "NanoFiQA2018Retrieval",
+   "NanoTouche2020Retrieval",
+   "NanoArguAnaRetrieval",
+   "NanoSciFactRetrieval",
+   "NanoMSMARCORetrieval"
+  ],
+  "queries": 299,
+  "documents": 24893,
+  "all_bf16_mean_ndcg@10": {
+   "4096": 0.6565,
+   "768": 0.645
+  },
+  "bf16_replica_pct": {
+   "4096": 99.54,
+   "768": 100.05
+  },
+  "ship_rule": "both pairings >= 98.0% of all-BF16 mean nDCG@10 at 4096 dims; faster passing candidate (long inputs, c=32) ships",
+  "ship_rule_results": {
+   "nvfp4-A": {
+    "bf16_corpus_x_nvfp4_query": 99.56,
+    "all_nvfp4": 99.94,
+    "passes": true
+   },
+   "nvfp4-B": {
+    "bf16_corpus_x_nvfp4_query": 99.79,
+    "all_nvfp4": 98.81,
+    "passes": true
+   }
+  },
+  "doc_vector_cosine_vs_bf16": {
+   "nvfp4-A": {
+    "documents": 24893,
+    "mean": 0.98056,
+    "p1": 0.96734,
+    "p5": 0.9731,
+    "min": 0.92475
+   },
+   "nvfp4-B": {
+    "documents": 24893,
+    "mean": 0.96882,
+    "p1": 0.94973,
+    "p5": 0.95817,
+    "min": 0.86195
+   },
+   "nvfp4-B-clean": {
+    "documents": 24893,
+    "mean": 0.96884,
+    "p1": 0.94985,
+    "p5": 0.95802,
+    "min": 0.86195
+   },
+   "nvfp4-B-stable": {
+    "documents": 24893,
+    "mean": 0.96884,
+    "p1": 0.95073,
+    "p5": 0.95808,
+    "min": 0.86195
+   },
+   "bf16-replica": {
+    "documents": 24893,
+    "mean": 0.99993,
+    "p1": 0.99985,
+    "p5": 0.99989,
+    "min": 0.99927
+   }
+  }
+ },
+ "throughput": {
+  "setup": "one RTX PRO 6000 Blackwell (SM120), vLLM v0.32.0, identical serve flags, served beside a co-resident production engine that had 0 running requests when each run started (the stable-profile run also sampled it every 2 s: 0 throughout); single-input requests, unique prefixes",
+  "stable_profile_run_production_engine_load": {
+   "samples": 27,
+   "max": 0.0,
+   "mean": 0.0,
+   "zero_share": 1.0
+  },
+  "tok_per_s_ratio_vs_bf16": {
+   "nvfp4-A": {
+    "short_c1": 1.26,
+    "short_c8": 1.45,
+    "short_c32": 1.68,
+    "short_c64": 1.8,
+    "long_c1": 1.9,
+    "long_c8": 2.01,
+    "long_c32": 2.03,
+    "long_c64": 2.02
+   },
+   "nvfp4-B": {
+    "short_c1": 1.09,
+    "short_c8": 1.45,
+    "short_c32": 1.67,
+    "short_c64": 1.88,
+    "long_c1": 2.45,
+    "long_c8": 2.65,
+    "long_c32": 2.68,
+    "long_c64": 2.69
+   },
+   "nvfp4-B-stable": {
+    "short_c1": 0.99,
+    "short_c8": 1.56,
+    "short_c32": 1.89,
+    "short_c64": 2.0,
+    "long_c1": 2.51,
+    "long_c8": 2.69,
+    "long_c32": 2.73,
+    "long_c64": 2.74
+   }
+  },
+  "short_range": {
+   "nvfp4-A": "1.26-1.80x",
+   "nvfp4-B": "1.09-1.88x",
+   "nvfp4-B-stable": "0.99-2.00x"
+  },
+  "long_range": {
+   "nvfp4-A": "1.90-2.03x",
+   "nvfp4-B": "2.45-2.69x",
+   "nvfp4-B-stable": "2.51-2.74x"
+  },
+  "faster_long_c32": "nvfp4-B"
+ },
+ "shipped": "nvfp4-B",
+ "weights_gib_loaded": {
+  "bf16": 14.11,
+  "nvfp4-A": 6.83,
+  "nvfp4-B": 4.81
+ },
+ "per_set_ndcg@10_4096": {
+  "NanoNFCorpusRetrieval": {
+   "bf16": 0.3787,
+   "nvfp4-B": 0.3788,
+   "bf16_corpus_x_nvfp4-B_query": 0.3838
+  },
+  "NanoFiQA2018Retrieval": {
+   "bf16": 0.7074,
+   "nvfp4-B": 0.694,
+   "bf16_corpus_x_nvfp4-B_query": 0.7026
+  },
+  "NanoTouche2020Retrieval": {
+   "bf16": 0.6487,
+   "nvfp4-B": 0.6517,
+   "bf16_corpus_x_nvfp4-B_query": 0.6479
+  },
+  "NanoArguAnaRetrieval": {
+   "bf16": 0.6841,
+   "nvfp4-B": 0.6611,
+   "bf16_corpus_x_nvfp4-B_query": 0.6721
+  },
+  "NanoSciFactRetrieval": {
+   "bf16": 0.8042,
+   "nvfp4-B": 0.8094,
+   "bf16_corpus_x_nvfp4-B_query": 0.8018
+  },
+  "NanoMSMARCORetrieval": {
+   "bf16": 0.7158,
+   "nvfp4-B": 0.6972,
+   "bf16_corpus_x_nvfp4-B_query": 0.7225
+  }
+ },
+ "activation_outliers_shipped": {
+  "input_quantizers": 252,
+  "median_amax": 3410.0,
+  "max_amax": 33100.0,
+  "largest": [
+   {
+    "linear": "layers.34.self_attn.q_proj",
+    "amax": 33100.0
+   },
+   {
+    "linear": "layers.34.self_attn.k_proj",
+    "amax": 33100.0
+   },
+   {
+    "linear": "layers.34.self_attn.v_proj",
+    "amax": 33100.0
+   }
+  ],
+  "by_group": {
+   "mlp": {
+    "median_amax": 4230.0,
+    "max_amax": 11200.0
+   },
+   "self_attn": {
+    "median_amax": 2460.0,
+    "max_amax": 33100.0
+   }
+  }
+ },
+ "precision_coverage_shipped": {
+  "per_linear": {
+   "mlp.down_proj": {
+    "dtype": "NVFP4",
+    "params": "1.81B",
+    "share": "26.1%"
+   },
+   "mlp.gate_proj": {
+    "dtype": "NVFP4",
+    "params": "1.81B",
+    "share": "26.1%"
+   },
+   "mlp.up_proj": {
+    "dtype": "NVFP4",
+    "params": "1.81B",
+    "share": "26.1%"
+   },
+   "self_attn.o_proj": {
+    "dtype": "NVFP4",
+    "params": "0.60B",
+    "share": "8.7%"
+   },
+   "self_attn.q_proj": {
+    "dtype": "NVFP4",
+    "params": "0.60B",
+    "share": "8.7%"
+   },
+   "self_attn.k_proj": {
+    "dtype": "NVFP4",
+    "params": "0.15B",
+    "share": "2.2%"
+   },
+   "self_attn.v_proj": {
+    "dtype": "NVFP4",
+    "params": "0.15B",
+    "share": "2.2%"
+   }
+  },
+  "total_decoder_linear_params": "6.95B",
+  "per_dtype": "NVFP4 100.0%"
+ },
+ "reproducibility": {
+  "default_profile": {
+   "doc_vector_cosine_between_instances": {
+    "documents": 24893,
+    "mean": 0.98291,
+    "p1": 0.96959,
+    "p5": 0.97475,
+    "min": 0.92923
+   },
+   "published_copy_second_instance_pct": {
+    "all_nvfp4": 98.84,
+    "bf16_corpus_x_nvfp4_query": 100.18
+   },
+   "corpus_and_queries_from_different_instances_pct": 99.48,
+   "same_container_restarted_64_documents": {
+    "mean": 0.994078,
+    "min": 0.981485
+   }
+  },
+  "same_64_documents_by_profile": {
+   "documents": 64,
+   "set": "NanoSciFactRetrieval",
+   "request_pattern": "two requests of 32 documents",
+   "labels": {
+    "detc": "stable profile (batch-invariant + shared persisted cache)",
+    "defc": "default profile + shared persisted cache",
+    "det": "batch-invariant, fresh cache per container",
+    "clean": "default profile, clean download",
+    "orig": "default profile, evaluated export"
+   },
+   "pairs": {
+    "detc1 vs detc2": {
+     "mean": 1.0,
+     "min": 1.0
+    },
+    "detc1 vs detc3": {
+     "mean": 1.0,
+     "min": 1.0
+    },
+    "detc2 vs detc3": {
+     "mean": 1.0,
+     "min": 1.0
+    },
+    "defc1 vs defc2": {
+     "mean": 0.992445,
+     "min": 0.982774
+    },
+    "det1 vs det2": {
+     "mean": 0.985245,
+     "min": 0.976677
+    },
+    "orig1 vs orig2": {
+     "mean": 0.994078,
+     "min": 0.981485
+    },
+    "clean1 vs orig1": {
+     "mean": 0.985329,
+     "min": 0.980349
+    },
+    "detc1 vs det1": {
+     "mean": 0.987732,
+     "min": 0.9814
+    },
+    "detc1 vs clean1": {
+     "mean": 0.985569,
+     "min": 0.98134
+    }
+   }
+  },
+  "stable_profile": {
+   "definition": "VLLM_BATCH_INVARIANT=1 (vLLM selects CutlassNvFp4LinearKernel) and the vLLM, Triton, Inductor and FlashInfer cache directories on one persisted volume shared by every container on the same GPU model and image; prefix caching on (the vLLM default for this pooling model, confirmed from the engine config log)",
+   "full_set_between_containers": {
+    "compared": "stable-profile container 3 vs container 4 (same persisted cache), full public sets",
+    "docs": {
+     "vectors": 24893,
+     "bitwise_identical": 24511,
+     "cosine_min": 1.0
+    },
+    "queries": {
+     "vectors": 299,
+     "bitwise_identical": 294,
+     "cosine_min": 1.0
+    },
+    "max_abs_element_difference": 2.9802322387695312e-08,
+    "elements_differing": 1497631,
+    "elements_total": 103186432,
+    "one_minus_cosine_max": 1.1102230246251565e-15
+   },
+   "bitwise_identical_share": 0.9846,
+   "public_benchmark_pct": {
+    "all_nvfp4": 98.49,
+    "bf16_corpus_x_nvfp4_query": 99.39,
+    "all_nvfp4_delta_ci95": [
+     -0.0099,
+     -0.0194,
+     -0.0011
+    ]
+   },
+   "throughput_long_range": "2.51-2.74x",
+   "throughput_short_range": "0.99-2.00x"
+  }
+ },
+ "store_compatibility": {
+  "rule": "drop-in when NVFP4 queries lose <= 1.0 pt recall@10 and MRR@10 (paired-bootstrap 95% CI lower bound) against the stored BF16 vectors, and <= 1% of pair decisions flip at the store's own threshold",
+  "store_labels": {
+   "transcripts": "long-transcript chunk store (retrieval only)",
+   "memories": "personal-memory store (0.97 cosine dedup trigger)",
+   "claims": "news-claim store (0.60 cosine candidate floor)"
+  },
+  "verdicts": {
+   "nvfp4-A": {
+    "transcripts": {
+     "drop_in": true,
+     "reasons": [],
+     "drift_4096_mean": 0.9793,
+     "drift_4096_p1": 0.9648,
+     "bf16_reembed_vs_stored_mean": 0.99984
+    },
+    "memories": {
+     "drop_in": false,
+     "reasons": [
+      "recall@10 CI lower bound -1.30 pt",
+      "MRR@10 CI lower bound -1.23 pt",
+      "1.32% of pairs flip at the app's 0.97 threshold (529 above with BF16, 2 with NVFP4)"
+     ],
+     "drift_4096_mean": 0.9594,
+     "drift_4096_p1": 0.9029,
+     "bf16_reembed_vs_stored_mean": 0.98174
+    },
+    "claims": {
+     "drop_in": false,
+     "reasons": [
+      "2.21% of pairs flip at the app's 0.6 threshold (35199 above with BF16, 34551 with NVFP4)"
+     ],
+     "drift_4096_mean": 0.9797,
+     "drift_4096_p1": 0.9697,
+     "bf16_reembed_vs_stored_mean": 0.99993
+    }
+   },
+   "nvfp4-B": {
+    "transcripts": {
+     "drop_in": true,
+     "reasons": [],
+     "drift_4096_mean": 0.9672,
+     "drift_4096_p1": 0.9459,
+     "bf16_reembed_vs_stored_mean": 0.99984
+    },
+    "memories": {
+     "drop_in": false,
+     "reasons": [
+      "recall@10 CI lower bound -1.35 pt",
+      "MRR@10 CI lower bound -1.32 pt",
+      "1.32% of pairs flip at the app's 0.97 threshold (529 above with BF16, 0 with NVFP4)"
+     ],
+     "drift_4096_mean": 0.9475,
+     "drift_4096_p1": 0.8879,
+     "bf16_reembed_vs_stored_mean": 0.98174
+    },
+    "claims": {
+     "drop_in": false,
+     "reasons": [
+      "3.31% of pairs flip at the app's 0.6 threshold (35199 above with BF16, 34067 with NVFP4)"
+     ],
+     "drift_4096_mean": 0.9678,
+     "drift_4096_p1": 0.9545,
+     "bf16_reembed_vs_stored_mean": 0.99993
+    }
+   }
+  },
+  "mixed_corpus": {
+   "nvfp4-A": {
+    "self_gap_mean": 0.0111,
+    "nvfp4_rows_recall@1": [
+     0.7399,
+     0.7733
+    ],
+    "bf16_rows_recall@1": [
+     0.7302,
+     0.7283
+    ]
+   },
+   "nvfp4-B": {
+    "self_gap_mean": 0.0123,
+    "nvfp4_rows_recall@1": [
+     0.7368,
+     0.7783
+    ],
+    "bf16_rows_recall@1": [
+     0.7243,
+     0.7233
+    ]
+   }
+  },
+  "mixed_corpus_note": "post-hoc (not pre-registered): half of the sampled corpus rows re-embedded with NVFP4; [stored corpus, mixed corpus] recall@1 for NVFP4 questions per row group"
+ },
+ "artifact_validation": "PASS"
+}

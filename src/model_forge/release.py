@@ -117,6 +117,16 @@ DIFFUSION_WEIGHT_PRECISION_MAP_COMPONENTS: frozenset[str] = frozenset(
 # Hugging Face namespace that owns every actual Darkstar weight repository.
 DARKSTAR_HF_NAMESPACE = "HangGlidersRule"
 
+# Unchanged upstream checkpoints a family may name as its resolved base-bf16 reference. The reference is
+# measured, never owned or republished; every derivative still follows the namespace and precision rules.
+# Each entry must also appear in the v2 ledger schema's target_repository pattern.
+UPSTREAM_BF16_REFERENCES: frozenset[str] = frozenset(
+    {
+        "Qwen/Qwen3.8-27B",
+        "Qwen/Qwen3-Embedding-8B",
+    }
+)
+
 # A product-level publication target is either resolved to one concrete, precision-encoded
 # repository id, or explicitly unresolved until a precision winner is selected. There is no third
 # option: a bare release-slot id may never stand in for an unresolved target.
@@ -1107,7 +1117,7 @@ def target_repository_errors(product: dict[str, Any]) -> list[str]:
     # unchanged upstream reference rather than an owned Darkstar publication. Its resolved target is
     # therefore the exact pinned upstream repository; every derivative still follows the namespace
     # and precision-encoding rules below.
-    if role == "base-bf16" and status == "resolved" and target == "Qwen/Qwen3.8-27B":
+    if role == "base-bf16" and status == "resolved" and target in UPSTREAM_BF16_REFERENCES:
         if candidates:
             errors.append(f"{pid}: the upstream BF16 reference must not declare Darkstar candidates")
         return errors

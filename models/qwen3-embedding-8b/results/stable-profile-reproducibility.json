@@ -1,0 +1,17 @@
+{
+ "compared": "stable-profile container 3 vs container 4 (same persisted cache), full public sets",
+ "docs": {
+  "vectors": 24893,
+  "bitwise_identical": 24511,
+  "cosine_min": 1.0
+ },
+ "queries": {
+  "vectors": 299,
+  "bitwise_identical": 294,
+  "cosine_min": 1.0
+ },
+ "max_abs_element_difference": 2.9802322387695312e-08,
+ "elements_differing": 1497631,
+ "elements_total": 103186432,
+ "one_minus_cosine_max": 1.1102230246251565e-15
+}

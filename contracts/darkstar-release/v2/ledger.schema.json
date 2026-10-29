@@ -350,7 +350,7 @@
       },
       {
        "type": "string",
-       "pattern": "^(Qwen/Qwen3\\.8-27B|Qwen/Qwen-Image-2\\.1|[A-Za-z0-9._-]+/Darkstar-[A-Za-z0-9.-]*(BF16|ModelOpt-(W4A16|W4A4)-NVFP4(-Mixed-FP8)?))$"
+       "pattern": "^(Qwen/Qwen3\\.8-27B|Qwen/Qwen-Image-2\\.1|Qwen/Qwen3-Embedding-8B|[A-Za-z0-9._-]+/Darkstar-[A-Za-z0-9.-]*(BF16|ModelOpt-(W4A16|W4A4)-NVFP4(-Mixed-FP8)?))$"
       },
       {
        "type": "string",

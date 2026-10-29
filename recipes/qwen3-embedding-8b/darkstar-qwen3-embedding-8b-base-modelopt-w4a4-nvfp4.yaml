@@ -1,0 +1,78 @@
+schema_version: "2.0"
+name: darkstar-qwen3-embedding-8b-base-modelopt-w4a4-nvfp4
+family: qwen3-embedding-8b
+
+# Issue #18, candidate B: every decoder linear (MLP gate/up/down and self-attention q/k/v/o, 36 layers, 252 linears)
+# W4A4 NVFP4. Built from the upstream BF16 weights with the pinned ModelOpt 0.48.0rc1 image.
+# The export drops the lm_head tensor that transformers' Qwen3ForCausalLM loader initialises at random: the source
+# checkpoint has none and the pooling runner never reads it (models/qwen3-embedding-8b/eval/strip_lm_head.py).
+
+source:
+  model_id: Qwen/Qwen3-Embedding-8B
+  revision: 1d8ad4ca9b3dd8059ad90a75d4983776a23d44af
+
+transforms: []
+
+datasets:
+  ms_marco_v1_1:
+    source: microsoft/ms_marco
+    revision: a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a
+    sha256: d643f77fecf055ca31e2da5829f86ba90aa925d151154f6ddfcb49446bbb11c6
+
+quantization:
+  scheme: NVFP4
+  targets: Linear
+  group_size: 16
+  framework: nvidia-modelopt
+  framework_version: 0.48.0rc1
+  framework_pin_commit: ff2450c15eb5f1697ec0471704d5421d54fce4f4
+  algorithm: nvfp4_act_headroom
+  weight_scale_algorithm: mse
+  fp8_scale_sweep: true
+  operator_recipe: configs/modelopt/recipes/qwen3-embedding-8b/nvfp4_attn_mlp_act_headroom-kv_bf16.yaml
+  operator_recipe_sha256: 2a5f6acb073072af0808ee7218bf6d870dcb569d4a241719d06be267de38381c
+  quant_grp:
+    mlp_gate_up_down: W4A4_NVFP4
+    self_attn_qkvo: W4A4_NVFP4
+  protected_tensors:
+    - embed_tokens
+    - norm.weight
+  keep_bf16:
+    - embed_tokens
+    - norm.weight
+  ignore:
+    - lm_head
+    - "re:.*embed_tokens.*"
+    - "re:.*norm\\.weight$"
+  calibration:
+    dataset: microsoft/ms_marco v1.1 train (256 instruction-prefixed queries + 256 passages, as an embedding client sends them)
+    config: qwen3_embedding_retrieval_text_512
+    samples: 512
+    max_sequence_length: 1024
+    batch_size: 8
+    kv_cache_qformat: none
+    pipeline: modelopt_hf_ptq
+    shard_size: 10GB
+
+validation:
+  max_refusal_leakage: 0.01
+  quantized_layers_count: 252
+  mtp_present: false
+
+runtime:
+  kv_dtype: bf16
+  context_length: 28672
+  flash_attention: true
+  spec_decode: none
+  vllm_pin: vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34
+
+performance:
+  prompt_lengths: [103, 3735]
+  warmup_repeats: 1
+  measure_repeats: 1
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_nvfp4: HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4

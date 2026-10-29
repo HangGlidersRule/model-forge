@@ -1,0 +1,29 @@
+{
+ "input_quantizers": 252,
+ "median_amax": 3410.0,
+ "max_amax": 33100.0,
+ "largest": [
+  {
+   "linear": "layers.34.self_attn.q_proj",
+   "amax": 33100.0
+  },
+  {
+   "linear": "layers.34.self_attn.k_proj",
+   "amax": 33100.0
+  },
+  {
+   "linear": "layers.34.self_attn.v_proj",
+   "amax": 33100.0
+  }
+ ],
+ "by_group": {
+  "mlp": {
+   "median_amax": 4230.0,
+   "max_amax": 11200.0
+  },
+  "self_attn": {
+   "median_amax": 2460.0,
+   "max_amax": 33100.0
+  }
+ }
+}

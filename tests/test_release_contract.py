@@ -2033,3 +2033,33 @@ def test_tracked_serve_compose_hash_is_verified_from_current_bytes() -> None:
         # Wherever both digests are recorded together they must stay distinct.
         if "operator_snapshot_compose_sha256" in carrier:
             assert carrier["operator_snapshot_compose_sha256"] != actual
+
+
+UPSTREAM_REFERENCE_FAMILIES = {
+    "qwen3-embedding-8b": "Qwen/Qwen3-Embedding-8B",
+}
+
+
+@pytest.mark.parametrize("family,upstream", sorted(UPSTREAM_REFERENCE_FAMILIES.items()))
+def test_family_upstream_bf16_reference_passes_schema_and_target_rules(family: str, upstream: str) -> None:
+    """A family whose BF16 control is an unchanged upstream checkpoint other than Qwen3.8-27B validates: schema,
+    lifecycle, target and precision checks all pass on its ledger, and the reference stays un-owned."""
+    ledger = load_json(REPO_ROOT / "models" / family / "results" / "publication-readiness-ledger.json")
+    schema = load_json(REPO_ROOT / "contracts" / "darkstar-release" / "v2" / "ledger.schema.json")
+    validate_ledger_schema(ledger, schema)
+    assert not ledger_target_repository_errors(ledger)
+    assert not ledger_candidate_precision_errors(ledger)
+    reference = next(p for p in ledger["products"] if p["role"] == "base-bf16")
+    assert reference["target_repository"] == upstream
+    assert DARKSTAR_HF_NAMESPACE not in reference["target_repository"]
+    assert not product_candidates(reference)
+
+
+def test_unlisted_upstream_bf16_reference_is_still_rejected() -> None:
+    product = {
+        "product_id": "Darkstar-Example-Base-BF16",
+        "role": "base-bf16",
+        "target_repository": "SomeOrg/Some-Model",
+        "target_repository_status": "resolved",
+    }
+    assert any("must live under" in e for e in target_repository_errors(product))

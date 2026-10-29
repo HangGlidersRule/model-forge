@@ -1,0 +1,33 @@
+{
+ "repository": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
+ "uploaded_commit": "efb78193a22c247395c47ecf44137ff290168d5c",
+ "hf_commit": "744fb1778f222986304b5106de4993f60627afcf",
+ "hf_commit_note": "Current head: a card-only commit on top of efb78193 (the clean-download-smoked commit); the safetensors LFS oid is identical at both commits (hf_publish.py same-weights).",
+ "model_safetensors_sha256": "e2ddcc42fcd77d8c2a34e5d7e1b04d41b6cc45edc2370961b2a2fcb91c672eff",
+ "manifest_entries": 16,
+ "clean_download_smoke": {
+  "commit": "efb78193a22c247395c47ecf44137ff290168d5c",
+  "download": "empty HF cache; 17 files; 16/16 manifest.sha256 entries verified, 0 mismatches",
+  "files_vs_evaluated_export": "byte-identical (config, quant config, tokenizer, pooling and prompt files, model.safetensors)",
+  "serve": "vLLM v0.32.0 by digest with the card's exact command (host port and memory sizing only); FlashInferCutlassNvFp4LinearKernel; weights 4.81 GiB; health 200 after 133 s; 0 fatal markers in the log",
+  "card_example": {
+   "vectors": 2,
+   "dim": 4096,
+   "norms": [
+    1.0,
+    1.0
+   ],
+   "query_document_cosine": 0.6711
+  },
+  "public_benchmark_on_this_instance": "see embedding-gate-summary.json reproducibility.default_profile.published_copy_second_instance_pct"
+ },
+ "public_flip": {
+  "commit": "744fb1778f222986304b5106de4993f60627afcf",
+  "anonymous_non_200": [],
+  "card_read_back_identical": true
+ },
+ "collections": {
+  "family": "HangGlidersRule/darkstar-qwen3-embedding-8b-6ae3ab8344f2aaa16a5b2d00",
+  "releases": "HangGlidersRule/darkstar-releases-6a8dfe8c2340f19e4f3e24c1"
+ }
+}

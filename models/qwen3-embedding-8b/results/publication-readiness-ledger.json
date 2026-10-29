@@ -1,0 +1,278 @@
+{
+ "schema_version": "1.0.0",
+ "contract": "contracts/darkstar-release/v2/contract.json",
+ "contract_version": "2.0.0",
+ "family": "qwen3-embedding-8b",
+ "family_display": "Darkstar Qwen3-Embedding-8B",
+ "source_revision": "Qwen/Qwen3-Embedding-8B@1d8ad4ca9b3dd8059ad90a75d4983776a23d44af",
+ "note": "Embedding family (dense Qwen3 decoder, last-token pooling, 4096-dim with Matryoshka truncation). Base quantization only: an embedding model has no refusal behavior, so the two abliterated roles are not_applicable placeholders. The BF16 cell is the unchanged upstream reference. GPQA does not apply; the matched full-denominator quality gate for this family is retrieval nDCG@10 on six pinned MTEB Nano sets (299 queries, 24,893 documents), with BF16-corpus x NVFP4-query compatibility as the deployment gate.",
+ "any_publication_claim": true,
+ "rejected_historical": [],
+ "related_issues": [
+  "HangGlidersRule/model-forge#18"
+ ],
+ "products": [
+  {
+   "product_id": "Darkstar-Qwen3-Embedding-8B-Base-BF16",
+   "role": "base-bf16",
+   "lifecycle": "published",
+   "target_repository": "Qwen/Qwen3-Embedding-8B",
+   "target_repository_status": "resolved",
+   "target_repository_note": "Upstream reference only. Qwen/Qwen3-Embedding-8B at 1d8ad4ca supplies the unchanged BF16 control; HangGlidersRule does not own or republish these weights.",
+   "served_model_alias": "darkstar-qwen3embedding8b-base-bf16",
+   "runtime_container_name": "vllm-darkstar-qwen3embedding8b-base-bf16",
+   "model_card": "models/qwen3-embedding-8b/model-card/base-bf16.md",
+   "recipe": null,
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Source pinned to Qwen/Qwen3-Embedding-8B@1d8ad4ca9b3dd8059ad90a75d4983776a23d44af (Apache-2.0); shard sha256 verified on download",
+     "evidence_path": "models/qwen3-embedding-8b/recon.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "performance_profile",
+     "status": "verified",
+     "evidence": "BF16 control 18,322 tok/s at c=1 and 17,831 at c=32 on ~3.7k-token inputs; 5,014 / 19,691 tok/s at c=1 / c=64 on ~100-token inputs",
+     "evidence_path": "models/qwen3-embedding-8b/results/throughput-bf16.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "gpqa_matched_full_denominator",
+     "status": "verified",
+     "evidence": "Embedding family: matched full-denominator MTEB Nano retrieval gate replaces GPQA; BF16 control mean nDCG@10 0.6565 (4096 dims), 299/299 queries over 24,893 documents",
+     "evidence_path": "models/qwen3-embedding-8b/results/retrieval-benchmark.json",
+     "next_missing_proof": "none - gate satisfied"
+    }
+   ]
+  },
+  {
+   "product_id": "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-NVFP4",
+   "role": "base-modelopt-nvfp4",
+   "lifecycle": "published",
+   "target_repository": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
+   "target_repository_status": "resolved",
+   "served_model_alias": "darkstar-qwen3embedding8b-base-nvfp4",
+   "runtime_container_name": "vllm-darkstar-qwen3embedding8b-base-modelopt",
+   "model_card": "models/qwen3-embedding-8b/model-card/base-nvfp4.md",
+   "recipe": "recipes/qwen3-embedding-8b/darkstar-qwen3-embedding-8b-base-modelopt-w4a4-nvfp4.yaml",
+   "publication_claim": true,
+   "candidates": [
+    {
+     "candidate_id": "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
+     "precision_class": "W4A4-NVFP4",
+     "target_repository": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
+     "selection": "selected",
+     "promotion_status": "promoted",
+     "promotion_note": "Candidate B (every decoder linear W4A4, nvfp4_act_headroom): mean nDCG@10 98.81% of BF16 all-NVFP4 and 99.79% as BF16-corpus x NVFP4-query (BF16 replica 99.54%), 2.45-2.69x BF16 tokens/s on long inputs. Candidate A (MLP only: 99.94% / 99.56%, 1.90-2.03x) also passed the ship rule; the faster passing candidate ships (amendment R18-A1). Store compatibility: drop-in for long-transcript retrieval; stores acting on fixed similarity thresholds need re-embedding.",
+     "recipe": "configs/modelopt/recipes/qwen3-embedding-8b/nvfp4_attn_mlp_act_headroom-kv_bf16.yaml",
+     "evidence_path": "models/qwen3-embedding-8b/results/embedding-gate-summary.json",
+     "immutable_hashes": {
+      "model.safetensors": "e2ddcc42fcd77d8c2a34e5d7e1b04d41b6cc45edc2370961b2a2fcb91c672eff",
+      "operator_recipe": "2a5f6acb073072af0808ee7218bf6d870dcb569d4a241719d06be267de38381c",
+      "calibration_jsonl": "d643f77fecf055ca31e2da5829f86ba90aa925d151154f6ddfcb49446bbb11c6",
+      "manifest_sha256": "see the published repository's manifest.sha256"
+     },
+     "precision_map": {
+      "language_mlp": "W4A4-NVFP4-g16 (gate/up/down, 36 layers)",
+      "lm_head": "not present (embedding model; the source checkpoint has no lm_head)",
+      "self_attention": "W4A4-NVFP4-g16 (q/k/v/o, 36 layers)",
+      "gdn_projections": "not present (dense Qwen3 decoder)",
+      "kv_cache": "BF16",
+      "protected": "embed_tokens and all norms (BF16)"
+     }
+    },
+    {
+     "candidate_id": "Darkstar-Qwen3-Embedding-8B-Base-MLP-ModelOpt-W4A4-NVFP4",
+     "precision_class": "W4A4-NVFP4",
+     "target_repository": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-MLP-ModelOpt-W4A4-NVFP4",
+     "selection": "rejected",
+     "promotion_status": "none",
+     "promotion_note": "Candidate A (decoder MLP only, attention BF16): passed the ship rule (99.94% / 99.56%) but is slower than B on long inputs (1.90-2.03x vs 2.45-2.69x); not published. Reserved id only; no repository exists.",
+     "recipe": "configs/modelopt/recipes/qwen3-embedding-8b/nvfp4_mlp_only_act_headroom-kv_bf16.yaml",
+     "evidence_path": "models/qwen3-embedding-8b/results/embedding-gate-summary.json",
+     "precision_map": {
+      "language_mlp": "W4A4-NVFP4-g16",
+      "lm_head": "not present",
+      "self_attention": "BF16",
+      "gdn_projections": "not present",
+      "kv_cache": "BF16",
+      "protected": "attention, embed_tokens, norms (BF16)"
+     }
+    }
+   ],
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Built from Qwen/Qwen3-Embedding-8B@1d8ad4ca BF16 (Apache-2.0); no third-party quantized inputs",
+     "evidence_path": "models/qwen3-embedding-8b/recon.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "artifact_manifest",
+     "status": "verified",
+     "evidence": "manifest.sha256 over every shipped file; model.safetensors sha256 e2ddcc42... identical on build host and upload host",
+     "evidence_path": "models/qwen3-embedding-8b/results/artifact-validation.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "recipe_edit_manifest",
+     "status": "verified",
+     "evidence": "Schema-2 recipe; operator recipe sha256 2a5f6acb...; calibration sha256 d643f77f...; ModelOpt 0.48.0rc1 pin",
+     "evidence_path": "recipes/qwen3-embedding-8b/darkstar-qwen3-embedding-8b-base-modelopt-w4a4-nvfp4.yaml",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "artifact_validation",
+     "status": "verified",
+     "evidence": "Tokenizer, sentence-transformers pooling/prompt files and LICENSE byte-identical to upstream; config.json identical outside quantization metadata and transformers-5 re-serialization; no lm_head (as upstream)",
+     "evidence_path": "models/qwen3-embedding-8b/results/artifact-validation.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "modelopt_candidate_comparison",
+     "status": "verified",
+     "evidence": "A (MLP only) and B (all linears) on the same public retrieval sets, BF16 replica and store-compatibility samples; both pass the ship rule, B is faster",
+     "evidence_path": "models/qwen3-embedding-8b/results/embedding-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "nvfp4_tensor_scale_validation",
+     "status": "verified",
+     "evidence": "252 NVFP4 W4A4 linears (108 MLP, 144 self-attention; group 16); 0 non-finite and 0 zero block scales over 434,110,464; fused q/k/v and gate/up share scales",
+     "evidence_path": "models/qwen3-embedding-8b/results/artifact-validation.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "performance_profile",
+     "status": "verified",
+     "evidence": "Long inputs (~3.7k tokens) 44,856 tok/s at c=1 and 47,828 at c=32 (BF16 18,322 / 17,831), 2.45-2.69x; short inputs 1.09-1.88x",
+     "evidence_path": "models/qwen3-embedding-8b/results/embedding-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "serving_capacity_profile",
+     "status": "verified",
+     "evidence": "Weights 4.81 GiB in vLLM (BF16 14.11 GiB); c=1/8/32/64 at short and long inputs; KV cache sized explicitly (4 GiB) beside a co-resident engine",
+     "evidence_path": "models/qwen3-embedding-8b/results/build-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "gpqa_matched_full_denominator",
+     "status": "verified",
+     "evidence": "Embedding family: MTEB Nano retrieval replaces GPQA; mean nDCG@10 0.6487 all-NVFP4 and 0.6551 BF16-corpus x NVFP4-query vs BF16 0.6565 (replica 0.6535), 299/299 queries",
+     "evidence_path": "models/qwen3-embedding-8b/results/embedding-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "serve_profile_frozen",
+     "status": "verified",
+     "evidence": "vLLM v0.32.0 by digest; --runner pooling --hf-overrides is_matryoshka; FlashInfer CUTLASS NVFP4 kernels; BF16 KV",
+     "evidence_path": "models/qwen3-embedding-8b/model-card/base-nvfp4.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "model_card_final",
+     "status": "verified",
+     "evidence": "Gold-standard card; every number checked against the gate summary by eval/check_card_numbers.py (36/36); hub README read back identical at 744fb177",
+     "evidence_path": "models/qwen3-embedding-8b/model-card/base-nvfp4.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "publication_targets_hf_ghcr",
+     "status": "verified",
+     "evidence": "HF target HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4 public @ 744fb1778f222986304b5106de4993f60627afcf (card-only commit on the clean-download-smoked efb78193; weights identical); GHCR not required (pinned upstream vLLM image)",
+     "evidence_path": "models/qwen3-embedding-8b/results/publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "clean_download_boot_smoke",
+     "status": "verified",
+     "evidence": "Clean re-download at efb78193, 16/16 manifest hashes verified, files byte-identical to the evaluated export, served with the card's exact command, card example answered (two unit vectors, query-document cosine 0.6711)",
+     "evidence_path": "models/qwen3-embedding-8b/results/publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "release_tag",
+     "status": "verified",
+     "evidence": "darkstar-qwen3-embedding-8b-v1.0.0",
+     "evidence_path": "models/qwen3-embedding-8b/README.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "no_inherited_unverified_results",
+     "status": "verified",
+     "evidence": "Every number on the card was measured on this exact artifact",
+     "evidence_path": "models/qwen3-embedding-8b/results/embedding-gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    }
+   ]
+  },
+  {
+   "product_id": "Darkstar-Qwen3-Embedding-8B-Abliterated-BF16",
+   "role": "abliterated-bf16",
+   "lifecycle": "in_progress",
+   "target_repository": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Abliterated-BF16",
+   "target_repository_status": "resolved",
+   "target_repository_note": "Not built and not planned: an embedding model is not a refusal-edit target. Reserved id only; no repository exists.",
+   "served_model_alias": "darkstar-qwen3embedding8b-abliterated-bf16",
+   "runtime_container_name": "vllm-darkstar-qwen3embedding8b-abliterated-bf16",
+   "model_card": "models/qwen3-embedding-8b/model-card/base-nvfp4.md",
+   "recipe": null,
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "abliteration_pass",
+     "status": "not_applicable",
+     "evidence": "No abliteration for an embedding-model family",
+     "evidence_path": null,
+     "next_missing_proof": "none - not applicable"
+    }
+   ]
+  },
+  {
+   "product_id": "Darkstar-Qwen3-Embedding-8B-Abliterated-ModelOpt-NVFP4",
+   "role": "abliterated-modelopt-nvfp4",
+   "lifecycle": "in_progress",
+   "target_repository": null,
+   "target_repository_status": "unresolved_pending_precision_winner",
+   "target_repository_note": "Not built and not planned: an embedding model is not a refusal-edit target. No precision winner will be selected; no repository exists.",
+   "served_model_alias": "darkstar-qwen3embedding8b-abliterated-nvfp4",
+   "candidates": [
+    {
+     "candidate_id": "Darkstar-Qwen3-Embedding-8B-Abliterated-ModelOpt-W4A4-NVFP4",
+     "precision_class": "W4A4-NVFP4",
+     "target_repository": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Abliterated-ModelOpt-W4A4-NVFP4",
+     "selection": "not_built",
+     "promotion_status": "none",
+     "promotion_note": "Reserved id only; refusal edits do not apply to an embedding model.",
+     "recipe": null,
+     "precision_map": {
+      "language_mlp": "W4A4-NVFP4-g16",
+      "lm_head": "not present",
+      "self_attention": "W4A4-NVFP4-g16",
+      "gdn_projections": "not present",
+      "kv_cache": "BF16",
+      "protected": "BF16"
+     }
+    }
+   ],
+   "runtime_container_name": "vllm-darkstar-qwen3embedding8b-abliterated-nvfp4",
+   "model_card": "models/qwen3-embedding-8b/model-card/base-nvfp4.md",
+   "recipe": null,
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "abliteration_pass",
+     "status": "not_applicable",
+     "evidence": "No abliteration for an embedding-model family",
+     "evidence_path": null,
+     "next_missing_proof": "none - not applicable"
+    }
+   ]
+  }
+ ]
+}
