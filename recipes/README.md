@@ -31,6 +31,10 @@ Historical compressed-tensors recipes (rejected for publication, retained for li
 
 - `qwen3-reranker-4b/darkstar-qwen3-reranker-4b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (decoder MLP only, `nvfp4_act_headroom` calibration; published). Operator recipe SHA-256 `eb9a063a89cc527f58a0c68bcbc860427e9f3cf67c048033316da147c82686d6`.
 
+## Nemotron-3.5-Lightning 30B-A3B
+
+- `nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (routed and shared MoE experts; activation scales set to the lowest simulated NVFP4 error per stream after calibration). Operator recipe SHA-256 `6facf6cdc5486dba9a402881dae92c6c60d7ca7f8fc4e2bab608abec4948ee68`.
+
 ModelOpt PTQ YAML candidates live under `configs/modelopt/recipes/` (not schema-2 forge recipes).
 
 Legacy comparison/eval specs live under `qwen3.8-27b/legacy/` and remain

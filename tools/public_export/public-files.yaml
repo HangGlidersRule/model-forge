@@ -606,6 +606,56 @@ rules:
     generated: false
     precedence: 100
 
+  - id: hf-card-lightning-base-modelopt-w4a4
+    source: "publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Lightning base ModelOpt W4A4 NVFP4 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: lightning-w4a4-calibration-builders
+    source: "models/nemotron-3.5-lightning-r1/calibration/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Deterministic calibration-set and held-out-prompt builders for the W4A4 cell, so its calibration and KL sets are reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: lightning-w4a4-eval-harnesses
+    source: "models/nemotron-3.5-lightning-r1/eval/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: KL probe, throughput probe, activation statistics, scale-variant builder, validators and the gate-summary builder for the W4A4 cell, so the published numbers are reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: curated-lightning-w4a4-evidence
+    source: "models/nemotron-3.5-lightning-r1/results/w4a4-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated aggregate gate evidence for the Lightning W4A4 NVFP4 cell (aggregates only; no per-item answers or logprob arrays).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 524288
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-readiness-ledger
+      - curated-gpqa-matrix
+      - curated-capacity-profiles
+
   - id: hf-card-lightning-abliterated-bf16
     source: "publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16/README.md"
     disposition: copy

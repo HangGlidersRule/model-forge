@@ -10,6 +10,7 @@ TARGETS = {
     "Darkstar-Qwen3.8-27B-Abliterated-BF16",
     "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4",
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4",
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
@@ -34,6 +35,10 @@ EXPECTED_METADATA = {
         "quantized",
     ),
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4": (
+        "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+        "quantized",
+    ),
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4": (
         "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
         "quantized",
     ),
@@ -90,6 +95,9 @@ SOURCE_CARDS = {
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4": (
         REPO_ROOT / "models/nemotron-3.5-lightning-r1/model-card/base-nvfp4.md"
     ),
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4": (
+        REPO_ROOT / "models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4.md"
+    ),
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": (
         REPO_ROOT / "models/nemotron-3.5-lightning-r1/model-card/abliterated-nvfp4.md"
     ),
@@ -120,6 +128,7 @@ EXPECTED_LICENSE = {
     "Darkstar-Qwen3.8-27B-Abliterated-BF16": "apache-2.0",
     "Darkstar-Qwen3.8-27B-Abliterated-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4": "other",
+    "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4": "other",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16": "other",
     "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4": "other",
     "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4": "other",
@@ -159,7 +168,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 13
+    assert len(cards) == 14
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
@@ -239,6 +248,10 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             assert "darkstar-qwen3.8-27b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "--max-num-seqs 16" in text
+        elif "Lightning" in target and "W4A4" in target:
+            assert "darkstar-nemotron-3.5-lightning-v1.1.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "--max-model-len" in text
         elif "Lightning" in target:
             assert "darkstar-nemotron-3.5-lightning-v1.0.0" in text
             assert "--max-model-len" in text
