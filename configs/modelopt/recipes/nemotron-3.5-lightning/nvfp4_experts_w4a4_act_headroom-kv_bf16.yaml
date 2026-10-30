@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Nemotron-3.5-Lightning-30B-A3B, issue #17 candidate A: W4A4 NVFP4 on every MoE expert, routed and shared
+# (static MSE weight scales, NVFP4 activations calibrated with nvfp4_act_headroom). Everything else matches the
+# shipped Darkstar W4A16 cells: Mamba in/out projections, attention, router, lm_head, embeddings, norms and the MTP head
+# stay BF16; KV cache BF16.
+#
+# Built from NVIDIA/Model-Optimizer@ff2450c15eb5f1697ec0471704d5421d54fce4f4 (0.48.0rc1). Pattern names follow
+# NVIDIA's own model recipe for this checkpoint (modelopt_recipes/models/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16)
+# and the transformers 5.18 module tree: routed experts are a fused NemotronHExperts container (ModelOpt wraps it as
+# _QuantNonGatedFusedExperts with per-expert weight quantizers and one shared input quantizer per projection), shared
+# experts are a dense NemotronHMLP.
+#
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+metadata:
+  recipe_type: ptq
+  description: >-
+    Nemotron-3.5-Lightning candidate A: W4A4 NVFP4 on routed + shared MoE experts (static MSE weight scales,
+    nvfp4_act_headroom activation calibration). Mamba, attention, router, lm_head, MTP BF16. KV cache BF16.
+quantize:
+  algorithm:
+    method: nvfp4_act_headroom
+    anchor_percentile: 1
+    upper_percentile: 99.99
+    rho: 16384
+    weight_scale_algorithm:
+      method: mse
+      fp8_scale_sweep: true
+  quant_cfg:
+    - $import: base_disable_all
+    # Routed experts (fused 3-D container: up_proj_weight_quantizers.<i>, up_proj_input_quantizer, down_proj_*).
+    - quantizer_name: '*mixer.experts*weight_quantizer*'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.experts*input_quantizer'
+      cfg:
+        $import: nvfp4
+    # Shared expert (dense up_proj / down_proj Linear modules).
+    - quantizer_name: '*mixer.shared_experts*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.shared_experts*input_quantizer'
+      cfg:
+        $import: nvfp4
+    - $import: default_disabled_quantizers
+    # Explicit BF16 protections (some are also in default_disabled_quantizers; listed so the recipe reads on its own).
+    - quantizer_name: '*mixer.in_proj*'
+      enable: false
+    - quantizer_name: '*mixer.out_proj*'
+      enable: false
+    - quantizer_name: '*mixer.conv1d*'
+      enable: false
+    - quantizer_name: '*mixer.gate*'
+      enable: false
+    - quantizer_name: '*_bmm_quantizer'
+      enable: false
+    - quantizer_name: '*lm_head*'
+      enable: false
+    # The MTP subtree stays BF16; this rule stays last so no broad selector above re-enables it.
+    - quantizer_name: '*mtp*'
+      enable: false

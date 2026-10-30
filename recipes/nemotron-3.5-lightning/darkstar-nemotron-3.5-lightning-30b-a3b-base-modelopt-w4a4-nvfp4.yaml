@@ -1,0 +1,98 @@
+schema_version: "2.0"
+name: darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4
+family: nemotron-3.5-lightning
+
+# Issue #17: W4A4 NVFP4 on every MoE expert (routed and shared up/down projections, 23 layers, 5,934 linears), built from
+# the upstream BF16 weights with ModelOpt 0.48.0rc1. After calibration, the 5,934 activation input_scale tensors (69
+# streams) were replaced by the lowest-simulated-error global scale per stream (amendment R17-A1); weights and weight
+# scales are the calibrated build's, byte for byte. Evidence: models/nemotron-3.5-lightning-r1/results/w4a4-gate-summary.json.
+
+source:
+  model_id: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+  revision: d468880b6ad3c6e0d21377ce7242adaea4cc884d
+
+transforms: []
+
+datasets:
+  cnn_dailymail:
+    source: abisee/cnn_dailymail
+    revision: 96df5e686bee6baa90b8bee7c28b81fa3fa6223d
+    sha256: null
+  nemotron_post_training:
+    source: nvidia/Nemotron-Post-Training-Dataset-v2
+    revision: 5c89e01dd720ae0f4058445ed49c5fb68a03c76e
+    sha256: null
+
+quantization:
+  scheme: NVFP4
+  targets: Linear
+  group_size: 16
+  framework: nvidia-modelopt
+  framework_version: 0.48.0rc1
+  framework_pin_commit: ff2450c15eb5f1697ec0471704d5421d54fce4f4
+  algorithm: nvfp4_act_headroom
+  weight_scale_algorithm: mse
+  fp8_scale_sweep: true
+  activation_scale_override: lowest simulated NVFP4 error per stream (R17-A1, eval/make_variants.py rule mse)
+  operator_recipe: configs/modelopt/recipes/nemotron-3.5-lightning/nvfp4_experts_w4a4_act_headroom-kv_bf16.yaml
+  operator_recipe_sha256: 6facf6cdc5486dba9a402881dae92c6c60d7ca7f8fc4e2bab608abec4948ee68
+  quant_grp:
+    routed_experts_up_down: W4A4_NVFP4
+    shared_expert_up_down: W4A4_NVFP4
+  protected_tensors:
+    - embeddings
+    - norms
+    - lm_head
+    - mtp.layers
+    - mixer.in_proj
+    - mixer.out_proj
+    - mixer.conv1d
+    - mixer.gate
+    - mixer.q_proj
+  keep_bf16:
+    - lm_head
+    - mtp.layers
+    - mixer.in_proj
+    - mixer.out_proj
+    - mixer.conv1d
+    - mixer.gate
+    - mixer.q_proj
+  ignore:
+    - lm_head
+    - "re:^backbone\\.embeddings"
+    - "re:^mtp\\.layers"
+    - "re:.*mixer\\.(in_proj|out_proj|conv1d|gate)"
+    - "re:.*mixer\\.[qkvo]_proj"
+    - "re:.*norm.*"
+  calibration:
+    dataset: cnn_dailymail 3.0.0 (512 articles) + Nemotron-Post-Training-Dataset-v2 chat/stem/math/code (128 each, chat-templated); file sha256 0a1be3fb7fd44f745213f61f45fb4ce61a69d85a4bf39f0adf4e8957c5d87840 (calibration/build_calib.py)
+    config: lightning_calib_1024
+    samples: 1024
+    max_sequence_length: 2048
+    batch_size: 1
+    kv_cache_qformat: none
+    pipeline: modelopt_hf_ptq
+    shard_size: 10GB
+
+validation:
+  max_refusal_leakage: 0.01
+  quantized_layers_count: 5934
+  mtp_present: true
+
+runtime:
+  kv_dtype: bf16
+  context_length: 131072
+  flash_attention: true
+  spec_decode: none
+  vllm_pin: vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34
+
+performance:
+  prompt_lengths: [3000, 50000]
+  warmup_repeats: 1
+  measure_repeats: 1
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_nvfp4: HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4

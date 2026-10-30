@@ -34,14 +34,30 @@ pinned to `d468880b6ad3c6e0d21377ce7242adaea4cc884d` under OpenMDW-1.1.
 
 Family collection: [Darkstar Nemotron-3.5-Lightning 30B-A3B](https://huggingface.co/collections/HangGlidersRule/darkstar-nemotron-35-lightning-30b-a3b-6a8dfe8c5ec5db63d6a031d0).
 
-Exactly three public HangGlidersRule repositories contain complete, hash-verified checkpoints and
-final cards:
+Four public HangGlidersRule repositories contain complete, hash-verified checkpoints and final cards:
 
 - `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4`
+- `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4`
 - `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-BF16`
 - `HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4`
 
 No HangGlidersRule repository exists or is planned for the unchanged BF16 control.
+
+### W4A4 NVFP4 cell (v1.1.0, issue 17)
+
+[`Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4) runs the MoE experts in real FP4 (W4A4) on stock vLLM: prefill is 1.45-1.72x
+the W4A16 build on vLLM's default kernel, at next-token KL 0.0246 to BF16 (W4A16 0.0189) and GPQA Diamond 130/198 (W4A16 136/198,
+inside the pre-registered noise band of 11.9 questions). Its activation scales replace the calibrated ones, which clipped the
+routed-expert down-projection inputs (KL 0.0795).
+
+- Card: [`model-card/base-w4a4-nvfp4.md`](model-card/base-w4a4-nvfp4.md)
+- Publication receipt (clean-download smoke): [`results/w4a4-publication-receipt.json`](results/w4a4-publication-receipt.json)
+- Evidence: [`results/w4a4-gate-summary.json`](results/w4a4-gate-summary.json), built by
+  [`eval/build_w4a4_summary.py`](eval/build_w4a4_summary.py) and checked against the card by
+  [`eval/check_card_numbers.py`](eval/check_card_numbers.py)
+- Recipe: [`../../recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4.yaml`](../../recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4.yaml)
+- Calibration and held-out prompt builders: [`calibration/`](calibration/)
+- Pre-registration, amendment and results: [issue 17](https://github.com/HangGlidersRule/model-forge/issues/17)
 
 ## Current status
 

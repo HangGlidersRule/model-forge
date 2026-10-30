@@ -1,0 +1,503 @@
+{
+ "issue": 17,
+ "product": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4",
+ "shipped_variant": "mse",
+ "pre_registration": "https://github.com/HangGlidersRule/model-forge/issues/17#issuecomment-6512178222",
+ "amendment": "https://github.com/HangGlidersRule/model-forge/issues/17#issuecomment-6529325359",
+ "gpqa": {
+  "items": 198,
+  "dataset_sha256": "a8472c5a82ea2df8f209c17713aba1a6d409120c609ec0582dae0cb940c7e28c",
+  "cells": {
+   "BF16": {
+    "correct": 138,
+    "attempted": 198,
+    "accuracy": 0.697,
+    "unparseable": 14,
+    "truncated_no_answer": 10,
+    "hit_max_tokens": 15,
+    "errors": 0,
+    "no_response_items": 0,
+    "no_response_error_types": [],
+    "median_completion_tokens": 8911
+   },
+   "BF16-replica": {
+    "correct": 141,
+    "attempted": 198,
+    "accuracy": 0.7121,
+    "unparseable": 18,
+    "truncated_no_answer": 2,
+    "hit_max_tokens": 8,
+    "errors": 0,
+    "no_response_items": 0,
+    "no_response_error_types": [],
+    "median_completion_tokens": 6996
+   },
+   "W4A16": {
+    "correct": 136,
+    "attempted": 198,
+    "accuracy": 0.6869,
+    "unparseable": 10,
+    "truncated_no_answer": 14,
+    "hit_max_tokens": 18,
+    "errors": 0,
+    "no_response_items": 0,
+    "no_response_error_types": [],
+    "median_completion_tokens": 10149
+   },
+   "A": {
+    "correct": 126,
+    "attempted": 198,
+    "accuracy": 0.6364,
+    "unparseable": 8,
+    "truncated_no_answer": 19,
+    "hit_max_tokens": 29,
+    "errors": 0,
+    "no_response_items": 0,
+    "no_response_error_types": [],
+    "median_completion_tokens": 11704
+   },
+   "mse": {
+    "correct": 130,
+    "attempted": 198,
+    "accuracy": 0.6566,
+    "unparseable": 15,
+    "truncated_no_answer": 9,
+    "hit_max_tokens": 19,
+    "errors": 4,
+    "no_response_items": 4,
+    "no_response_error_types": [
+     "ConnectTimeout"
+    ],
+    "median_completion_tokens": 9351
+   }
+  },
+  "noise": {
+   "bf16_discordant_items": 37,
+   "band": 0.0602,
+   "band_questions": 11.9
+  },
+  "A_minus_W4A16": {
+   "questions": -10,
+   "diff": -0.0505,
+   "bootstrap95": [
+    -0.1111,
+    0.0101
+   ],
+   "verdict": "PASS"
+  },
+  "mse_minus_W4A16": {
+   "questions": -6,
+   "diff": -0.0303,
+   "bootstrap95": [
+    -0.0859,
+    0.0253
+   ],
+   "verdict": "PASS",
+   "on_items_answered": {
+    "items": 194,
+    "questions": -3,
+    "W4A16_correct_on_unanswered": 3
+   }
+  },
+  "common_finished_set": {
+   "items": 150,
+   "correct": {
+    "BF16": 122,
+    "BF16-replica": 119,
+    "W4A16": 119,
+    "A": 112,
+    "mse": 113
+   }
+  },
+  "vs_bf16": {
+   "BF16": {
+    "questions": 0,
+    "diff": 0.0,
+    "bootstrap95": [
+     0.0,
+     0.0
+    ]
+   },
+   "W4A16": {
+    "questions": -2,
+    "diff": -0.0101,
+    "bootstrap95": [
+     -0.0657,
+     0.0455
+    ]
+   },
+   "A": {
+    "questions": -12,
+    "diff": -0.0606,
+    "bootstrap95": [
+     -0.1212,
+     0.0
+    ]
+   },
+   "mse": {
+    "questions": -8,
+    "diff": -0.0404,
+    "bootstrap95": [
+     -0.101,
+     0.0202
+    ]
+   }
+  }
+ },
+ "kl": {
+  "reported_set": {
+   "W4A16": {
+    "positions": 37727,
+    "mean_kl": 0.0189,
+    "top1_agreement": 0.9503
+   },
+   "W4A16-b12x": {
+    "positions": 37727,
+    "mean_kl": 0.0358,
+    "top1_agreement": 0.9352
+   },
+   "A": {
+    "positions": 37727,
+    "mean_kl": 0.0795,
+    "top1_agreement": 0.9046
+   },
+   "mse": {
+    "positions": 37727,
+    "mean_kl": 0.0246,
+    "top1_agreement": 0.9428
+   }
+  },
+  "selection_set": {
+   "A": {
+    "positions": 42354,
+    "mean_kl": 0.0804,
+    "top1_agreement": 0.9046
+   },
+   "mse": {
+    "positions": 42354,
+    "mean_kl": 0.0247,
+    "top1_agreement": 0.9462
+   },
+   "b12xeq": {
+    "positions": 42354,
+    "mean_kl": 0.0249,
+    "top1_agreement": 0.9456
+   },
+   "p9999": {
+    "positions": 42354,
+    "mean_kl": 0.0752,
+    "top1_agreement": 0.909
+   },
+   "p999": {
+    "positions": 42354,
+    "mean_kl": 0.1656,
+    "top1_agreement": 0.8666
+   }
+  },
+  "selection": {
+   "rule": "lowest selection KL; advances if <= 0.9 x A",
+   "winner": "mse",
+   "mse_vs_A_reduction_pct": 69.3
+  }
+ },
+ "throughput": {
+  "cells": {
+   "W4A16": {
+    "3k_c1": {
+     "prefill_tok_per_s_aggregate": 30002,
+     "ttft_p50_ms": 100.1,
+     "prompt_tokens_mean": 3014
+    },
+    "3k_c8": {
+     "prefill_tok_per_s_aggregate": 32761,
+     "ttft_p50_ms": 666.7,
+     "prompt_tokens_mean": 3013
+    },
+    "50k_c1": {
+     "prefill_tok_per_s_aggregate": 25015,
+     "ttft_p50_ms": 1998.9,
+     "prompt_tokens_mean": 50018
+    },
+    "50k_c8": {
+     "prefill_tok_per_s_aggregate": 25252,
+     "ttft_p50_ms": 15703.2,
+     "prompt_tokens_mean": 50018
+    }
+   },
+   "W4A16-b12x": {
+    "3k_c1": {
+     "prefill_tok_per_s_aggregate": 40077,
+     "ttft_p50_ms": 74.0,
+     "prompt_tokens_mean": 3014
+    },
+    "3k_c8": {
+     "prefill_tok_per_s_aggregate": 44633,
+     "ttft_p50_ms": 489.2,
+     "prompt_tokens_mean": 3014
+    },
+    "50k_c1": {
+     "prefill_tok_per_s_aggregate": 31250,
+     "ttft_p50_ms": 1589.6,
+     "prompt_tokens_mean": 50017
+    },
+    "50k_c8": {
+     "prefill_tok_per_s_aggregate": 31883,
+     "ttft_p50_ms": 12443.4,
+     "prompt_tokens_mean": 50017
+    }
+   },
+   "A": {
+    "3k_c1": {
+     "prefill_tok_per_s_aggregate": 49828,
+     "ttft_p50_ms": 60.9,
+     "prompt_tokens_mean": 3013
+    },
+    "3k_c8": {
+     "prefill_tok_per_s_aggregate": 57120,
+     "ttft_p50_ms": 378.8,
+     "prompt_tokens_mean": 3014
+    },
+    "50k_c1": {
+     "prefill_tok_per_s_aggregate": 37264,
+     "ttft_p50_ms": 1340.5,
+     "prompt_tokens_mean": 50016
+    },
+    "50k_c8": {
+     "prefill_tok_per_s_aggregate": 37964,
+     "ttft_p50_ms": 10464.2,
+     "prompt_tokens_mean": 50018
+    }
+   },
+   "mse": {
+    "3k_c1": {
+     "prefill_tok_per_s_aggregate": 46463,
+     "ttft_p50_ms": 61.5,
+     "prompt_tokens_mean": 3013
+    },
+    "3k_c8": {
+     "prefill_tok_per_s_aggregate": 56283,
+     "ttft_p50_ms": 385.1,
+     "prompt_tokens_mean": 3014
+    },
+    "50k_c1": {
+     "prefill_tok_per_s_aggregate": 36387,
+     "ttft_p50_ms": 1375.0,
+     "prompt_tokens_mean": 50019
+    },
+    "50k_c8": {
+     "prefill_tok_per_s_aggregate": 37308,
+     "ttft_p50_ms": 10640.7,
+     "prompt_tokens_mean": 50017
+    }
+   }
+  },
+  "ratios": {
+   "mse_vs_W4A16": [
+    1.55,
+    1.72,
+    1.45,
+    1.48
+   ],
+   "mse_vs_W4A16-b12x": [
+    1.16,
+    1.26,
+    1.16,
+    1.17
+   ]
+  },
+  "range_vs_W4A16_marlin": "1.45-1.72x",
+  "range_vs_W4A16_b12x": "1.16-1.26x",
+  "mse_vs_A_pct": [
+   -6.8,
+   -1.5,
+   -2.4,
+   -1.7
+  ],
+  "reference_dense_27b_as_served": {
+   "note": "A dense 27B engine as configured for production decode (chunked prefill, ~6k-token batches, sharing the GPU with live traffic); not a like-for-like model comparison.",
+   "cells": {
+    "3k_c1": {
+     "prefill_tok_per_s_aggregate": 3388,
+     "ttft_p50_ms": 709.0
+    },
+    "3k_c8": {
+     "prefill_tok_per_s_aggregate": 3730,
+     "ttft_p50_ms": 5666.4
+    },
+    "50k_c1": {
+     "prefill_tok_per_s_aggregate": 3435,
+     "ttft_p50_ms": 14427.2
+    },
+    "50k_c8": {
+     "prefill_tok_per_s_aggregate": 3555,
+     "ttft_p50_ms": 110482.7
+    }
+   }
+  }
+ },
+ "activation_scales": {
+  "streams": 69,
+  "stats_samples": 256,
+  "stats_tokens": 229027,
+  "routed_up_global_amax_A": [
+   1982.5,
+   29724.7
+  ],
+  "routed_up_global_amax_mse": [
+   2.0,
+   8192.0
+  ],
+  "down_global_amax_A": [
+   1.6,
+   629.0
+  ],
+  "down_global_amax_mse": [
+   8.0,
+   2048.0
+  ],
+  "mse_up_streams_at_or_below_8192": 23,
+  "up_streams": 23,
+  "mechanism": {
+   "routed_down_input": {
+    "streams": 23,
+    "A_global_amax_over_observed_max": [
+     0.12,
+     0.42
+    ],
+    "mse_global_amax_over_observed_max": [
+     0.98,
+     1.9
+    ],
+    "A_below_observed_max": 23,
+    "mse_below_observed_max": 1,
+    "median_relative_squared_error": {
+     "A": 0.0108,
+     "mse": 0.0019,
+     "b12xeq": 0.002,
+     "p9999": 0.0109,
+     "p999": 0.0456
+    },
+    "worst_A_streams": [
+     [
+      0.132,
+      "L1.rdown"
+     ],
+     [
+      0.032,
+      "L10.rdown"
+     ],
+     [
+      0.027,
+      "L40.rdown"
+     ]
+    ]
+   },
+   "up_input": {
+    "streams": 23,
+    "A_global_amax_over_observed_max": [
+     168.83,
+     991.26
+    ],
+    "mse_global_amax_over_observed_max": [
+     1.0,
+     174.3
+    ],
+    "A_below_observed_max": 0,
+    "mse_below_observed_max": 0,
+    "median_relative_squared_error": {
+     "A": 0.0088,
+     "mse": 0.0088,
+     "b12xeq": 0.0088,
+     "p9999": 0.0094,
+     "p999": 0.0107
+    },
+    "worst_A_streams": [
+     [
+      0.009,
+      "L8.up"
+     ],
+     [
+      0.009,
+      "L6.up"
+     ],
+     [
+      0.009,
+      "L51.up"
+     ]
+    ]
+   },
+   "shared_down_input": {
+    "streams": 23,
+    "A_global_amax_over_observed_max": [
+     0.16,
+     4.91
+    ],
+    "mse_global_amax_over_observed_max": [
+     0.97,
+     1.91
+    ],
+    "A_below_observed_max": 11,
+    "mse_below_observed_max": 2,
+    "median_relative_squared_error": {
+     "A": 0.003,
+     "mse": 0.0015,
+     "b12xeq": 0.0022,
+     "p9999": 0.0073,
+     "p999": 0.0305
+    },
+    "worst_A_streams": [
+     [
+      0.244,
+      "L6.sdown"
+     ],
+     [
+      0.203,
+      "L40.sdown"
+     ],
+     [
+      0.017,
+      "L43.sdown"
+     ]
+    ]
+   }
+  }
+ },
+ "artifact": {
+  "verdict": "PASS",
+  "tensors": 24315,
+  "quantized_modules": 5934,
+  "routed": 5888,
+  "shared": 46,
+  "fp8_block_scales": 1864611840,
+  "fp8_block_scales_nan": 0,
+  "fp8_block_scales_zero": 0,
+  "input_scale_streams": 69,
+  "input_scale_values_checked": 5934,
+  "protected_tensors_checked": 579,
+  "protected_linear_modules": 381,
+  "protected_linear_not_excluded_count": 0,
+  "release_file_count": 20,
+  "release_files": [
+   ".gitattributes",
+   "LICENSE",
+   "accuracy_plot.png",
+   "agentic_coding_benchmarks.png",
+   "bias.md",
+   "chat_template.jinja",
+   "config.json",
+   "explainability.md",
+   "generation_config.json",
+   "hf_quant_config.json",
+   "model-00001-of-00003.safetensors",
+   "model-00002-of-00003.safetensors",
+   "model-00003-of-00003.safetensors",
+   "model-input-scales.safetensors",
+   "model.safetensors.index.json",
+   "privacy.md",
+   "safety.md",
+   "special_tokens_map.json",
+   "tokenizer.json",
+   "tokenizer_config.json"
+  ]
+ }
+}
