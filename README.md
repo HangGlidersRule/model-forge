@@ -14,6 +14,10 @@ Private operator archives, raw evaluation evidence, restricted question and answ
 - Serve candidates through generic container recipes.
 - Publish only curated aggregate evidence in model records; raw run dumps stay ignored.
 
+**Start here:** the [Model Forge guide](docs/guide/README.md) explains the whole process in one place:
+[abliteration](docs/guide/abliteration.md), [from upstream checkpoint to release](docs/guide/release-process.md),
+[evaluation](docs/guide/evaluation.md), and [lessons and pitfalls](docs/guide/lessons.md).
+
 ## Model catalog
 
 Each model family gets a record under `models/`. A family has up to four evaluated cells: the unchanged upstream BF16 control plus three HangGlidersRule-owned Darkstar artifacts (clean ModelOpt quant, abliterated BF16, abliterated ModelOpt quant). Cells that do not yet exist are marked `—`. Each owned cell that ships has a public Hugging Face checkpoint and its card lives in the family record.
@@ -77,6 +81,7 @@ containers/          Generic build and serve Compose assets
 scripts/             Family-specific operational launchers (e.g. scripts/qwen3_8/)
 tests/               Unit and smoke tests
 .github/workflows/   CI: pytest, Ruff, mypy, git diff --check
+docs/guide/          The Model Forge guide: abliteration, release process, evaluation, lessons
 docs/decisions/      Public architecture and governance decisions
 ```
 
