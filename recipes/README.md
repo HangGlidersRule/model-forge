@@ -34,6 +34,7 @@ Historical compressed-tensors recipes (rejected for publication, retained for li
 ## Nemotron-3.5-Lightning 30B-A3B
 
 - `nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (routed and shared MoE experts; activation scales set to the lowest simulated NVFP4 error per stream after calibration). Operator recipe SHA-256 `6facf6cdc5486dba9a402881dae92c6c60d7ca7f8fc4e2bab608abec4948ee68`.
+- `nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 Mixed-FP8 (the W4A4 experts in NVIDIA's layout: FP8 Mamba projections, NVFP4 weight-only lm_head, calibrated FP8 KV; published). Operator recipe SHA-256 `188e78f46099740cc1b7b4d60301ea79279ff912100ba3fccc1d01c0631be3e6`.
 
 ModelOpt PTQ YAML candidates live under `configs/modelopt/recipes/` (not schema-2 forge recipes).
 

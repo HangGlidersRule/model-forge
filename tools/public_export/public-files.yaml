@@ -617,6 +617,34 @@ rules:
     generated: false
     precedence: 100
 
+  - id: hf-card-lightning-base-modelopt-w4a4-mixed-fp8
+    source: "publication/huggingface/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Lightning base ModelOpt W4A4 NVFP4 Mixed-FP8 artifact (issue 25).
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: curated-lightning-nvl-evidence
+    source: "models/nemotron-3.5-lightning-r1/results/nvl-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated aggregate gate evidence for the Lightning W4A4 NVFP4 Mixed-FP8 cell (aggregates only; no per-item answers or logprob arrays).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 524288
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-readiness-ledger
+      - curated-gpqa-matrix
+      - curated-capacity-profiles
+
   - id: lightning-w4a4-calibration-builders
     source: "models/nemotron-3.5-lightning-r1/calibration/*.py"
     disposition: transform

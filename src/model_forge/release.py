@@ -380,7 +380,25 @@ def candidate_requires_mixed_fp8(candidate: dict[str, Any]) -> bool:
     )
 
 
-def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
+def _contract_at_least(version: str | None, major: int, minor: int) -> bool:
+    """True when a dotted contract version is at least major.minor (unknown or malformed versions are not)."""
+    if not version:
+        return False
+    try:
+        parts = [int(p) for p in str(version).split(".")[:2]]
+    except ValueError:
+        return False
+    parts += [0] * (2 - len(parts))
+    return (parts[0], parts[1]) >= (major, minor)
+
+
+# Contract 3.1: a W4A4 build may serve an NVFP4 weight-only (W4A16) lm_head, declared on the lm_head component. This is
+# NVIDIA's own ModelOpt layout for hybrid MoE checkpoints; the output projection's activations stay BF16 because nothing
+# after it absorbs quantization error. Every other weight path keeps the original rule.
+_W4A4_WEIGHT_ONLY_LM_HEAD = re.compile(r"^W4A16-NVFP4\b")
+
+
+def candidate_precision_errors(candidate: dict[str, Any], *, contract_version: str | None = None) -> list[str]:
     """Return violations of the candidate precision-encoding rules.
 
     The four-product family slot may be labelled `ModelOpt-NVFP4`, but every candidate id must
@@ -435,7 +453,15 @@ def candidate_precision_errors(candidate: dict[str, Any]) -> list[str]:
 
     # W4A4 never serves W4A16 weights. It may serve FP8 weights only as the declared Mixed-FP8 class
     # (W4A4 NVFP4 on some linears plus FP8 W8A8 on others, e.g. NVIDIA's Qwen3.8-27B layout).
-    if pclass.startswith("W4A4") and has_w4a16:
+    # From contract 3.1 the one exception is an NVFP4 weight-only lm_head declared on the lm_head component.
+    w4a16_paths = [c for c in weight_components & set(pmap) if "W4A16" in str(pmap[c])]
+    if (
+        _contract_at_least(contract_version, 3, 1)
+        and w4a16_paths == ["lm_head"]
+        and _W4A4_WEIGHT_ONLY_LM_HEAD.match(str(pmap["lm_head"]))
+    ):
+        w4a16_paths = []
+    if pclass.startswith("W4A4") and w4a16_paths:
         errors.append(f"{cid}: named W4A4 but precision_map serves W4A16 weights (conflation)")
     if pclass.startswith("W4A4") and has_fp8 and "Mixed-FP8" not in pclass:
         errors.append(
@@ -1228,8 +1254,9 @@ def ledger_candidates(ledger: dict[str, Any]) -> list[dict[str, Any]]:
 
 def ledger_candidate_precision_errors(ledger: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    version = ledger.get("contract_version")
     for candidate in ledger_candidates(ledger):
-        errors.extend(candidate_precision_errors(candidate))
+        errors.extend(candidate_precision_errors(candidate, contract_version=str(version) if version else None))
     return errors
 
 

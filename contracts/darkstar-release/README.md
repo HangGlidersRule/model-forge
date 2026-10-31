@@ -13,7 +13,8 @@ It is the schema/checklist backing the normative process document
 - [`v2/contract.json`](v2/contract.json) — image/diffusion extension (version `2.0.0`).
 - [`v2/ledger.schema.json`](v2/ledger.schema.json) — JSON Schema for contract 2.x ledgers.
 - [`v3/contract.json`](v3/contract.json) — several products per role, KV-cache effect, and the
-  task-scoped quality gate (version `3.0.0`).
+  task-scoped quality gate (version `3.0.0`); `3.1.0` adds one naming allowance, an NVFP4 weight-only
+  `lm_head` in a W4A4 build when the precision map declares it.
 - [`v3/ledger.schema.json`](v3/ledger.schema.json) — JSON Schema for contract 3.x ledgers.
 
 ## How it is used

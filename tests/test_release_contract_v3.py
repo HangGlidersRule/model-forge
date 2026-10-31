@@ -118,6 +118,58 @@ def test_kv_cache_gate_on_a_product_without_a_selected_candidate() -> None:
     assert kv_cache_gate_errors(no_gate)
 
 
+def _w4a4_candidate(lm_head: str) -> dict:
+    return {
+        "candidate_id": "Darkstar-Example-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+        "precision_class": "W4A4-NVFP4-Mixed-FP8",
+        "target_repository": "HangGlidersRule/Darkstar-Example-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+        "selection": "selected",
+        "precision_map": {
+            "language_mlp": "W4A4-NVFP4-g16 (experts)",
+            "lm_head": lm_head,
+            "self_attention": "BF16",
+            "gdn_projections": "FP8 E4M3 (Mamba in_proj/out_proj)",
+            "kv_cache": "FP8 E4M3",
+            "protected": "embeddings, norms (BF16)",
+        },
+    }
+
+
+def test_w4a4_allows_a_declared_nvfp4_weight_only_lm_head_from_contract_3_1() -> None:
+    """Contract 3.1: a W4A4 build may carry an NVFP4 weight-only (W4A16) lm_head when the precision map declares it on
+    the lm_head component. NVIDIA's own ModelOpt checkpoints use this layout."""
+    from model_forge.release import candidate_precision_errors
+
+    cand = _w4a4_candidate("W4A16-NVFP4-g16 (weight-only)")
+    assert candidate_precision_errors(cand, contract_version="3.1.0") == []
+
+
+def test_w4a4_still_rejects_w4a16_outside_lm_head() -> None:
+    """The 3.1 allowance is lm_head only: W4A16 on any other weight path of a W4A4-named build is still a conflation."""
+    from model_forge.release import candidate_precision_errors
+
+    cand = _w4a4_candidate("W4A16-NVFP4-g16 (weight-only)")
+    cand["precision_map"]["language_mlp"] = "W4A16-NVFP4-g16"
+    assert any("conflation" in e for e in candidate_precision_errors(cand, contract_version="3.1.0"))
+
+
+def test_w4a4_weight_only_lm_head_must_be_nvfp4() -> None:
+    """The allowance covers an NVFP4 weight-only lm_head; another weight-only format is still a conflation."""
+    from model_forge.release import candidate_precision_errors
+
+    cand = _w4a4_candidate("W4A16-INT4-AWQ (weight-only)")
+    assert any("conflation" in e for e in candidate_precision_errors(cand, contract_version="3.1.0"))
+
+
+def test_w4a4_weight_only_lm_head_is_rejected_before_contract_3_1() -> None:
+    """Ledgers on contract 3.0 and earlier keep the original rule (no exception), so their meaning does not change."""
+    from model_forge.release import candidate_precision_errors
+
+    cand = _w4a4_candidate("W4A16-NVFP4-g16 (weight-only)")
+    assert any("conflation" in e for e in candidate_precision_errors(cand, contract_version="3.0.0"))
+    assert any("conflation" in e for e in candidate_precision_errors(cand))
+
+
 def test_any_publication_claim_must_match_the_products() -> None:
     """A ledger's any_publication_claim must equal whether any product claims publication (PR #28 review)."""
     from model_forge.release import publication_claim_flag_errors
