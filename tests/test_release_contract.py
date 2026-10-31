@@ -19,6 +19,7 @@ stays in the map is a failure and not a silent pass.
 """
 from __future__ import annotations
 
+import json
 import re
 import shlex
 from pathlib import Path
@@ -731,14 +732,39 @@ def test_serve_examples_use_registered_runtime_aliases() -> None:
     assert not violations, "serve example violations:\n" + "\n".join(violations)
 
 
+def _exported_paths() -> set[str] | None:
+    """Paths the public tree ships, from PUBLIC_EXPORT_MANIFEST.json when it exists (the public repository); None in the
+    private source tree, which has no manifest and holds every file."""
+    manifest = REPO_ROOT / "PUBLIC_EXPORT_MANIFEST.json"
+    if not manifest.is_file():
+        return None
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    paths = {str(e["output_path"]) for e in data.get("files", []) if isinstance(e, dict) and e.get("output_path")}
+    return paths or None
+
+
 def test_known_legacy_alias_files_still_fail_the_alias_rule() -> None:
+    """Each listed file must still exist (in the tree being tested) and still break the alias rule, so the list can only
+    shrink. A listed file that the public export excludes is skipped in the public tree, where it does not exist."""
     known_aliases = _all_family_aliases()
+    exported = _exported_paths()
     for rel in sorted(KNOWN_LEGACY_ALIAS_FILES):
+        if exported is not None and rel not in exported:
+            continue
         path = REPO_ROOT / rel
         assert path.is_file(), rel
         assert _alias_rule_violations(path, known_aliases), (
             f"{rel} no longer fails the alias rule; remove it from KNOWN_LEGACY_ALIAS_FILES"
         )
+
+
+def test_known_legacy_alias_files_list_cannot_grow() -> None:
+    """The legacy list is frozen to these three files; new files must use registered aliases."""
+    assert KNOWN_LEGACY_ALIAS_FILES <= {
+        "containers/serve/darkstar-nemotron-3-nano-omni-abliterated-nvfp4.yml",
+        "containers/serve/serve-production-nvfp4kv.yml",
+        "models/qwen-image-2.1/model-card/base-fp8.md",
+    }
 
 
 def test_serve_model_id_parser_reads_canonical_product4_compose() -> None:

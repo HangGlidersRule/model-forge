@@ -118,6 +118,35 @@ def test_kv_cache_gate_on_a_product_without_a_selected_candidate() -> None:
     assert kv_cache_gate_errors(no_gate)
 
 
+def test_any_publication_claim_must_match_the_products() -> None:
+    """A ledger's any_publication_claim must equal whether any product claims publication (PR #28 review)."""
+    from model_forge.release import publication_claim_flag_errors
+
+    claimed = {"any_publication_claim": True, "products": [{"product_id": "a", "publication_claim": True}]}
+    unclaimed = {"any_publication_claim": False, "products": [{"product_id": "a", "publication_claim": False}]}
+    assert publication_claim_flag_errors(claimed) == []
+    assert publication_claim_flag_errors(unclaimed) == []
+    assert publication_claim_flag_errors({**claimed, "any_publication_claim": False})
+    assert publication_claim_flag_errors({**unclaimed, "any_publication_claim": True})
+
+
+def test_per_artifact_gate_evidence_is_not_shared_between_products() -> None:
+    """A per-artifact gate (validation, capacity, GPQA, behavior, ...) verified on two products with identical evidence
+    text and path is an inherited result, which the contract forbids (PR #28 review)."""
+    from model_forge.release import inherited_evidence_errors
+
+    def product(pid: str, evidence: str) -> dict:
+        return {"product_id": pid, "gates": [
+            {"id": "serving_capacity_profile", "status": "verified", "evidence": evidence, "evidence_path": "r.json"},
+            {"id": "release_tag", "status": "verified", "evidence": "tag v1", "evidence_path": "README.md"}]}
+
+    assert inherited_evidence_errors({"products": [product("a", "c=8 1,000 tok/s"), product("b", "c=8 2,000 tok/s")]}) == []
+    shared = inherited_evidence_errors({"products": [product("a", "c=8 1,000 tok/s"), product("b", "c=8 1,000 tok/s")]})
+    assert shared and "serving_capacity_profile" in shared[0]
+    # family-wide gates (a shared release tag) are not per-artifact
+    assert not any("release_tag" in e for e in shared)
+
+
 def test_ledger_allows_several_products_per_role_when_identities_are_unique() -> None:
     from model_forge.release import ledger_uniqueness_errors
 

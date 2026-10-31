@@ -8,6 +8,7 @@ checks that keep those renderings honest and prevent gate weakening.
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import shlex
@@ -1384,7 +1385,7 @@ def quality_gate_errors(product: dict[str, Any]) -> list[str]:
     if not isinstance(task, str) or not task:
         errors.append(f"{pid}: task is required")
         return errors
-    contract = load_json(contract_paths_for({"contract_version": "3.0.0"})[0])
+    contract = _v3_contract()
     gates = product.get("gates", [])
     if not isinstance(gates, list):
         errors.append(f"{pid}: gates must be a list")
@@ -1416,6 +1417,67 @@ def _extend_ledger_errors(errors: list[str], path: Path, call: Callable[[], list
         errors.extend(call())
     except (KeyError, TypeError, ValueError, jsonschema.ValidationError) as exc:
         errors.append(f"{path}: {type(exc).__name__}: {exc}")
+
+
+@functools.lru_cache(maxsize=1)
+def _v3_contract() -> dict[str, Any]:
+    """The v3 contract, read once per process (the every-ledger CI test calls it for every product)."""
+    return load_json(contract_paths_for({"contract_version": "3.0.0"})[0])
+
+
+def publication_claim_flag_errors(ledger: dict[str, Any]) -> list[str]:
+    """``any_publication_claim`` must equal whether any product claims publication."""
+    products = ledger.get("products", [])
+    if not isinstance(products, list):
+        return []
+    derived = any(bool(p.get("publication_claim")) for p in products if isinstance(p, dict))
+    declared = ledger.get("any_publication_claim")
+    if bool(declared) != derived:
+        return [f"any_publication_claim is {declared!r} but the products' publication_claim values imply {derived!r}"]
+    return []
+
+
+# Gates whose evidence must be a measurement or check of the exact product. Family-wide gates (provenance, release tag,
+# card, recipe) legitimately share evidence across products.
+PER_ARTIFACT_GATES: frozenset[str] = frozenset(
+    {
+        "artifact_manifest",
+        "artifact_validation",
+        "nvfp4_tensor_scale_validation",
+        "kv_cache_effect_measured",
+        "performance_profile",
+        "serving_capacity_profile",
+        "gpqa_matched_full_denominator",
+        "quality_matched_full_denominator",
+        "behavior_refusal_eval",
+        "clean_download_boot_smoke",
+    }
+)
+
+
+def inherited_evidence_errors(ledger: dict[str, Any]) -> list[str]:
+    """A per-artifact gate verified on two products with the same evidence text and path is an inherited result."""
+    seen: dict[tuple[str, str, str], list[str]] = {}
+    products = ledger.get("products", [])
+    if not isinstance(products, list):
+        return []
+    for product in products:
+        if not isinstance(product, dict):
+            continue
+        pid = str(product.get("product_id", "<unknown>"))
+        for gate in product.get("gates", []) or []:
+            if not isinstance(gate, dict) or gate.get("status") != "verified":
+                continue
+            gate_id = str(gate.get("id", ""))
+            if gate_id not in PER_ARTIFACT_GATES:
+                continue
+            key = (gate_id, str(gate.get("evidence", "")), str(gate.get("evidence_path", "")))
+            seen.setdefault(key, []).append(pid)
+    return [
+        f"{gate_id}: identical verified evidence on {', '.join(pids)} (an inherited result; measure each product)"
+        for (gate_id, _evidence, _path), pids in sorted(seen.items())
+        if len(pids) > 1
+    ]
 
 
 def _schema_errors(path: Path, ledger: dict[str, Any], schema_path: Path) -> list[str]:
@@ -1466,6 +1528,8 @@ def validate_ledger(path: Path) -> list[str]:
     _extend_ledger_errors(errors, path, lambda: ledger_candidate_precision_errors(ledger))
     if major == 3:
         _extend_ledger_errors(errors, path, lambda: ledger_uniqueness_errors(ledger))
+        _extend_ledger_errors(errors, path, lambda: publication_claim_flag_errors(ledger))
+        _extend_ledger_errors(errors, path, lambda: inherited_evidence_errors(ledger))
         products = ledger.get("products", [])
         if isinstance(products, list):
             for index, product in enumerate(products):

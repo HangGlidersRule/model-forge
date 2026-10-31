@@ -53,7 +53,7 @@
       "product_id": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4",
       "role": "base-modelopt-nvfp4",
       "task": "chat",
-      "lifecycle": "locally_complete_unpublished",
+      "lifecycle": "in_progress",
       "target_repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4",
       "target_repository_status": "resolved",
       "served_model_alias": "darkstar-nemotron35lightning-base-nvfp4",
@@ -91,10 +91,10 @@
         },
         {
           "id": "artifact_manifest",
-          "status": "verified",
-          "evidence": "manifest.sha256 over every shipped file; LFS sha256 read back after upload",
+          "status": "missing",
+          "evidence": "No committed manifest attestation for this cell",
           "evidence_path": "models/nemotron-3.5-lightning-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "next_missing_proof": "commit the shipped manifest.sha256 attestation for this exact artifact"
         },
         {
           "id": "recipe_edit_manifest",
@@ -105,10 +105,10 @@
         },
         {
           "id": "artifact_validation",
-          "status": "verified",
-          "evidence": "Fail-closed structural validation of the shipped files",
-          "evidence_path": "models/nemotron-3.5-lightning-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "The lineage records the layout; no committed validation report",
+          "evidence_path": null,
+          "next_missing_proof": "commit a structural validation report for this exact artifact"
         },
         {
           "id": "modelopt_candidate_comparison",
@@ -119,10 +119,10 @@
         },
         {
           "id": "nvfp4_tensor_scale_validation",
-          "status": "verified",
-          "evidence": "Scales finite and positive; no NaN or zero FP8 block scales; BF16 MTP preserved; BF16 KV",
-          "evidence_path": "models/nemotron-3.5-lightning-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "No committed tensor/scale validation report for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "commit a tensor/scale validation report for this exact artifact"
         },
         {
           "id": "kv_cache_effect_measured",
@@ -195,7 +195,7 @@
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, artifact_validation, nvfp4_tensor_scale_validation, clean_download_boot_smoke."
     },
     {
       "product_id": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4",
@@ -240,7 +240,7 @@
         {
           "id": "artifact_manifest",
           "status": "verified",
-          "evidence": "manifest.sha256 over every shipped file; LFS sha256 read back after upload",
+          "evidence": "manifest.sha256 over 21 files; LFS sha256 equal to the local files after upload (publication receipt)",
           "evidence_path": "models/nemotron-3.5-lightning-r1/results/w4a4-gate-summary.json",
           "next_missing_proof": "none - gate satisfied"
         },
@@ -469,7 +469,7 @@
       "product_id": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4",
       "role": "abliterated-modelopt-nvfp4",
       "task": "chat",
-      "lifecycle": "locally_complete_unpublished",
+      "lifecycle": "in_progress",
       "target_repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4",
       "target_repository_status": "resolved",
       "served_model_alias": "darkstar-nemotron35lightning-abliterated-nvfp4",
@@ -528,10 +528,10 @@
         },
         {
           "id": "artifact_validation",
-          "status": "verified",
-          "evidence": "Fail-closed structural validation of the shipped files",
-          "evidence_path": "models/nemotron-3.5-lightning-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "The lineage records the layout; no committed validation report",
+          "evidence_path": null,
+          "next_missing_proof": "commit a structural validation report for this exact artifact"
         },
         {
           "id": "modelopt_candidate_comparison",
@@ -542,10 +542,10 @@
         },
         {
           "id": "nvfp4_tensor_scale_validation",
-          "status": "verified",
-          "evidence": "Scales finite and positive; no NaN or zero FP8 block scales; BF16 MTP preserved; BF16 KV",
-          "evidence_path": "models/nemotron-3.5-lightning-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "No committed tensor/scale validation report for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "commit a tensor/scale validation report for this exact artifact"
         },
         {
           "id": "kv_cache_effect_measured",
@@ -563,10 +563,10 @@
         },
         {
           "id": "serving_capacity_profile",
-          "status": "verified",
-          "evidence": "c=8 prefill aggregate 32,761 / 25,252 tok/s at ~3k / ~50k-token prompts, beside c=1 (issue 17)",
-          "evidence_path": "models/nemotron-3.5-lightning-r1/results/w4a4-gate-summary.json",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "No capacity profile measured on this cell",
+          "evidence_path": null,
+          "next_missing_proof": "measure a serving-capacity profile on this exact artifact"
         },
         {
           "id": "gpqa_matched_full_denominator",
@@ -625,7 +625,7 @@
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_validation, nvfp4_tensor_scale_validation, serving_capacity_profile, clean_download_boot_smoke."
     }
   ]
 }

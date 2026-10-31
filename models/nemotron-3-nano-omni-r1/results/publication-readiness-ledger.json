@@ -6,7 +6,7 @@
   "family_display": "Darkstar Nemotron-3-Nano-Omni 30B-A3B Reasoning",
   "source_revision": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea000b7c2837fc8f9488aa2008524fac8ba",
   "note": "Migrated to contract v3 from the legacy free-form ledger (issue #27). Gates without recorded evidence are marked missing.",
-  "any_publication_claim": true,
+  "any_publication_claim": false,
   "rejected_historical": [],
   "related_issues": [],
   "products": [
@@ -103,10 +103,10 @@
         },
         {
           "id": "artifact_validation",
-          "status": "verified",
-          "evidence": "Structural validation recorded in the lineage",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "The lineage records the layout; no committed validation report",
+          "evidence_path": null,
+          "next_missing_proof": "commit a structural validation report for this exact artifact"
         },
         {
           "id": "modelopt_candidate_comparison",
@@ -117,10 +117,10 @@
         },
         {
           "id": "nvfp4_tensor_scale_validation",
-          "status": "verified",
-          "evidence": "Vision, audio and MTP-equivalent towers protected; BF16 KV",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "No committed tensor/scale validation report for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "commit a tensor/scale validation report for this exact artifact"
         },
         {
           "id": "kv_cache_effect_measured",
@@ -193,7 +193,7 @@
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, serving_capacity_profile, clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, artifact_validation, nvfp4_tensor_scale_validation, serving_capacity_profile, clean_download_boot_smoke."
     },
     {
       "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
@@ -372,10 +372,10 @@
         },
         {
           "id": "artifact_validation",
-          "status": "verified",
-          "evidence": "Structural validation recorded in the lineage",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "The lineage records the layout; no committed validation report",
+          "evidence_path": null,
+          "next_missing_proof": "commit a structural validation report for this exact artifact"
         },
         {
           "id": "modelopt_candidate_comparison",
@@ -386,10 +386,10 @@
         },
         {
           "id": "nvfp4_tensor_scale_validation",
-          "status": "verified",
-          "evidence": "Vision, audio and MTP-equivalent towers protected; BF16 KV",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "No committed tensor/scale validation report for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "commit a tensor/scale validation report for this exact artifact"
         },
         {
           "id": "kv_cache_effect_measured",
@@ -414,10 +414,10 @@
         },
         {
           "id": "gpqa_matched_full_denominator",
-          "status": "verified",
-          "evidence": "58/198 (thinking on, temp 0, full denominator)",
+          "status": "missing",
+          "evidence": "58/198 is recorded for this cell in the family README, but the committed per-item file is the BF16 parent's run",
           "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-bf16-thisrunner.json",
-          "next_missing_proof": "none - gate satisfied"
+          "next_missing_proof": "run GPQA Diamond on this exact artifact under the accepted protocol"
         },
         {
           "id": "behavior_refusal_eval",
@@ -463,13 +463,13 @@
         },
         {
           "id": "no_inherited_unverified_results",
-          "status": "verified",
-          "evidence": "Numbers on the card measured on this artifact",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
-          "next_missing_proof": "none - gate satisfied"
+          "status": "missing",
+          "evidence": "GPQA evidence is the BF16 parent's run until this artifact's own run is committed",
+          "evidence_path": null,
+          "next_missing_proof": "re-verify once every gate cites a measurement of this exact artifact"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, serving_capacity_profile, behavior_refusal_eval, clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, artifact_validation, nvfp4_tensor_scale_validation, serving_capacity_profile, gpqa_matched_full_denominator, behavior_refusal_eval, clean_download_boot_smoke, no_inherited_unverified_results."
     }
   ]
 }
