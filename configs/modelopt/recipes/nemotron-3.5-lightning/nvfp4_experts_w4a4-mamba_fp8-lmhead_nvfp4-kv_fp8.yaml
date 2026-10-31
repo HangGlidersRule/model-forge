@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Nemotron-3.5-Lightning-30B-A3B: the issue-17 W4A4 cell rebuilt in NVIDIA's checkpoint layout.
+#
+# Experts exactly as the v1.1.0 cell (candidate A + R17-A1): W4A4 NVFP4 on routed + shared experts, static MSE weight
+# scales with the FP8 scale sweep, NVFP4 activations calibrated with nvfp4_act_headroom (the expert activation scales
+# are afterwards replaced by the R17-A1 mse rule, eval/split_mse.py). Everything else follows NVIDIA's own recipe for
+# this checkpoint (modelopt_recipes/models/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16/ptq/w4a16_nvfp4_4o6.yaml):
+#   - Mamba in_proj / out_proj: FP8 E4M3, per-tensor weight and input scales (max-calibrated)
+#   - lm_head: NVFP4 weight-only (W4A16), static MSE weight scales; its input stays BF16
+#   - KV cache: FP8 E4M3 with calibrated per-layer k/v scales
+#   - attention q/k/v/o, router, conv1d, norms, embeddings and the MTP head: BF16
+#
+# Built from NVIDIA/Model-Optimizer@ff2450c15eb5f1697ec0471704d5421d54fce4f4 (0.48.0rc1). Rules apply in order and a
+# later rule overrides an earlier one, so the FP8 / lm_head / KV enables come after default_disabled_quantizers (which
+# disables *lm_head*), and the MTP rule stays last.
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+  fp8: configs/numerics/fp8
+metadata:
+  recipe_type: ptq
+  description: >-
+    Nemotron-3.5-Lightning W4A4 NVFP4 experts (static MSE weight scales, nvfp4_act_headroom activations) in NVIDIA's
+    checkpoint layout: FP8 Mamba in/out projections, NVFP4 weight-only lm_head, FP8 KV cache. Attention, router,
+    conv1d, norms, embeddings and MTP BF16.
+quantize:
+  algorithm:
+    method: nvfp4_act_headroom
+    anchor_percentile: 1
+    upper_percentile: 99.99
+    rho: 16384
+    weight_scale_algorithm:
+      method: mse
+      fp8_scale_sweep: true
+  quant_cfg:
+    - $import: base_disable_all
+    # Routed experts (fused 3-D container: up_proj_weight_quantizers.<i>, up_proj_input_quantizer, down_proj_*).
+    - quantizer_name: '*mixer.experts*weight_quantizer*'
+      enable: true
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.experts*input_quantizer'
+      enable: true
+      cfg:
+        $import: nvfp4
+    # Shared expert (dense up_proj / down_proj Linear modules).
+    - quantizer_name: '*mixer.shared_experts*weight_quantizer'
+      enable: true
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.shared_experts*input_quantizer'
+      enable: true
+      cfg:
+        $import: nvfp4
+    - $import: default_disabled_quantizers
+    - quantizer_name: '*mixer.conv1d*'
+      enable: false
+    - quantizer_name: '*mixer.gate*'
+      enable: false
+    # NVIDIA layout: FP8 Mamba projections.
+    - quantizer_name: '*mixer.in_proj*weight_quantizer'
+      enable: true
+      cfg:
+        $import: fp8
+    - quantizer_name: '*mixer.in_proj*input_quantizer'
+      enable: true
+      cfg:
+        $import: fp8
+    - quantizer_name: '*mixer.out_proj*weight_quantizer'
+      enable: true
+      cfg:
+        $import: fp8
+    - quantizer_name: '*mixer.out_proj*input_quantizer'
+      enable: true
+      cfg:
+        $import: fp8
+    # NVIDIA layout: lm_head NVFP4 weight-only (W4A16); lm_head.input_quantizer stays disabled.
+    - quantizer_name: 'lm_head.weight_quantizer'
+      enable: true
+      cfg:
+        $import: nvfp4_static
+    # NVIDIA layout: KV cache FP8 with calibrated scales (k and v only; q/p stay disabled).
+    - quantizer_name: '*[kv]_bmm_quantizer'
+      enable: true
+      cfg:
+        num_bits: e4m3
+    # The MTP subtree stays BF16; this rule stays last so no selector above re-enables it.
+    - quantizer_name: '*mtp*'
+      enable: false

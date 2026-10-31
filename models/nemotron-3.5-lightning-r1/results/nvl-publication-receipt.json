@@ -1,0 +1,46 @@
+{
+ "repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+ "hf_commit": "cd3ad5cdf15020be1c4839186978206bde774e54",
+ "verified_commit": "cd3ad5cdf15020be1c4839186978206bde774e54",
+ "hf_commit_note": "The public head is the clean-download-verified commit; no card-only commits since.",
+ "files": [
+  ".gitattributes",
+  "LICENSE",
+  "README.md",
+  "accuracy_plot.png",
+  "agentic_coding_benchmarks.png",
+  "bias.md",
+  "chat_template.jinja",
+  "config.json",
+  "explainability.md",
+  "generation_config.json",
+  "hf_quant_config.json",
+  "manifest.sha256",
+  "model-00001-of-00003.safetensors",
+  "model-00002-of-00003.safetensors",
+  "model-00003-of-00003.safetensors",
+  "model-input-scales.safetensors",
+  "model.safetensors.index.json",
+  "privacy.md",
+  "safety.md",
+  "special_tokens_map.json",
+  "tokenizer.json",
+  "tokenizer_config.json"
+ ],
+ "manifest_sha256_of_manifest_file": "bccf60ad8218b5c37127d77def097237b171bb7822f10f2184cff52888dfffcd",
+ "lfs_sha256_matches_local": true,
+ "clean_download_boot_smoke": {
+  "download": "empty HF cache, snapshot_download at the verified commit inside the pinned vLLM image; 21/21 manifest.sha256 entries verified, 0 mismatches; weights 20.07 GiB",
+  "serve": "vLLM v0.32.0 by digest, the card's serve flags (memory fraction raised for the 96 GB test card, FP8 KV as shipped); selected NVFP4 MoE backend FLASHINFER_CUTLASS; healthy after 230 s",
+  "requests": {
+   "thinking_on": "content '9.9 is larger than 9.11.', 934 reasoning characters, finish stop",
+   "thinking_off": "content 'Paris', no reasoning",
+   "completion_logprobs": "' Paris. The quick'; 4 token logprobs, all finite"
+  },
+  "result": "PASS"
+ },
+ "anonymous_http_non_200": [],
+ "card_read_back_identical": true,
+ "family_collection": "HangGlidersRule/darkstar-nemotron-35-lightning-30b-a3b-6a8dfe8c5ec5db63d6a031d0",
+ "darkstar_releases_collection": "not added: the family's featured product stays the Abliterated W4A16 cell"
+}

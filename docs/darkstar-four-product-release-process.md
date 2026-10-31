@@ -1,6 +1,7 @@
 # Darkstar four-product release process
 
-Contract v3 (3.0.0) supersedes the sections below where they differ: see `contracts/darkstar-release/v3/`.
+Contract v3 (3.1.0) supersedes the sections below where they differ: see `contracts/darkstar-release/v3/`. Since 3.1.0 a
+W4A4 build may carry an NVFP4 weight-only `lm_head` declared in its precision map (NVIDIA's ModelOpt layout).
 
 - **Document status:** normative
 - **Version:** 1.0.0

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "contract": "contracts/darkstar-release/v3/contract.json",
-  "contract_version": "3.0.0",
+  "contract_version": "3.1.0",
   "family": "nemotron-3.5-lightning-r1",
   "family_display": "Darkstar Nemotron-3.5-Lightning 30B-A3B",
   "source_revision": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16@d468880b6ad3c6e0d21377ce7242adaea4cc884d",
@@ -9,7 +9,8 @@
   "any_publication_claim": true,
   "rejected_historical": [],
   "related_issues": [
-    "HangGlidersRule/model-forge#17"
+    "HangGlidersRule/model-forge#17",
+    "HangGlidersRule/model-forge#25"
   ],
   "products": [
     {
@@ -626,6 +627,153 @@
         }
       ],
       "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_validation, nvfp4_tensor_scale_validation, serving_capacity_profile, clean_download_boot_smoke."
+    },
+    {
+      "product_id": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+      "role": "base-modelopt-nvfp4",
+      "task": "chat",
+      "lifecycle": "published",
+      "target_repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+      "target_repository_status": "resolved",
+      "served_model_alias": "darkstar-nemotron35lightningw4a4fp8-base-nvfp4",
+      "runtime_container_name": "vllm-darkstar-nemotron35lightningw4a4fp8-base-modelopt",
+      "model_card": "models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4-mixed-fp8.md",
+      "recipe": "recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
+      "publication_claim": true,
+      "candidates": [
+        {
+          "candidate_id": "Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+          "precision_class": "W4A4-NVFP4-Mixed-FP8",
+          "target_repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+          "selection": "selected",
+          "promotion_status": "promoted",
+          "promotion_note": "Issue 25: the W4A4 cell in NVIDIA's checkpoint layout for memory-tight GPUs; all pre-registered gates passed.",
+          "recipe": "recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "precision_map": {
+            "language_mlp": "W4A4-NVFP4-g16 (routed + shared expert up/down, 5,934 linears)",
+            "lm_head": "W4A16-NVFP4-g16",
+            "self_attention": "BF16",
+            "gdn_projections": "FP8 E4M3 (Mamba in_proj/out_proj, 46 linears); conv1d and SSM BF16",
+            "kv_cache": "FP8 E4M3 (calibrated k/v scales, 6 attention layers)",
+            "protected": "embeddings, norms, router, attention q/k/v/o, MTP head (BF16)"
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Built from nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16@d468880b (OpenMDW-1.1)",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/recon.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "verified",
+          "evidence": "Release validation lists 20 shipped files with sha256; manifest.sha256 written at upload",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Schema-2 recipe; operator recipe sha256 188e78f4...",
+          "evidence_path": "recipes/nemotron-3.5-lightning/darkstar-nemotron-3.5-lightning-30b-a3b-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Fail-closed release validation PASS: 24,421 tensors; 532 protected tensors byte-identical to BF16; configs identical outside quantization_config",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "verified",
+          "evidence": "Compared with the W4A16 build and the v1.1.0 W4A4 cell on GPQA, KL and a 32 GB serving check (pre-registered on issue 25)",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "verified",
+          "evidence": "5,934 W4A4 experts, 46 FP8 Mamba projections, 12 k/v scales; 0 NaN and 0 zero FP8 block scales",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "kv_cache_effect_measured",
+          "status": "verified",
+          "evidence": "KL vs BF16 0.0358 with FP8 KV, 0.0352 with BF16 KV (FP8 KV adds 0.0006)",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "RTX PRO 4500: single-stream decode 333.9 tok/s (1.03x the W4A16 build), prefill 1.21-1.49x",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "verified",
+          "evidence": "RTX PRO 4500 at util 0.77: KV pool 201,426 tokens; prefill at c=8 measured on ~3k and ~50k-token prompts",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "136/198 vs W4A16 136/198; delta 0, pre-registered bar -0.06: PASS",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Exact vllm serve command on the card (DSpark 3, FP8 KV, util 0.77)",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4-mixed-fp8.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Gold-standard card; every number checked by eval/check_card_numbers_nvl.py",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4-mixed-fp8.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8 @ cd3ad5cdf15020be1c4839186978206bde774e54",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4-mixed-fp8.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "verified",
+          "evidence": "Empty-cache download, every manifest entry checked, served with the card's command",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-publication-receipt.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "darkstar-nemotron-3.5-lightning-v1.2.0",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4-mixed-fp8.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "Every number on the card measured on this exact artifact",
+          "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        }
+      ]
     }
   ]
 }

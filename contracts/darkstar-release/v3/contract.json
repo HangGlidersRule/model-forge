@@ -1,6 +1,6 @@
 {
  "contract_id": "darkstar-four-product-release",
- "contract_version": "3.0.0",
+ "contract_version": "3.1.0",
  "process_document": "docs/darkstar-four-product-release-process.md",
  "ledger_schema": "contracts/darkstar-release/v3/ledger.schema.json",
  "note": "v3 extends v2. A ledger holds four to sixteen products and may publish more than one product in a role. KV-cache metadata follows the precision map, and kv_cache_effect_measured records the BF16-KV comparison when the selected candidate serves FP8 KV. task selects gpqa_matched_full_denominator for chat and quality_matched_full_denominator for embedding, rerank, and decision. Image products keep the image gates. All v1 gate ids remain (frozen-superset rule).",
@@ -94,7 +94,12 @@
    "enforcement": "Fail-closed in src/model_forge/release.py and tests/test_release_contract.py across the ledger, model cards, serve examples, recipes, and repository documentation."
   },
   "promotion_note": "modelopt_candidate_comparison and gpqa_matched_full_denominator record measurement facts about a candidate. Promotion of a candidate to the release winner is a separate, documented decision: selecting a winner requires both a completed W4A16-vs-W4A4 comparison and an explicit rationale weighing quality against throughput. For Darkstar-Qwen3.8-27B the mixed W4A16-NVFP4+FP8 base candidate was selected (promoted) over the uniform W4A4 candidate: it delivers the higher single-stream throughput while its GPQA (153/198 = 77.27%) sits within about 2.02 percentage points / 4 questions of the Base BF16 baseline (157/198 = 79.29%); the W4A4 candidate was built, measured, and rejected on throughput. Promotion is never automatic from a GPQA number alone, and a rejected candidate is never presented as the winner.",
-  "diffusion_extension": "Diffusion candidates declare architecture: 'diffusion'; DiT precision-map components (dit_blocks, protected_blocks, attention, text_encoder, vae); id vocabulary NVFP4 / FP8 / Mixed-FP8 (NVFP4+FP8 mix)."
+  "diffusion_extension": "Diffusion candidates declare architecture: 'diffusion'; DiT precision-map components (dit_blocks, protected_blocks, attention, text_encoder, vae); id vocabulary NVFP4 / FP8 / Mixed-FP8 (NVFP4+FP8 mix).",
+  "w4a4_weight_only_lm_head": {
+   "since": "3.1.0",
+   "rule": "A W4A4-named candidate may serve an NVFP4 weight-only (W4A16-NVFP4) lm_head when its precision map declares it on the lm_head component; this is NVIDIA's own ModelOpt layout, which keeps the output projection's activations in BF16. Every other served weight path of a W4A4 candidate must not be W4A16, and a weight-only lm_head in any other format is still a conflation. Ledgers declaring contract 3.0.x keep the original rule without this allowance.",
+   "enforcement": "candidate_precision_errors(candidate, contract_version=...) in src/model_forge/release.py; tests in tests/test_release_contract_v3.py."
+  }
  },
  "statuses": [
   "verified",
