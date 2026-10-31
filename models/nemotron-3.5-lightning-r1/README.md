@@ -65,9 +65,10 @@ routed-expert down-projection inputs (KL 0.0795).
 [`Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8) is the W4A4 cell in NVIDIA's checkpoint layout, for memory-tight GPUs.
 - **Same experts as v1.1.0:** expert weights and activation scales are bit-identical.
 - **NVIDIA's layout around them:** FP8 Mamba projections, an NVFP4 weight-only `lm_head` and a calibrated FP8 KV cache.
-- **On a 32 GB RTX PRO 4500** against the W4A16 build: prefill 1.21-1.49x and single-stream decode 1.03x. The v1.1.0 cell decodes
-  at 0.81x on that card.
-- **Quality:** GPQA Diamond 136/198, equal to the W4A16 build; next-token KL 0.0358 (v1.1.0: 0.0246).
+- **On a 32 GB RTX PRO 4500**, against NVIDIA's W4A16 checkpoint (`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4`) with the
+  same serve flags: prefill 1.21-1.49x and single-stream decode 0.99-1.03x. Against the same checkpoint on that card, the v1.1.0
+  cell decodes at 0.81x. The family's W4A16 build was not measured on that card.
+- **Quality:** GPQA Diamond 136/198, equal to the family's W4A16 build; next-token KL 0.0358 (v1.1.0: 0.0246).
 
 - Card: [`model-card/base-w4a4-nvfp4-mixed-fp8.md`](model-card/base-w4a4-nvfp4-mixed-fp8.md)
 - Publication receipt (clean-download smoke): [`results/nvl-publication-receipt.json`](results/nvl-publication-receipt.json)

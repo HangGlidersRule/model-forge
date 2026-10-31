@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Check every number on the Lightning W4A4 NVFP4 Mixed-FP8 card against results/nvl-gate-summary.json (fails closed).
 Each expected string is built from the summary; the card must contain it verbatim. Run from the repository root.
+The card names two different W4A16 baselines and must never conflate them: GPQA and KL compare with the family's W4A16
+build ("W4A16 build"); the 32 GB serving runs compare with NVIDIA's W4A16 checkpoint ("NVIDIA's W4A16 checkpoint").
 Usage: check_card_numbers_nvl.py [CARD]"""
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -12,7 +15,8 @@ d = json.loads((R / "nvl-gate-summary.json").read_text())
 g, k, a, s = d["gpqa"], d["kl"], d["artifact"], d["serving_rtx_pro_4500"]
 gc, nv, delta = g["cells"], g["cells"]["NVL"], g["NVL_minus_W4A16"]
 runs = s["runs"]
-r77, r75, ref, v110 = runs["nvl_0.77"], runs["nvl_0.75"], runs["reference_w4a16_0.75"], runs["v1_1_0_0.80"]
+r77, r75, ref, v110 = runs["nvl_0.77"], runs["nvl_0.75"], runs["reference_nvidia_w4a16_0.75"], runs["v1_1_0_0.80"]
+REF = "NVIDIA's W4A16 checkpoint"
 
 
 def pc(x):
@@ -28,11 +32,11 @@ def ci(v):
 
 
 expect = [
-    f"prefill runs {s['gate']['prefill_range_0.77']} the\n  family's W4A16 build",
-    f"single-stream decode runs {x2(r77['decode_vs_reference'])}",
-    f"GPQA Diamond {nv['correct']}/198, equal to the W4A16 build",
+    f"[{REF}](https://huggingface.co/{s['reference_checkpoint'].split('@')[0]}) with the same serve flags,\n"
+    f"  prefill runs {s['gate']['prefill_range_nvl']} and single-stream decode {s['gate']['decode_range_nvl']}.",
+    f"GPQA Diamond {nv['correct']}/198, equal to the family's W4A16 build",
     f"Next-token KL to BF16 is {k['NVL']['mean_kl']:.4f}.",
-    f"That cell decodes at {x2(v110['decode_vs_reference'])} the W4A16 build on the RTX PRO 4500; this one at {x2(r77['decode_vs_reference'])}",
+    f"against {REF}, that cell decodes at {x2(v110['decode_vs_reference'])}; this one at {s['gate']['decode_range_nvl']}",
     f"prefer that cell (KL {k['mse']['mean_kl']:.4f})",
     f"in all 23 MoE layers: {a['experts']:,} linears",
     f"on the {a['mamba_fp8']} Mamba `in_proj`/`out_proj` linears",
@@ -52,19 +56,33 @@ expect = [
     f"| Next-token KL vs BF16, BF16 KV | {k['NVL-bf16kv']['mean_kl']:.4f}, top-1 agreement {100 * k['NVL-bf16kv']['top1_agreement']:.2f}% | "
     f"same prompts; the FP8 KV cache adds {k['fp8_kv_effect']:.4f} |",
     f"| Next-token KL, other builds | W4A4 cell without Mixed-FP8 {k['mse']['mean_kl']:.4f}; W4A16 {k['W4A16']['mean_kl']:.4f} | same prompts |",
-    f"| KV-cache pool, memory fraction {r77['util']} | {r77['kv_pool_tokens']:,} tokens | {r77['loaded_gib']} GiB loaded; the W4A16 build: "
+    f"at revision\n  `{s['reference_checkpoint'].split('@')[1].split(' ')[0]}`, MoE on Marlin, memory fraction {ref['util']}.",
+    f"| KV-cache pool, memory fraction {r77['util']} | {r77['kv_pool_tokens']:,} tokens | {r77['loaded_gib']} GiB loaded; {REF}: "
     f"{ref['kv_pool_tokens']:,} at {ref['util']} ({ref['loaded_gib']} GiB loaded) |",
     f"| KV-cache pool, memory fraction {r75['util']} | {r75['kv_pool_tokens']:,} tokens |",
-    f"| Prefill vs the W4A16 build, fraction {r77['util']} | " + ", ".join(x2(v) for v in r77["prefill_vs_reference"]) + " |",
-    f"| Single-stream decode vs the W4A16 build | {x2(r77['decode_vs_reference'])} ({r77['decode_tok_per_s']} vs {ref['decode_tok_per_s']} tok/s) |",
+    f"| Prefill vs {REF}, fraction {r77['util']} | " + ", ".join(x2(v) for v in r77["prefill_vs_reference"]) + " |",
+    f"| Prefill vs {REF}, fraction {r75['util']} | " + ", ".join(x2(v) for v in r75["prefill_vs_reference"]) + " |",
+    f"| Single-stream decode vs {REF} | {x2(r75['decode_vs_reference'])} at {r75['util']} ({r75['decode_tok_per_s']} vs "
+    f"{ref['decode_tok_per_s']} tok/s), {x2(r77['decode_vs_reference'])} at {r77['util']} ({r77['decode_tok_per_s']} tok/s) |",
     f"| W4A4 cell without Mixed-FP8, same card at {v110['util']:.2f} | decode {x2(v110['decode_vs_reference'])}, prefill "
-    f"{min(v110['prefill_vs_reference']):.2f}-{max(v110['prefill_vs_reference']):.2f}x | same flags |",
+    f"{min(v110['prefill_vs_reference']):.2f}-{max(v110['prefill_vs_reference']):.2f}x | same flags, against its own back-to-back "
+    f"reference run of {REF} |",
     "| Tool calling, JSON-schema output | " + ", ".join("pass" if r77["checks"][c] else "fail" for c in ("tool_call", "json_schema")) + " |",
-    f"(0.0358, against {k['mse']['mean_kl']:.4f} and {k['W4A16']['mean_kl']:.4f})".replace("0.0358", f"{k['NVL']['mean_kl']:.4f}"),
+    f"({k['NVL']['mean_kl']:.4f}, against {k['mse']['mean_kl']:.4f} and {k['W4A16']['mean_kl']:.4f})",
     f"--gpu-memory-utilization {r77['util']}",
 ]
 missing = [e for e in expect if e not in card]
 for e in missing:
     print("MISSING:", e)
-print(f"{len(expect) - len(missing)}/{len(expect)} card numbers match the gate summary")
-sys.exit(1 if missing else 0)
+# Guard against the conflation the PR #30 review caught: a serving ratio must never be attributed to "the W4A16 build".
+# Scan the whole card, sentence by sentence (a ratio and its baseline can sit on different lines of one sentence).
+conflated = []
+for sentence in re.split(r"(?<=[.;|])\s+|\n\s*\n|\n-\s", card):
+    flat = " ".join(sentence.split())
+    if re.search(r"\b\d+\.\d+(?:-\d+\.\d+)?x\b", flat) and re.search(r"(?:prefill|decode)", flat, re.I) \
+            and re.search(r"the (?:family's )?W4A16 build", flat) and REF not in flat:
+        conflated.append(flat)
+for line in conflated:
+    print("CONFLATED (serving ratio against 'the W4A16 build'):", line[:200])
+print(f"{len(expect) - len(missing)}/{len(expect)} card numbers match the gate summary; {len(conflated)} conflated serving baselines")
+sys.exit(1 if missing or conflated else 0)

@@ -1,8 +1,8 @@
 {
  "repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
- "hf_commit": "cd3ad5cdf15020be1c4839186978206bde774e54",
+ "hf_commit": "f33bf407f41ddcdb2fe1d35d973e90eaed8a93ce",
  "verified_commit": "cd3ad5cdf15020be1c4839186978206bde774e54",
- "hf_commit_note": "The public head is the clean-download-verified commit; no card-only commits since.",
+ "hf_commit_note": "The clean-download smoke ran on cd3ad5cd (the uploaded weights). f33bf407 is a card-only commit after review: it changes README.md and its manifest.sha256 line; every LFS object is unchanged.",
  "files": [
   ".gitattributes",
   "LICENSE",

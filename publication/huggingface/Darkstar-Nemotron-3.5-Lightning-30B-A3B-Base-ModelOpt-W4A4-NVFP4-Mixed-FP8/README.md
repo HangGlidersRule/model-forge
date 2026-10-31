@@ -26,15 +26,16 @@ Unedited NVIDIA ModelOpt quantization of
 at revision `d468880b6ad3c6e0d21377ce7242adaea4cc884d`, built from the upstream BF16 weights. No behavior edit was applied.
 
 **What it is for.** The family's W4A4 cell, in NVIDIA's checkpoint layout, for GPUs where memory is tight.
-- **Speed:** the MoE experts run real FP4 math (W4A4) on Blackwell GPUs. On a 32 GB RTX PRO 4500, prefill runs 1.21-1.49x the
-  family's W4A16 build with the same serve flags, and single-stream decode runs 1.03x.
-- **Quality:** GPQA Diamond 136/198, equal to the W4A16 build. Next-token KL to BF16 is 0.0358.
+- **Speed:** the MoE experts run real FP4 math (W4A4) on Blackwell GPUs. On a 32 GB RTX PRO 4500, against
+  [NVIDIA's W4A16 checkpoint](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4) with the same serve flags,
+  prefill runs 1.21-1.49x and single-stream decode 0.99-1.03x.
+- **Quality:** GPQA Diamond 136/198, equal to the family's W4A16 build. Next-token KL to BF16 is 0.0358.
 
 **How it differs from the
 [W4A4 cell without Mixed-FP8](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4).**
 - **Same experts:** the expert weights and activation scales are bit-identical.
 - **Smaller around them:** the Mamba projections, `lm_head` and KV cache use NVIDIA's layout, so every decode step reads less memory.
-  - That cell decodes at 0.81x the W4A16 build on the RTX PRO 4500; this one at 1.03x.
+  - On the RTX PRO 4500, against NVIDIA's W4A16 checkpoint, that cell decodes at 0.81x; this one at 0.99-1.03x.
   - This one fits the same 131,072-token window on that card at a lower memory fraction.
 - **Choose by hardware:** on a 96 GB card, prefer that cell (KL 0.0246); on a 32 GB card, this one.
 
@@ -69,7 +70,8 @@ at revision `d468880b6ad3c6e0d21377ce7242adaea4cc884d`, built from the upstream 
 
 **Quality setup.** One RTX PRO 6000 Blackwell (SM120), stock vLLM `v0.32.0` and the same serve flags for every cell. The baselines:
 - the upstream BF16 checkpoint, run twice for the noise floor;
-- the family's [W4A16 build](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4).
+- the family's [W4A16 build](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4)
+  ("W4A16 build" below), run in the same evaluation window.
 
 GPQA Diamond: `llm-inference-bench` `gpqa-diamond`, all 198 items, thinking on, temperature 0, max 65,536 tokens,
 `--reasoning-parser nemotron_v3`. Unparseable and truncated items count as wrong. Confidence intervals come from a paired bootstrap
@@ -87,16 +89,22 @@ GPQA Diamond: `llm-inference-bench` `gpqa-diamond`, all 198 items, thinking on, 
 
 **Serving setup.** One 32 GB RTX PRO 4500 (SM120), sharing the card with a small speech model as in the deployment it was tested
 for. Every run uses vLLM `v0.32.0` with the same flags: DSpark drafter (3 speculative tokens), FP8 KV cache, a 131,072-token window
-and 16 sequences. The reference is the family's W4A16 build at memory fraction 0.75. Prefill runs use one output token and a unique
-prefix per request.
+and 16 sequences.
+- **Reference:** [NVIDIA's W4A16 checkpoint](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4) at revision
+  `bee7596271d1495f6992ae224aefde4410e816b8`, MoE on Marlin, memory fraction 0.75. It shares this checkpoint's layout outside the
+  experts. The family's W4A16 build keeps its Mamba projections and `lm_head` in BF16 and was not measured on this card.
+- **Pairing:** each candidate run is paired with a reference run on the same card. The 0.75 run and its reference ran back to back;
+  the 0.77 run followed on the same card and is compared with that same reference.
+- **Prefill runs** use one output token and a unique prefix per request.
 
 | Serving metric | Value | Basis |
 |---|---|---|
-| KV-cache pool, memory fraction 0.77 | 201,426 tokens | 19.82 GiB loaded; the W4A16 build: 179,260 at 0.75 (19.37 GiB loaded) |
+| KV-cache pool, memory fraction 0.77 | 201,426 tokens | 19.82 GiB loaded; NVIDIA's W4A16 checkpoint: 179,260 at 0.75 (19.37 GiB loaded) |
 | KV-cache pool, memory fraction 0.75 | 151,311 tokens | below one full 131,072-token request plus headroom; use 0.77 or more on a 32 GB card |
-| Prefill vs the W4A16 build, fraction 0.77 | 1.21x, 1.42x, 1.44x, 1.49x | ~3k-token prompts at c=1 and c=8, then ~50k-token prompts at c=1 and c=8 |
-| Single-stream decode vs the W4A16 build | 1.03x (333.9 vs 325.0 tok/s) | median of three 512-token answers, thinking off |
-| W4A4 cell without Mixed-FP8, same card at 0.80 | decode 0.81x, prefill 1.38-1.57x | same flags |
+| Prefill vs NVIDIA's W4A16 checkpoint, fraction 0.77 | 1.21x, 1.42x, 1.44x, 1.49x | ~3k-token prompts at c=1 and c=8, then ~50k-token prompts at c=1 and c=8 |
+| Prefill vs NVIDIA's W4A16 checkpoint, fraction 0.75 | 1.21x, 1.37x, 1.44x, 1.45x | same prompts, back to back with the reference |
+| Single-stream decode vs NVIDIA's W4A16 checkpoint | 0.99x at 0.75 (321.3 vs 325.0 tok/s), 1.03x at 0.77 (333.9 tok/s) | median of three 512-token answers, thinking off |
+| W4A4 cell without Mixed-FP8, same card at 0.80 | decode 0.81x, prefill 1.38-1.56x | same flags, against its own back-to-back reference run of NVIDIA's W4A16 checkpoint |
 | Tool calling, JSON-schema output | pass, pass | one request each |
 
 Missing cells are marked `not measured` and are never backfilled from a different checkpoint or protocol.
@@ -105,12 +113,12 @@ Missing cells are marked `not measured` and are never backfilled from a differen
 
 This is an unedited base quantization. No behavior edit was applied; refusal behavior is the upstream model's.
 - **Quality cost.** Next-token KL to BF16 is higher than either sibling cell's (0.0358, against 0.0246 and 0.0189); GPQA matches the
-  W4A16 build. Prefer the W4A16 build where answer quality matters more than speed.
+  family's W4A16 build. Prefer that build where answer quality matters more than speed.
 - **Static activation scales.** One scale per projection input covers all 128 routed experts. Inputs far outside the calibration text
   (other languages, unusual formats) may degrade more than the measured average.
 - **Hardware.** On GPUs without FP4 tensor cores, vLLM falls back to weight-only kernels and the speed gain does not apply.
-- **Toolchain.** Built with a ModelOpt release candidate (`0.48.0rc1`), the newest ModelOpt build at release time; `0.47.0` was the
-  newest stable release.
+- **Toolchain.** Built with a ModelOpt release candidate (`0.48.0rc1`), the newest ModelOpt build when this campaign pinned it;
+  `0.48.0rc2` was tagged later and is not used. `0.47.0` is the newest stable release.
 
 ## Release reference
 

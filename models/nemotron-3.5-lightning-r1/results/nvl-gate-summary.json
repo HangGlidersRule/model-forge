@@ -58,6 +58,7 @@
    "band_questions": 11.9
   },
   "frozen_bar": -0.06,
+  "W4A16_is": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4@3699203aec2f66e8af418855f2232f45f10691a4 (the family's W4A16 build, issue-17 eval window)",
   "NVL_minus_W4A16": {
    "questions": 0,
    "diff": 0.0,
@@ -96,7 +97,8 @@
    "mean_kl": 0.0189,
    "top1_agreement": 0.9503
   },
-  "fp8_kv_effect": 0.0006
+  "fp8_kv_effect": 0.0006,
+  "W4A16_is": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4@3699203aec2f66e8af418855f2232f45f10691a4 (the family's W4A16 build, issue-17 eval window)"
  },
  "artifact": {
   "verdict": "PASS",
@@ -147,9 +149,11 @@
  },
  "serving_rtx_pro_4500": {
   "gpu": "RTX PRO 4500 (32 GB)",
+  "reference_checkpoint": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4@bee7596271d1495f6992ae224aefde4410e816b8 (MoE on Marlin)",
   "runs": {
-   "reference_w4a16_0.75": {
+   "reference_nvidia_w4a16_0.75": {
     "util": 0.75,
+    "note": "issue-25 round 3: the reference, NVIDIA's W4A16 checkpoint (MoE on Marlin)",
     "loaded_gib": 19.37,
     "kv_pool_tokens": 179260,
     "prefill": {
@@ -173,6 +177,7 @@
    },
    "nvl_0.75": {
     "util": 0.75,
+    "note": "issue-25 round 3, same run as the reference",
     "loaded_gib": 19.82,
     "kv_pool_tokens": 151311,
     "prefill": {
@@ -196,6 +201,7 @@
    },
    "nvl_0.77": {
     "util": 0.77,
+    "note": "issue-25 round 4, the next run on the same card, judged against round 3's reference",
     "loaded_gib": 19.82,
     "kv_pool_tokens": 201426,
     "prefill": {
@@ -217,8 +223,33 @@
      "json_schema": true
     }
    },
+   "reference_nvidia_w4a16_round1_0.75": {
+    "util": 0.75,
+    "note": "issue-25 round 1: the same reference checkpoint, measured again",
+    "loaded_gib": 19.37,
+    "kv_pool_tokens": 179260,
+    "prefill": {
+     "3k_c1": 12273,
+     "3k_c8": 14757,
+     "50k_c1": 12011,
+     "50k_c8": 12196
+    },
+    "prefill_vs_reference": [
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "decode_tok_per_s": 325.6,
+    "decode_vs_reference": 1.0,
+    "checks": {
+     "tool_call": true,
+     "json_schema": true
+    }
+   },
    "v1_1_0_0.80": {
     "util": 0.8,
+    "note": "issue-25 round 1, judged against that round's own reference",
     "loaded_gib": 21.11,
     "kv_pool_tokens": 182151,
     "prefill": {
@@ -228,8 +259,8 @@
      "50k_c8": 16971
     },
     "prefill_vs_reference": [
-     1.49,
-     1.57,
+     1.43,
+     1.56,
      1.38,
      1.39
     ],
@@ -244,7 +275,9 @@
   "gate": {
    "rule": "KV pool >= 179,260 tokens at util <= 0.80; tool-call and json_schema pass; prefill >= 1.20x in every cell; decode >= 0.90x",
    "verdict": "PASS",
-   "prefill_range_0.77": "1.21-1.49x"
+   "prefill_range_0.77": "1.21-1.49x",
+   "prefill_range_nvl": "1.21-1.49x",
+   "decode_range_nvl": "0.99-1.03x"
   }
  }
 }

@@ -7,7 +7,7 @@ and KL position arrays stay out of the public record: only aggregates are writte
 Usage: build_nvl_summary.py RAW_DIR OUT_DIR
   RAW_DIR: gpqa-{BF16,BF16-replica,W4A16,mse,NVL}.json, kl-{BF16,W4A16,mse,NVL,NVL-bf16kv}.json,
            nvl-release-validation.json, shard-bytes.json (byte size of each shipped safetensors file),
-           ab-{cur3,nvl,nvl4,new2}.json (RTX PRO 4500 serving runs),
+           ab-{cur,cur3,nvl,nvl4,new2}.json (RTX PRO 4500 serving runs),
            serve-boot-facts.txt (loaded size and KV pool per serving run, from the engine logs)"""
 import json
 import math
@@ -44,8 +44,10 @@ def boot(a, b, seed=1234, reps=10000):
 
 disc = sum(ok("BF16", i) != ok("BF16-replica", i) for i in ids)
 band = 1.96 * math.sqrt(disc / n / n)
+FAMILY_W4A16 = ("HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A16-NVFP4"
+                "@3699203aec2f66e8af418855f2232f45f10691a4 (the family's W4A16 build, issue-17 eval window)")
 gpqa = {"items": n, "cells": {}, "noise": {"bf16_discordant_items": disc, "band": round(band, 4), "band_questions": round(band * n, 1)},
-        "frozen_bar": -0.060}
+        "frozen_bar": -0.060, "W4A16_is": FAMILY_W4A16}
 for c in CELLS:
     a = gp[c]["accuracy"]
     no_response = sorted(i for i in ids if rows[c][i].get("ok") is False)
@@ -78,8 +80,9 @@ def kl(ref, cand):
     return {"positions": m, "mean_kl": round(s / m, 4), "top1_agreement": round(agree / m, 4)}
 
 
-klres = {c: kl("kl-BF16.json", f"kl-{c}.json") for c in ("NVL", "NVL-bf16kv", "mse", "W4A16")}
+klres: dict = {c: kl("kl-BF16.json", f"kl-{c}.json") for c in ("NVL", "NVL-bf16kv", "mse", "W4A16")}
 klres["fp8_kv_effect"] = round(klres["NVL"]["mean_kl"] - klres["NVL-bf16kv"]["mean_kl"], 4)
+klres["W4A16_is"] = FAMILY_W4A16
 
 # ---------- artifact ----------
 val = load("nvl-release-validation.json")
@@ -102,24 +105,36 @@ for line in (raw / "serve-boot-facts.txt").read_text().splitlines():
         raise SystemExit(f"serve-boot-facts.txt: unparseable line {line!r}")
     boot_facts[name.removeprefix("serve-").removesuffix(".log")] = {
         "loaded_gib": float(gib.group(1)), "kv_pool_tokens": int(tokens.group(1).replace(",", ""))}
-runs = {"reference_w4a16_0.75": ("cur3", 0.75), "nvl_0.75": ("nvl", 0.75), "nvl_0.77": ("nvl4", 0.77), "v1_1_0_0.80": ("new2", 0.80)}
-serving = {"gpu": "RTX PRO 4500 (32 GB)", "runs": {}}
+REF_CKPT = "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4@bee7596271d1495f6992ae224aefde4410e816b8"
+# label: (run file, util, reference run file, note). Every ratio is against a reference measured in the same session or,
+# for nvl_0.77, in the run immediately before on the same card.
+runs = {
+    "reference_nvidia_w4a16_0.75": ("cur3", 0.75, "cur3", "issue-25 round 3: the reference, NVIDIA's W4A16 checkpoint (MoE on Marlin)"),
+    "nvl_0.75": ("nvl", 0.75, "cur3", "issue-25 round 3, same run as the reference"),
+    "nvl_0.77": ("nvl4", 0.77, "cur3", "issue-25 round 4, the next run on the same card, judged against round 3's reference"),
+    "reference_nvidia_w4a16_round1_0.75": ("cur", 0.75, "cur", "issue-25 round 1: the same reference checkpoint, measured again"),
+    "v1_1_0_0.80": ("new2", 0.80, "cur", "issue-25 round 1, judged against that round's own reference"),
+}
+serving = {"gpu": "RTX PRO 4500 (32 GB)", "reference_checkpoint": REF_CKPT + " (MoE on Marlin)", "runs": {}}
 keys = ["3k_c1", "3k_c8", "50k_c1", "50k_c8"]
-ref = load("ab-cur3.json")
-for label, (f, util) in runs.items():
-    d = load(f"ab-{f}.json")
+for label, (f, util, rf, note) in runs.items():
+    d, ref = load(f"ab-{f}.json"), load(f"ab-{rf}.json")
     serving["runs"][label] = {
-        "util": util, **boot_facts[f],
+        "util": util, "note": note, **boot_facts[f],
         "prefill": {k: d["prefill"][k]["prefill_tok_per_s_aggregate"] for k in keys},
         "prefill_vs_reference": [round(d["prefill"][k]["prefill_tok_per_s_aggregate"] / ref["prefill"][k]["prefill_tok_per_s_aggregate"], 2) for k in keys],
         "decode_tok_per_s": d["decode"]["single_stream_tok_per_s_median"],
         "decode_vs_reference": round(d["decode"]["single_stream_tok_per_s_median"] / ref["decode"]["single_stream_tok_per_s_median"], 2),
         "checks": d["checks"]}
-s77 = serving["runs"]["nvl_0.77"]
+s75, s77 = serving["runs"]["nvl_0.75"], serving["runs"]["nvl_0.77"]
+both = s75["prefill_vs_reference"] + s77["prefill_vs_reference"]
+dec = [s75["decode_vs_reference"], s77["decode_vs_reference"]]
 serving["gate"] = {"rule": "KV pool >= 179,260 tokens at util <= 0.80; tool-call and json_schema pass; prefill >= 1.20x in every cell; decode >= 0.90x",
                    "verdict": "PASS" if (s77["kv_pool_tokens"] >= 179260 and all(s77["checks"].values())
                                          and min(s77["prefill_vs_reference"]) >= 1.20 and s77["decode_vs_reference"] >= 0.90) else "FAIL",
-                   "prefill_range_0.77": f"{min(s77['prefill_vs_reference']):.2f}-{max(s77['prefill_vs_reference']):.2f}x"}
+                   "prefill_range_0.77": f"{min(s77['prefill_vs_reference']):.2f}-{max(s77['prefill_vs_reference']):.2f}x",
+                   "prefill_range_nvl": f"{min(both):.2f}-{max(both):.2f}x",
+                   "decode_range_nvl": f"{min(dec):.2f}-{max(dec):.2f}x"}
 
 summary = {"issue": "HangGlidersRule/model-forge#25",
            "product": "HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",

@@ -692,7 +692,7 @@
         {
           "id": "modelopt_candidate_comparison",
           "status": "verified",
-          "evidence": "Compared with the W4A16 build and the v1.1.0 W4A4 cell on GPQA, KL and a 32 GB serving check (pre-registered on issue 25)",
+          "evidence": "Compared with the family's W4A16 build and the v1.1.0 W4A4 cell on GPQA and KL, and with NVIDIA's W4A16 checkpoint on a 32 GB serving check (pre-registered on issue 25)",
           "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
           "next_missing_proof": "none - gate satisfied"
         },
@@ -713,7 +713,7 @@
         {
           "id": "performance_profile",
           "status": "verified",
-          "evidence": "RTX PRO 4500: single-stream decode 333.9 tok/s (1.03x the W4A16 build), prefill 1.21-1.49x",
+          "evidence": "RTX PRO 4500: single-stream decode 333.9 tok/s (1.03x NVIDIA's W4A16 checkpoint), prefill 1.21-1.49x the same checkpoint",
           "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
           "next_missing_proof": "none - gate satisfied"
         },
@@ -727,7 +727,7 @@
         {
           "id": "gpqa_matched_full_denominator",
           "status": "verified",
-          "evidence": "136/198 vs W4A16 136/198; delta 0, pre-registered bar -0.06: PASS",
+          "evidence": "136/198 vs the family's W4A16 build 136/198; delta 0, pre-registered bar -0.06: PASS",
           "evidence_path": "models/nemotron-3.5-lightning-r1/results/nvl-gate-summary.json",
           "next_missing_proof": "none - gate satisfied"
         },
@@ -748,7 +748,7 @@
         {
           "id": "publication_targets_hf_ghcr",
           "status": "verified",
-          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8 @ cd3ad5cdf15020be1c4839186978206bde774e54",
+          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8 @ f33bf407f41ddcdb2fe1d35d973e90eaed8a93ce",
           "evidence_path": "models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4-mixed-fp8.md",
           "next_missing_proof": "none - gate satisfied"
         },
