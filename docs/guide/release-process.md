@@ -49,14 +49,15 @@ Build it with a committed, deterministic script (`models/<family>/calibration/`)
 
 ## 4. Builds
 
-Builds run NVIDIA ModelOpt at a pinned commit inside a pinned container image (`configs/modelopt/pin.json`; the
-current campaigns use `0.48.0rc1` at `ff2450c`, the newest build at the time, and record the release-candidate caveat
-on the cards).
+Builds run NVIDIA ModelOpt at a pinned commit inside a pinned container image. Each pin is a file under
+`configs/modelopt/`: `pin.json` (`0.46.0rc2`) still governs the earlier families and their shipped artifacts, and the
+current campaigns use `pins/modelopt-0.48.0rc1.json` (`0.48.0rc1` at `ff2450c`, the newest build at the time), with the
+release-candidate caveat recorded on their cards.
 
 - **Recipes are YAML** (`configs/modelopt/recipes/<family>/…`), loaded with `hf_ptq.py --recipe`. Rules apply in order,
   so put exclusions after the enables they override, and keep the MTP-disable rule last.
-- **Smoke first:** a 16-sample build plus a boot and one request catches layout and loader problems in ~10 minutes
-  before a multi-hour calibration.
+- **Smoke first:** a 16-sample build plus a boot and one request catches layout and loader problems before a
+  multi-hour calibration.
 - **Dry-run the recipe on the meta device** (no weights, CPU only) and count which quantizers it enables: it catches a
   wrong glob before any GPU time is spent.
 - **Typical layouts:**

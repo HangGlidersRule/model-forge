@@ -5,7 +5,7 @@ Each entry is something that cost real time once, and the rule it produced.
 ## Method
 
 - **Chat-template the abliteration prompts.** Raw-text prompts gave a weak, wrong refusal direction.
-- **Pick the abliteration layer by generation, not by norm.** The strongest-looking layer on Lightning left 43/200
+- **Pick the abliteration layer by generation test, not by assumption.** Taking Lightning's last layer left 43/200
   refusals; the generation-tested layer left none.
 - **Don't add readout targets to the edit.** Projecting `lm_head` and norms as well changed nothing behaviorally.
 - **When every projection variant collapses quality, stop projecting.** Nano-Omni needed LoRA unlearning; nine
@@ -21,14 +21,18 @@ Each entry is something that cost real time once, and the rule it produced.
 
 - **A smoke test must be a smoke test.** A "2-question" GPQA preflight that pointed at the full dataset ran all 198
   questions against a production server. Use a separate truncated copy of the dataset.
-- **Normalize text before judging refusals.** Curly apostrophes turned 147 refusals into "compliant".
-- **Record failed requests.** Four connection timeouts in a GPQA run count as wrong under the full-denominator rule;
-  the write-up must say so and report the delta on the answered items too.
+- **Normalize text before judging refusals.** Curly apostrophes once turned a batch of refusals into "compliant"
+  ([campaign boundaries](../campaign-boundaries.md)).
+- **Record failed requests.** Four requests that never connected in the Lightning W4A4 GPQA run
+  ([card](../../models/nemotron-3.5-lightning-r1/model-card/base-w4a4-nvfp4.md),
+  [gate summary](../../models/nemotron-3.5-lightning-r1/results/w4a4-gate-summary.json)) count as wrong under the
+  full-denominator rule; the write-up must say so and report the delta on the answered items too.
 - **Speed claims depend on the serving configuration.** A production engine tuned for decode (chunked prefill sharing
   the GPU with live traffic) is not a like-for-like comparison with a dedicated test serve.
 - **Hardware changes the answer.** A W4A4 build that was faster everywhere on a 96 GB card lost single-stream decode on
-  a 32 GB card (0.81x), because its BF16 Mamba projections and `lm_head` add memory reads to every step. Size and speed
-  both depend on the full checkpoint layout, not just the quantized experts.
+  a 32 GB card (0.81x; recorded in [issue #25](https://github.com/HangGlidersRule/model-forge/issues/25)). The likely
+  cause, which that issue tests, is that its BF16 Mamba projections and `lm_head` add memory reads to every step. Size
+  and speed both depend on the full checkpoint layout, not just the quantized experts.
 
 ## Tooling
 
@@ -44,8 +48,8 @@ Each entry is something that cost real time once, and the rule it produced.
 
 ## Publication
 
-- **Check card numbers by script.** A card-number checker caught figures typed from memory on two releases, and a
-  shard count that was wrong on a third.
+- **Check card numbers by script.** The card-number checker has caught figures typed from memory and a wrong shard
+  count before upload.
 - **Secret scanners read history.** A results file that listed `tokenizer.json` next to its sha256 tripped gitleaks'
   generic API-key rule; fixing the file was not enough, because the scan covers every commit since the last export. Keep
   per-file hashes in the published manifest, not in evidence JSON, and squash before exporting if needed.

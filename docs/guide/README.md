@@ -6,8 +6,8 @@ recipe and evaluation evidence. This guide collects how that work is done, in on
 
 The release contract ([`../darkstar-four-product-release-process.md`](../darkstar-four-product-release-process.md))
 and its machine-readable schema stay normative: where this guide summarizes a rule, the contract wins on any
-disagreement. Every number quoted here comes from a committed results file or model card; follow the links for the
-evidence.
+disagreement. Every number quoted here links to where it was recorded: a committed results file or model card, or the
+public issue that recorded the measurement.
 
 ## Who this is for
 

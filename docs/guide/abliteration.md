@@ -60,8 +60,8 @@ Script templates: `measure_qwen38_refusal_direction.py`, `measure_lightning_refu
    (`mask_massive_activations`).
 4. **Choose the layer by generation, not by norm.** Take the ~12 candidate layers with the largest direction norms,
    ablate each one with inference-time hooks on a handful of held-out harmful prompts (8 for Lightning), count
-   refusals, and keep the layer with the fewest. The norm alone picks wrong layers: on Lightning the last layer looked
-   strongest and scored 43/200 refusals downstream; layer 34 won the generation test at 0/8.
+   refusals, and keep the layer with the fewest. Assuming a layer instead goes wrong: on Lightning, taking the last
+   layer (51) left 43/200 refusals downstream, while layer 34 won the generation test at 0/8.
 5. **Save** `direction.safetensors` plus a `metrics.json` with the chosen layer, seed, raw difference norm and every
    candidate's score.
 
@@ -109,7 +109,7 @@ evidence table.
   `"as an ai"`, …), not bare phrases: a bare `"i'm sorry"` or `"i can't"` flags empathetic or restated answers as
   refusals.
 - **Normalize before matching:** NFKC plus smart-quote folding. Models emit curly apostrophes; a raw substring check
-  once scored 147 refusals as compliant.
+  once scored a batch of refusals as compliant ([campaign boundaries](../campaign-boundaries.md), section 3).
 - **Fresh per artifact:** the BF16 result does not verify the NVFP4 build, and vice versa.
 
 ### Intelligence gate
