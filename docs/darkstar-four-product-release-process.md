@@ -1,5 +1,7 @@
 # Darkstar four-product release process
 
+Contract v3 (3.0.0) supersedes the sections below where they differ: see `contracts/darkstar-release/v3/`.
+
 - **Document status:** normative
 - **Version:** 1.0.0
 - **Machine-readable contract:** [`contracts/darkstar-release/v1/contract.json`](../contracts/darkstar-release/v1/contract.json)
@@ -19,7 +21,7 @@ them into an orphan document.
 
 ## 1. Canonical products
 
-Every family has exactly four first-class products. No more, no fewer:
+Every family has four canonical roles; a family may publish more than one product in a role:
 
 | Role | Canonical product id | Notes |
 |---|---|---|
@@ -134,7 +136,10 @@ the gate is applicable to; on every other role the gate is `not_applicable`.
    W4A4/mixed** candidate comparison with the winning recipe recorded.
 7. **nvfp4_tensor_scale_validation** (ModelOpt NVFP4 only) — validate tensor and scale integrity (no
    empty/zero/NaN/Inf scales), no quantized vision, BF16 MTP preserved, no mixed precision inside fused
-   groups (fused q/k/v, gate/up, linear-attn qkv+z, a+b), no FP8 KV metadata.
+   groups (fused q/k/v, gate/up, linear-attn qkv+z, a+b), no FP8 KV metadata. *Contract v3:* KV-cache metadata
+   matches the precision map's `kv_cache` entry; calibrated FP8 KV scales are allowed when they are finite and
+   positive, one per attention layer, and the new gate **kv_cache_effect_measured** records quality with the shipped
+   KV setting and with BF16 KV.
 8. **performance_profile** (all) — an **independent**, warmup-aware single-stream throughput profile
    measured on this exact product. Never inherited from another artifact.
 9. **serving_capacity_profile** (all) — an **independent** serving/concurrency/capacity profile, kept
@@ -176,7 +181,7 @@ architecture is below; each family overrides as needed in its record.
 | max-num-seqs | applicable | Capacity knob, separate from single-stream |
 | Served model length | applicable | Context length pinned per product |
 | GMU (GPU memory utilization) | applicable | Recorded per serve profile |
-| KV dtype | applicable | BF16 during recipe attribution; no implicit FP8 KV metadata |
+| KV dtype | applicable | BF16 during recipe attribution; no implicit FP8 KV metadata (v3: explicit, measured FP8 KV allowed) |
 | Concurrency / capacity | applicable | Serving profile only; never mixed with single-stream TGen |
 | Recurrent cache mode (SSM/GatedDeltaNet) | applicable | Hybrid architecture requires an explicit mode |
 
@@ -184,6 +189,13 @@ Cold JIT/autotune/compile results are quarantined from steady-state scores. A pr
 pass a clean-restart reproduction before it is recorded as `verified`.
 
 ## 5. Frozen GPQA semantics
+
+> **Scope.** This section is the frozen legacy protocol of the in-repo harness, kept so the Qwen3.8-27B results stay
+> comparable. New GPQA claims use the accepted protocol in [`gpqa-abliteration-protocol.md`](gpqa-abliteration-protocol.md)
+> section 1 (llm-inference-bench `gpqa-diamond`: chat template, thinking on, temperature 0, full denominator). Under
+> contract v3 the GPQA gate applies to chat models only; embedding, rerank and decision models carry the family quality
+> gate `quality_matched_full_denominator` instead. Every rule below about the full denominator, recorded hashes and
+> never backfilling a missing cell applies to both protocols.
 
 GPQA Diamond is frozen. Any deviation is a different protocol and cannot fill a matched cell. The
 in-repo harness is `src/model_forge/gpqa/`; the family protocol note is
@@ -212,8 +224,10 @@ reproductions as Artificial Analysis measurements.
 
 ## 6. Quantization requirements (ModelOpt NVFP4 products)
 
-- Publication NVFP4 uses **pinned NVIDIA ModelOpt** (see [`../models/qwen3.8-27b-r3/modelopt/README.md`](../models/qwen3.8-27b-r3/modelopt/README.md)
-  and [`../configs/modelopt/pin.json`](../configs/modelopt/pin.json)). Prior llm-compressor
+- Publication NVFP4 uses **pinned NVIDIA ModelOpt**: [`../configs/modelopt/pin.json`](../configs/modelopt/pin.json)
+  (`0.46.0rc2`) for the earlier families and their shipped artifacts, and a per-campaign pin file under
+  [`../configs/modelopt/pins/`](../configs/modelopt/pins/) for later campaigns (see
+  [`../models/qwen3.8-27b-r3/modelopt/README.md`](../models/qwen3.8-27b-r3/modelopt/README.md)). Prior llm-compressor
   compressed-tensors NVFP4 artifacts are `rejected_historical`.
 - Compare **W4A16 vs W4A4/mixed** candidates; record the winning recipe and its evidence. Each
   candidate is named for its explicit precision class and carries a complete precision map (Section 1).

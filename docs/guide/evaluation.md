@@ -57,6 +57,15 @@ A cheap, sensitive quality probe for quantized builds (`kl_probe.py` in a family
 | Decision / scoring model | Non-inferiority against the current deployment on its own test set: KL to the teacher, choice top-1, AUROC, score error, with the noise floor from a repeated reference run | JEV-27B (`models/jev-27b/eval/gate_noninferiority.py`) |
 | Chat model | GPQA Diamond plus KL; behavior gate for abliterated products | Lightning, Qwen3.8-27B |
 
+Under contract v3 each product declares its `task`. Chat models carry the GPQA gate; embedding, rerank and decision
+models carry `quality_matched_full_denominator` with the metric and protocol named in the ledger.
+
+### KV cache
+
+Serve and measure with BF16 KV unless the checkpoint ships calibrated FP8 KV scales (NVIDIA's own layout). A checkpoint
+with FP8 KV metadata records its quality twice, with the shipped KV setting and with BF16 KV (gate
+`kv_cache_effect_measured`), and the card states both.
+
 ## Speed
 
 - **Prefill:** aggregate prompt tokens per second and median time to first token at ~3k and ~50k-token prompts,

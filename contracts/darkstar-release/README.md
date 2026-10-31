@@ -8,8 +8,13 @@ It is the schema/checklist backing the normative process document
 
 - [`v1/contract.json`](v1/contract.json) — canonical product roles, the frozen gate set, valid
   statuses, and the publication rule (version `1.0.0`).
-- [`v1/ledger.schema.json`](v1/ledger.schema.json) — JSON Schema (draft 2020-12) that every
-  per-family publication-readiness ledger must validate against.
+- [`v1/ledger.schema.json`](v1/ledger.schema.json) — JSON Schema (draft 2020-12) for contract 1.x
+  ledgers.
+- [`v2/contract.json`](v2/contract.json) — image/diffusion extension (version `2.0.0`).
+- [`v2/ledger.schema.json`](v2/ledger.schema.json) — JSON Schema for contract 2.x ledgers.
+- [`v3/contract.json`](v3/contract.json) — several products per role, KV-cache effect, and the
+  task-scoped quality gate (version `3.0.0`).
+- [`v3/ledger.schema.json`](v3/ledger.schema.json) — JSON Schema for contract 3.x ledgers.
 
 ## How it is used
 
@@ -39,6 +44,8 @@ Current ledger: [`models/qwen3.8-27b-r3/results/publication-readiness-ledger.jso
 
 ## Versioning
 
-The contract and schema are versioned by directory (`v1/`). Gates may be **added** or **strengthened**
-in a new version; they may not be removed or weakened. CI freezes the required gate set and the
-publication rule to prevent silent weakening.
+The contract and schema are versioned by directory (`v1/`, `v2/`, `v3/`). `validate_ledger` in
+[`src/model_forge/release.py`](../../src/model_forge/release.py) dispatches on the ledger's
+`contract_version`: 1.x loads `v1/`, 2.x loads `v2/`, and 3.x loads `v3/`. Gates may be **added** or
+**strengthened** in a new version; they may not be removed or weakened. CI freezes the required gate
+set and the publication rule to prevent silent weakening.

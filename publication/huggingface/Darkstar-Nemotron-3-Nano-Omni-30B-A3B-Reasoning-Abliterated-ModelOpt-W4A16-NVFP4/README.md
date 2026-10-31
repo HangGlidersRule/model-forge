@@ -84,7 +84,7 @@ Attention, BF16 KV cache, context 131,072, `max_num_seqs=16`:
 
 ```bash
 vllm serve HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4 \
-  --served-model-name nano-omni-ablit-nvfp4 \
+  --served-model-name darkstar-nemotron3nanoomni-abliterated-nvfp4 \
   --trust-remote-code \
   --kv-cache-dtype bfloat16 \
   --max-model-len 131072 \

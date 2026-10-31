@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
-  "contract": "contracts/darkstar-release/v2/contract.json",
-  "contract_version": "2.0.0",
+  "contract": "contracts/darkstar-release/v3/contract.json",
+  "contract_version": "3.0.0",
   "family": "qwen3-reranker-4b",
   "family_display": "Darkstar Qwen3-Reranker-4B",
   "source_revision": "Qwen/Qwen3-Reranker-4B@22e683669bc0f0bd69640a1354a6d0aebcfeede5",
@@ -21,10 +21,31 @@
       "recipe": null,
       "publication_claim": false,
       "gates": [
-        {"id": "provenance_ownership", "status": "verified", "evidence": "Source pinned to Qwen/Qwen3-Reranker-4B@22e683669bc0f0bd69640a1354a6d0aebcfeede5 (Apache-2.0); shard sha256 verified on download", "evidence_path": "models/qwen3-reranker-4b/recon.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "performance_profile", "status": "verified", "evidence": "BF16 control 42.2 pairs/s at c=1, 45.9 at c=8 (64 pairs/request, ~1k-token pairs, median of 3)", "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "gpqa_matched_full_denominator", "status": "verified", "evidence": "Reranker family: matched full-denominator MTEB Nano gate replaces GPQA; BF16 control macro nDCG@10 0.7118, 8970/8970 pairs scored", "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json", "next_missing_proof": "none - gate satisfied"}
-      ]
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Source pinned to Qwen/Qwen3-Reranker-4B@22e683669bc0f0bd69640a1354a6d0aebcfeede5 (Apache-2.0); shard sha256 verified on download",
+          "evidence_path": "models/qwen3-reranker-4b/recon.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "BF16 control 42.2 pairs/s at c=1, 45.9 at c=8 (64 pairs/request, ~1k-token pairs, median of 3)",
+          "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "quality_matched_full_denominator",
+          "status": "verified",
+          "evidence": "Reranker family: matched full-denominator MTEB Nano gate replaces GPQA; BF16 control macro nDCG@10 0.7118, 8970/8970 pairs scored",
+          "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied",
+          "metric": "macro nDCG@10 vs BF16 on six MTEB Nano sets (BM25 hard negatives)",
+          "protocol": "reranker gate summary, full denominator"
+        }
+      ],
+      "task": "rerank"
     },
     {
       "product_id": "Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-NVFP4",
@@ -65,27 +86,127 @@
         }
       ],
       "gates": [
-        {"id": "provenance_ownership", "status": "verified", "evidence": "Built from Qwen/Qwen3-Reranker-4B@22e68366 BF16 (Apache-2.0); no third-party quantized inputs", "evidence_path": "models/qwen3-reranker-4b/recon.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "artifact_manifest", "status": "verified", "evidence": "manifest.sha256 over all 19 artifact files shipped in the repository; model.safetensors sha256 8cab0a8b...", "evidence_path": "models/qwen3-reranker-4b/results/artifact-validation.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "recipe_edit_manifest", "status": "verified", "evidence": "Schema-2 recipe plus operator recipe sha256 eb9a063a...; ModelOpt 0.48.0rc1 pin (wheel sha256 2b874d94...)", "evidence_path": "recipes/qwen3-reranker-4b/darkstar-qwen3-reranker-4b-base-modelopt-w4a4-nvfp4.yaml", "next_missing_proof": "none - gate satisfied"},
-        {"id": "artifact_validation", "status": "verified", "evidence": "Tokenizer, template and sentence-transformers files byte-identical to upstream; config.json identical outside quantization metadata and transformers-5 re-serialization", "evidence_path": "models/qwen3-reranker-4b/results/artifact-validation.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "modelopt_candidate_comparison", "status": "verified", "evidence": "Three W4A4 candidates compared on the same eval set against BF16 and a BF16 replica; C selected", "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "nvfp4_tensor_scale_validation", "status": "verified", "evidence": "108 NVFP4 linears; 0 non-finite and 0 zero FP8 block scales; per-tensor scales finite and positive; fused groups uniform; no KV quantization", "evidence_path": "models/qwen3-reranker-4b/results/artifact-validation.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "performance_profile", "status": "verified", "evidence": "73.0 pairs/s at c=1 (BF16 42.2), 64 pairs/request, median of 3 after warmup", "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "serving_capacity_profile", "status": "verified", "evidence": "82.8 pairs/s at c=8 (BF16 45.9, 1.81x); published serving profile 79.6 pairs/s at c=8 on a shared GPU", "evidence_path": "models/qwen3-reranker-4b/results/reranker-serving-profile-summary.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "gpqa_matched_full_denominator", "status": "verified", "evidence": "Reranker family: MTEB Nano gate replaces GPQA; macro nDCG@10 0.7095 vs BF16 0.7118, 8970/8970 pairs; replica floor -0.0008", "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "serve_profile_frozen", "status": "verified", "evidence": "vLLM v0.32.0 by digest; pooling runner; Qwen3ForSequenceClassification overrides; checkpoint chat_template.jinja via --chat-template; BF16 KV", "evidence_path": "models/qwen3-reranker-4b/model-card/base-nvfp4.md", "next_missing_proof": "none - gate satisfied"},
-        {"id": "model_card_final", "status": "verified", "evidence": "Gold-standard card with measured gates, license and the release tag reference", "evidence_path": "models/qwen3-reranker-4b/model-card/base-nvfp4.md", "next_missing_proof": "none - gate satisfied"},
-        {"id": "publication_targets_hf_ghcr", "status": "verified", "evidence": "HF target HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4; GHCR not required (pinned upstream vLLM image)", "evidence_path": "models/qwen3-reranker-4b/results/publication-receipt.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "clean_download_boot_smoke", "status": "verified", "evidence": "Clean re-download from the hub, every file hash checked against manifest.sha256, served with the card's exact profile, score smoke passed", "evidence_path": "models/qwen3-reranker-4b/results/publication-receipt.json", "next_missing_proof": "none - gate satisfied"},
-        {"id": "release_tag", "status": "verified", "evidence": "darkstar-qwen3-reranker-4b-v1.0.0", "evidence_path": "models/qwen3-reranker-4b/README.md", "next_missing_proof": "none - gate satisfied"},
-        {"id": "no_inherited_unverified_results", "status": "verified", "evidence": "Every number on the card was measured on this exact artifact", "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json", "next_missing_proof": "none - gate satisfied"}
-      ]
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Built from Qwen/Qwen3-Reranker-4B@22e68366 BF16 (Apache-2.0); no third-party quantized inputs",
+          "evidence_path": "models/qwen3-reranker-4b/recon.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "verified",
+          "evidence": "manifest.sha256 over all 19 artifact files shipped in the repository; model.safetensors sha256 8cab0a8b...",
+          "evidence_path": "models/qwen3-reranker-4b/results/artifact-validation.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Schema-2 recipe plus operator recipe sha256 eb9a063a...; ModelOpt 0.48.0rc1 pin (wheel sha256 2b874d94...)",
+          "evidence_path": "recipes/qwen3-reranker-4b/darkstar-qwen3-reranker-4b-base-modelopt-w4a4-nvfp4.yaml",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Tokenizer, template and sentence-transformers files byte-identical to upstream; config.json identical outside quantization metadata and transformers-5 re-serialization",
+          "evidence_path": "models/qwen3-reranker-4b/results/artifact-validation.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "verified",
+          "evidence": "Three W4A4 candidates compared on the same eval set against BF16 and a BF16 replica; C selected",
+          "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "verified",
+          "evidence": "108 NVFP4 linears; 0 non-finite and 0 zero FP8 block scales; per-tensor scales finite and positive; fused groups uniform; no KV quantization",
+          "evidence_path": "models/qwen3-reranker-4b/results/artifact-validation.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "kv_cache_effect_measured",
+          "status": "not_applicable",
+          "evidence": "kv_cache is BF16",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "73.0 pairs/s at c=1 (BF16 42.2), 64 pairs/request, median of 3 after warmup",
+          "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "verified",
+          "evidence": "82.8 pairs/s at c=8 (BF16 45.9, 1.81x); published serving profile 79.6 pairs/s at c=8 on a shared GPU",
+          "evidence_path": "models/qwen3-reranker-4b/results/reranker-serving-profile-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "quality_matched_full_denominator",
+          "status": "verified",
+          "evidence": "Reranker family: MTEB Nano gate replaces GPQA; macro nDCG@10 0.7095 vs BF16 0.7118, 8970/8970 pairs; replica floor -0.0008",
+          "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied",
+          "metric": "macro nDCG@10 vs BF16 on six MTEB Nano sets (BM25 hard negatives)",
+          "protocol": "reranker gate summary, full denominator"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "vLLM v0.32.0 by digest; pooling runner; Qwen3ForSequenceClassification overrides; checkpoint chat_template.jinja via --chat-template; BF16 KV",
+          "evidence_path": "models/qwen3-reranker-4b/model-card/base-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Gold-standard card with measured gates, license and the release tag reference",
+          "evidence_path": "models/qwen3-reranker-4b/model-card/base-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "HF target HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4; GHCR not required (pinned upstream vLLM image)",
+          "evidence_path": "models/qwen3-reranker-4b/results/publication-receipt.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "verified",
+          "evidence": "Clean re-download from the hub, every file hash checked against manifest.sha256, served with the card's exact profile, score smoke passed",
+          "evidence_path": "models/qwen3-reranker-4b/results/publication-receipt.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "darkstar-qwen3-reranker-4b-v1.0.0",
+          "evidence_path": "models/qwen3-reranker-4b/README.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "Every number on the card was measured on this exact artifact",
+          "evidence_path": "models/qwen3-reranker-4b/results/reranker-gate-summary.json",
+          "next_missing_proof": "none - gate satisfied"
+        }
+      ],
+      "task": "rerank"
     },
     {
       "product_id": "Darkstar-Qwen3-Reranker-4B-Abliterated-BF16",
       "role": "abliterated-bf16",
-      "lifecycle": "published",
+      "lifecycle": "in_progress",
       "target_repository": "HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Abliterated-BF16",
       "target_repository_status": "resolved",
       "target_repository_note": "Not built and not planned: refusal-direction edits do not apply to a relevance scorer. Reserved id only; no repository exists.",
@@ -95,26 +216,86 @@
       "recipe": null,
       "publication_claim": false,
       "gates": [
-        {"id": "abliteration_pass", "status": "not_applicable", "evidence": "No abliteration for a reranker family", "evidence_path": null, "next_missing_proof": "none - not applicable"}
-      ]
+        {
+          "id": "abliteration_pass",
+          "status": "not_applicable",
+          "evidence": "No abliteration for a reranker family",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable"
+        },
+        {
+          "id": "quality_matched_full_denominator",
+          "status": "not_applicable",
+          "evidence": "Not built and not planned: a rerank model is not a refusal-edit target",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable",
+          "metric": "not applicable",
+          "protocol": "not applicable"
+        }
+      ],
+      "task": "rerank"
     },
     {
       "product_id": "Darkstar-Qwen3-Reranker-4B-Abliterated-ModelOpt-NVFP4",
       "role": "abliterated-modelopt-nvfp4",
-      "lifecycle": "published",
-      "target_repository": "HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Abliterated-ModelOpt-W4A4-NVFP4",
-      "target_repository_status": "resolved",
-      "target_repository_note": "Not built and not planned: refusal-direction edits do not apply to a relevance scorer. Reserved id only; no repository exists.",
+      "lifecycle": "in_progress",
+      "target_repository": null,
+      "target_repository_status": "unresolved_pending_precision_winner",
+      "target_repository_note": "Not built and not planned: a reranker is not a refusal-edit target. No repository exists.",
       "served_model_alias": "darkstar-qwen3reranker4b-abliterated-nvfp4",
       "runtime_container_name": "vllm-darkstar-qwen3reranker4b-abliterated-nvfp4",
       "model_card": "models/qwen3-reranker-4b/model-card/base-nvfp4.md",
       "recipe": null,
       "publication_claim": false,
       "gates": [
-        {"id": "abliteration_pass", "status": "not_applicable", "evidence": "No abliteration for a reranker family", "evidence_path": null, "next_missing_proof": "none - not applicable"}
+        {
+          "id": "abliteration_pass",
+          "status": "not_applicable",
+          "evidence": "No abliteration for a reranker family",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable"
+        },
+        {
+          "id": "quality_matched_full_denominator",
+          "status": "not_applicable",
+          "evidence": "Not built and not planned: a rerank model is not a refusal-edit target",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable",
+          "metric": "not applicable",
+          "protocol": "not applicable"
+        },
+        {
+          "id": "kv_cache_effect_measured",
+          "status": "not_applicable",
+          "evidence": "No selected candidate: nothing is served, so there is no KV cache",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable"
+        }
+      ],
+      "task": "rerank",
+      "candidates": [
+        {
+          "candidate_id": "Darkstar-Qwen3-Reranker-4B-Abliterated-ModelOpt-W4A4-NVFP4",
+          "precision_class": "W4A4-NVFP4",
+          "target_repository": "HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Abliterated-ModelOpt-W4A4-NVFP4",
+          "selection": "not_built",
+          "promotion_status": "none",
+          "promotion_note": "Reserved id only; refusal edits do not apply to a reranker.",
+          "recipe": null,
+          "precision_map": {
+            "language_mlp": "W4A4-NVFP4-g16",
+            "lm_head": "BF16",
+            "self_attention": "BF16",
+            "gdn_projections": "not present",
+            "kv_cache": "BF16",
+            "protected": "BF16"
+          }
+        }
       ]
     }
   ],
   "rejected_historical": [],
-  "related_issues": ["HangGlidersRule/model-forge#14"]
+  "related_issues": [
+    "HangGlidersRule/model-forge#14"
+  ]
 }

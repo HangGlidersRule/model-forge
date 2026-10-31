@@ -73,8 +73,10 @@ numbers measured with their own serving stack (vLLM 0.26, FP8 KV, TP2); our stac
 
 ## Caveats
 
-- GPQA is evaluated on the **final servable result only** (campaign policy); other products/configs are
-  recorded as process evidence, not benchmarked.
+- In the v1.0.0 campaign, GPQA was evaluated on the **final servable result only** (campaign policy at the time); the
+  other cells were recorded as process evidence, not benchmarked. Contract v3 requires the GPQA gate on every chat
+  product, so the family ledger marks the Abliterated BF16 cell's GPQA gate `missing`. The Base W4A16 cell was measured
+  later, in the issue-17 eval window (136/198, `results/w4a4-gate-summary.json`).
 - DFlash2/DSpark are not supported for nemotron_h (DFlash2 drafter is Qwen-vocab; no DSpark drafter
   in registry) — recorded as dead-ends.
 - Throughput measured on a single RTX PRO 6000 Blackwell (SM120), vLLM cu130-nightly build,

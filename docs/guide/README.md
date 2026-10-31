@@ -26,7 +26,8 @@ public issue that recorded the measurement.
 
 ## The four products
 
-Every family has four canonical product roles. The repository id always spells out the real precision.
+Every family has four canonical product roles, and a family may publish more than one product in a role (Lightning
+ships a W4A16 and a W4A4 base cell). The repository id always spells out the real precision.
 
 | Role | What it is | Example id |
 |---|---|---|

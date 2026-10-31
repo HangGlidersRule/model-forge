@@ -105,9 +105,11 @@ an explicit owner decision, recorded as such in the card, ledger and release not
   `models/nemotron-3.5-lightning-r1/eval/{build_w4a4_summary,check_card_numbers}.py`.
 - **Family record:** README, cards, recipes, evidence JSON, eval and calibration scripts, ledger, and export rules for
   any new file, plus rows in `README.md` and `recipes/README.md`.
-- **Ledger:** `models/<family>/results/publication-readiness-ledger.json`, validated against
-  `contracts/darkstar-release/v2/ledger.schema.json` and the lifecycle, target-repository and precision checks in
-  `src/model_forge/release.py`.
+- **Ledger:** `models/<family>/results/publication-readiness-ledger.json`, written against the current contract
+  (`contracts/darkstar-release/v3/`). `validate_ledger` in `src/model_forge/release.py` checks the schema of the
+  contract version the ledger declares plus the lifecycle, target-repository, precision, uniqueness, KV and quality-gate
+  rules, and CI runs it on every family's ledger. A gate the record has no evidence for is `missing`, and the product's
+  lifecycle follows from its gates.
 - **Production data stays private.** Results measured on private stores go public only as aggregates under neutral
   descriptions.
 
