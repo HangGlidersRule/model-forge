@@ -113,6 +113,12 @@ build/
 !/docs/governance/model-family-onboarding.md
 !/docs/governance/release-policy.md
 !/docs/gpqa-abliteration-protocol.md
+!/docs/guide/
+!/docs/guide/README.md
+!/docs/guide/abliteration.md
+!/docs/guide/evaluation.md
+!/docs/guide/lessons.md
+!/docs/guide/release-process.md
 !/docs/hf-publication-runbook.md
 !/docs/model-card-gold-standard.md
 !/docs/pull-request-risk.md
