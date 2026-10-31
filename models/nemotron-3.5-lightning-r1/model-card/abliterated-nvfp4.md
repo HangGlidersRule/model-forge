@@ -73,7 +73,7 @@ context 131,072, MTP depth 10, and `max_num_seqs=16`:
 
 ```bash
 vllm serve HangGlidersRule/Darkstar-Nemotron-3.5-Lightning-30B-A3B-Abliterated-ModelOpt-W4A16-NVFP4 \
-  --served-model-name darkstar-nemotron-3.5-lightning-abliterated-nvfp4 \
+  --served-model-name darkstar-nemotron35lightning-abliterated-nvfp4 \
   --kv-cache-dtype bfloat16 \
   --max-model-len 131072 \
   --max-num-seqs 16 \

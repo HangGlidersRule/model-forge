@@ -28,6 +28,7 @@ import pytest
 import yaml
 
 from model_forge.release import (
+    _SERVE_MODEL_ALIAS,
     CANONICAL_ROLES,
     DARKSTAR_HF_NAMESPACE,
     FROZEN_REQUIRED_GATES,
@@ -45,6 +46,7 @@ from model_forge.release import (
     candidate_requires_mixed_fp8,
     candidate_selection,
     contract_gate_ids,
+    contract_paths_for,
     expected_card_identity_ids,
     expected_lifecycle,
     extract_model_sources,
@@ -66,6 +68,7 @@ from model_forge.release import (
     product_gate_statuses,
     product_publication_ready,
     target_repository_errors,
+    validate_ledger,
     validate_ledger_schema,
 )
 
@@ -290,6 +293,12 @@ def test_no_gate_weakening() -> None:
     for gate in contract["gates"]:
         assert gate["applies_to"], f"gate {gate['id']} applies to no role"
         assert set(gate["applies_to"]) <= set(CANONICAL_ROLES)
+
+
+def test_every_contract_version_keeps_frozen_gates() -> None:
+    for version in ("v1", "v2", "v3"):
+        contract = load_json(REPO_ROOT / "contracts" / "darkstar-release" / version / "contract.json")
+        assert FROZEN_REQUIRED_GATES <= set(contract_gate_ids(contract))
 
 
 def test_ledger_and_rendered_blocks_are_in_sync() -> None:
@@ -661,17 +670,75 @@ def _all_family_aliases() -> set[str]:
     return aliases
 
 
+# Serve examples whose aliases predate the concise pattern. The list may only shrink: each path
+# must still exist and still fail the alias rule until the cards are renamed.
+KNOWN_LEGACY_ALIAS_FILES: frozenset[str] = frozenset(
+    {
+        # Operator compose files: their served name is a live runtime contract that clients call by name; renaming it
+        # is a serving change, not a documentation fix.
+        "containers/serve/darkstar-nemotron-3-nano-omni-abliterated-nvfp4.yml",
+        "containers/serve/serve-production-nvfp4kv.yml",
+        # The alias pattern allows only bf16|nvfp4 formats; this card serves the FP8 image cell under its registered
+        # ledger alias darkstar-qwenimage21-base-fp8.
+        "models/qwen-image-2.1/model-card/base-fp8.md",
+    }
+)
+
+def _family_ledger_cases() -> list:
+    return [
+        pytest.param(path, id=path.parents[1].name)
+        for path in sorted((REPO_ROOT / "models").glob("*/results/publication-readiness-ledger.json"))
+    ]
+
+
+@pytest.mark.parametrize("path", _family_ledger_cases())
+def test_every_family_ledger_validates(path: Path) -> None:
+    assert validate_ledger(path) == []
+
+
+def test_every_family_has_a_ledger_under_test() -> None:
+    """The parametrized ledger test must cover every family directory that publishes, so a new family cannot ship
+    without a ledger that validates."""
+    families = {p.parents[1].name for p in (REPO_ROOT / "models").glob("*/results/publication-readiness-ledger.json")}
+    assert {"jev-27b", "nemotron-3-nano-omni-r1", "nemotron-3.5-lightning-r1", "qwen-image-2.1", "qwen3-embedding-8b",
+            "qwen3-reranker-4b", "qwen3.8-27b-r3"} <= families
+
+
+def _alias_rule_violations(path: Path, known_aliases: set[str]) -> list[str]:
+    violations: list[str] = []
+    rel = path.relative_to(REPO_ROOT).as_posix()
+    for served in extract_serve_model_ids(
+        path.read_text(encoding="utf-8"), source_format=path.suffix
+    ):
+        reasons: list[str] = []
+        if served not in known_aliases:
+            reasons.append("not a ledger runtime alias")
+        if _SERVE_MODEL_ALIAS.fullmatch(served) is None:
+            reasons.append("does not match the served-model alias pattern")
+        if reasons:
+            violations.append(f"{rel}: served alias {served} ({'; '.join(reasons)})")
+    return violations
+
+
 def test_serve_examples_use_registered_runtime_aliases() -> None:
     known_aliases = _all_family_aliases()
     violations: list[str] = []
     for path in _publication_surface_files():
-        for served in extract_serve_model_ids(
-            path.read_text(encoding="utf-8"), source_format=path.suffix
-        ):
-            rel = path.relative_to(REPO_ROOT)
-            if served not in known_aliases:
-                violations.append(f"{rel}: served alias {served} is not a ledger runtime alias")
+        rel = path.relative_to(REPO_ROOT).as_posix()
+        if rel in KNOWN_LEGACY_ALIAS_FILES:
+            continue
+        violations.extend(_alias_rule_violations(path, known_aliases))
     assert not violations, "serve example violations:\n" + "\n".join(violations)
+
+
+def test_known_legacy_alias_files_still_fail_the_alias_rule() -> None:
+    known_aliases = _all_family_aliases()
+    for rel in sorted(KNOWN_LEGACY_ALIAS_FILES):
+        path = REPO_ROOT / rel
+        assert path.is_file(), rel
+        assert _alias_rule_violations(path, known_aliases), (
+            f"{rel} no longer fails the alias rule; remove it from KNOWN_LEGACY_ALIAS_FILES"
+        )
 
 
 def test_serve_model_id_parser_reads_canonical_product4_compose() -> None:
@@ -2037,16 +2104,22 @@ def test_tracked_serve_compose_hash_is_verified_from_current_bytes() -> None:
 
 UPSTREAM_REFERENCE_FAMILIES = {
     "qwen3-embedding-8b": "Qwen/Qwen3-Embedding-8B",
+    "qwen3-reranker-4b": "Qwen/Qwen3-Reranker-4B",
+    "nemotron-3.5-lightning-r1": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+    "nemotron-3-nano-omni-r1": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
 }
 
 
 @pytest.mark.parametrize("family,upstream", sorted(UPSTREAM_REFERENCE_FAMILIES.items()))
 def test_family_upstream_bf16_reference_passes_schema_and_target_rules(family: str, upstream: str) -> None:
-    """A family whose BF16 control is an unchanged upstream checkpoint other than Qwen3.8-27B validates: schema,
-    lifecycle, target and precision checks all pass on its ledger, and the reference stays un-owned."""
-    ledger = load_json(REPO_ROOT / "models" / family / "results" / "publication-readiness-ledger.json")
-    schema = load_json(REPO_ROOT / "contracts" / "darkstar-release" / "v2" / "ledger.schema.json")
-    validate_ledger_schema(ledger, schema)
+    """A family whose BF16 control is an unchanged upstream checkpoint other than Qwen3.8-27B validates against the
+    schema of the contract version its ledger declares (schema, lifecycle, target and precision checks all pass), and
+    the reference stays un-owned."""
+    path = REPO_ROOT / "models" / family / "results" / "publication-readiness-ledger.json"
+    ledger = load_json(path)
+    _, schema_path = contract_paths_for(ledger)
+    validate_ledger_schema(ledger, load_json(schema_path))
+    assert validate_ledger(path) == []
     assert not ledger_target_repository_errors(ledger)
     assert not ledger_candidate_precision_errors(ledger)
     reference = next(p for p in ledger["products"] if p["role"] == "base-bf16")

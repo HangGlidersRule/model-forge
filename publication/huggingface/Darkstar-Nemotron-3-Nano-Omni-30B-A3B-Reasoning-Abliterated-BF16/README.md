@@ -64,9 +64,7 @@ and legal review. Refusal-rate numbers are behavior measurements, not safety end
 
 ## Release reference
 
-Family release engineering is tracked in the Model Forge ledger for
-`nemotron-3-nano-omni-r1`; the immutable family tag follows the four-product release process once the
-remaining cells complete.
+Family release: [`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0). This immutable tag exists and the release contract is published.
 
 ## Runtime
 
@@ -76,7 +74,7 @@ compatible drafter; verified):
 
 ```bash
 vllm serve HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16 \
-  --served-model-name darkstar-nemotron-3-nano-omni-abliterated-bf16 \
+  --served-model-name darkstar-nemotron3nanoomni-abliterated-bf16 \
   --trust-remote-code \
   --kv-cache-dtype bfloat16 \
   --max-model-len 131072 \

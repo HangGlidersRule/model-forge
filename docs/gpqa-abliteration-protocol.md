@@ -33,7 +33,7 @@ metric_list: [{metric: acc}, {metric: acc_norm}]
 ```
 
 Scored by continuation log-prob of the four letter labels. Greedy, zero parse
-errors, deterministic. Use this as the headline number.
+errors, deterministic. Supporting evidence only, never the headline claim (see above).
 
 `gpqa_diamond_cot_zeroshot` — **generative CoT** (the TensorRT-LLM
 `GPQADiamond` flavor, task id `gpqa_diamond_cot_zeroshot_aa`):
@@ -85,8 +85,9 @@ sampling, and a custom regex parser. On models that obey the boxed instruction
 don't obey it (Lightning — 66–70/198 parse errors) it under-reads by ~2x
 (37.9% vs NVIDIA's 75.44%). It remains only for Qwen38 result continuity.
 
-Rule: **new GPQA claims use lm-eval stock tasks; the legacy harness is frozen
-and deprecated for claims.**
+Rule: **new GPQA claims use llm-inference-bench `gpqa-diamond` (chat template, thinking on, temperature 0,
+full denominator), as in section 1. lm-eval stock tasks are supporting evidence only. The legacy harness is
+frozen and deprecated for claims.**
 
 ## 2. Canonical abliteration (mlabonne method, adapted to Nemotron-H)
 

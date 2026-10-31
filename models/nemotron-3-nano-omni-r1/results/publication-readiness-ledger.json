@@ -1,57 +1,475 @@
 {
-  "family": "Darkstar Nemotron-3-Nano-Omni 30B-A3B",
+  "schema_version": "1.0.0",
+  "contract": "contracts/darkstar-release/v3/contract.json",
+  "contract_version": "3.0.0",
+  "family": "nemotron-3-nano-omni-r1",
+  "family_display": "Darkstar Nemotron-3-Nano-Omni 30B-A3B Reasoning",
   "source_revision": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea000b7c2837fc8f9488aa2008524fac8ba",
-  "license": "NVIDIA Open Model Agreement (2026-04-02)",
-  "updated": "2026-09-02",
+  "note": "Migrated to contract v3 from the legacy free-form ledger (issue #27). Gates without recorded evidence are marked missing.",
+  "any_publication_claim": true,
+  "rejected_historical": [],
+  "related_issues": [],
   "products": [
     {
-      "product": "Base-BF16",
-      "role": "upstream-control",
-      "build": "PASS (serves clean, 62G, 17 shards)",
-      "tune": "PASS no-spec 182.7 weighted (no MTP/DFlash/DFlash2/DSpark available for this arch \u2014 verified)",
-      "behavior": "N/A",
-      "gpqa": "reference ~46% (llm-inference-bench protocol)",
-      "publication": "not-republished (upstream control)"
+      "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-BF16",
+      "role": "base-bf16",
+      "task": "chat",
+      "lifecycle": "in_progress",
+      "target_repository": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+      "target_repository_status": "resolved",
+      "target_repository_note": "Upstream reference only: nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16 at 24e67ea0 is the unchanged BF16 control; not owned or republished.",
+      "served_model_alias": "darkstar-nemotron3nanoomni-base-bf16",
+      "runtime_container_name": "vllm-darkstar-nemotron3nanoomni-base-bf16",
+      "model_card": "models/nemotron-3-nano-omni-r1/README.md",
+      "recipe": null,
+      "publication_claim": false,
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "182.7 tok/s weighted, no speculative decoding",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/performance-base-bf16.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "missing",
+          "evidence": "Only an ~46% reference on the same protocol; no stored per-item run",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-matrix.json",
+          "next_missing_proof": "run GPQA Diamond on the upstream BF16 control and commit the result"
+        }
+      ]
     },
     {
-      "product": "Base-ModelOpt-NVFP4",
-      "role": "base-quantized",
-      "build": "PENDING (blocked by NVFP4 MoE backend correctness \u2014 same class of blocker as Lightning Base-NVFP4 was; HF-custom Mamba2 path shape errors resolved for serving but ModelOpt calib path still incompatible)",
-      "tune": "PENDING",
-      "behavior": "N/A",
-      "gpqa": "PENDING",
-      "publication": "LIVE https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4 (public, verified 200 card+config)"
+      "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
+      "role": "base-modelopt-nvfp4",
+      "task": "chat",
+      "lifecycle": "in_progress",
+      "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
+      "target_repository_status": "resolved",
+      "served_model_alias": "darkstar-nemotron3nanoomni-base-nvfp4",
+      "runtime_container_name": "vllm-darkstar-nemotron3nanoomni-base-modelopt",
+      "model_card": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+      "recipe": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-base-modelopt-w4a16-nvfp4.yaml",
+      "publication_claim": false,
+      "candidates": [
+        {
+          "candidate_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
+          "precision_class": "W4A16-NVFP4",
+          "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
+          "selection": "selected",
+          "promotion_status": "promoted",
+          "promotion_note": "Published cell of this family.",
+          "recipe": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-base-modelopt-w4a16-nvfp4.yaml",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/README.md",
+          "precision_map": {
+            "language_mlp": "W4A16-NVFP4-g16 (routed + shared expert up/down)",
+            "lm_head": "BF16",
+            "self_attention": "BF16",
+            "gdn_projections": "BF16 (Mamba2 projections, conv1d, SSM)",
+            "kv_cache": "BF16",
+            "protected": "vision tower, audio encoder, projectors, embeddings, norms, router (BF16)"
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "missing",
+          "evidence": "No committed manifest for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "commit the shipped manifest.sha256"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Schema-2 recipe",
+          "evidence_path": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-base-modelopt-w4a16-nvfp4.yaml",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Structural validation recorded in the lineage",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "verified",
+          "evidence": "W4A16 NVFP4 selected; recorded in the family record",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/README.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "verified",
+          "evidence": "Vision, audio and MTP-equivalent towers protected; BF16 KV",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "kv_cache_effect_measured",
+          "status": "not_applicable",
+          "evidence": "kv_cache is BF16",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "259.8 tok/s weighted, no speculative decoding",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/performance-base-nvfp4.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "missing",
+          "evidence": "No separate capacity profile recorded",
+          "evidence_path": null,
+          "next_missing_proof": "measure a serving-capacity profile"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "84/198 (thinking on, temp 0, full denominator)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-base-nvfp4.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Exact vllm serve command on the card",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Gold-standard card, live on the hub",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "missing",
+          "evidence": "Not recorded for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "record a clean re-download boot smoke"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "darkstar-nemotron-3-nano-omni-v1.0.0",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "Numbers on the card measured on this artifact",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        }
+      ],
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, serving_capacity_profile, clean_download_boot_smoke."
     },
     {
-      "product": "Abliterated-BF16",
+      "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
       "role": "abliterated-bf16",
-      "build": "PASS SFT-r1 (LoRA r32 q/k/v/o merged into pristine trunk, 17 shards, 62G)",
-      "tune": "PENDING (no-spec first; spec-decode N/A for arch)",
-      "behavior": "PASS 200/200 0/83 0err (measured on served artifact)",
-      "gpqa": "30.3% (60/198, parse=20) - SHIPPED-WITH-COST under option-1 approval: ~16pt loss vs base; refusal/reasoning subspace entanglement on this arch is structural; projection variants all worse (26.8-27.3%)",
-      "publication": "LIVE https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16 (public, verified 200 on card/config/shard1)"
+      "task": "chat",
+      "lifecycle": "in_progress",
+      "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
+      "target_repository_status": "resolved",
+      "served_model_alias": "darkstar-nemotron3nanoomni-abliterated-bf16",
+      "runtime_container_name": "vllm-darkstar-nemotron3nanoomni-abliterated-bf16",
+      "model_card": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+      "recipe": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml",
+      "publication_claim": false,
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "abliteration_pass",
+          "status": "verified",
+          "evidence": "LoRA unlearning SFT (r32, q/k/v/o), merged in float32; projection variants rejected with evidence",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "missing",
+          "evidence": "No committed manifest for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "commit the shipped manifest.sha256"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Schema-2 recipe with the lora-unlearning-sft transform",
+          "evidence_path": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Vision, audio, tokenizer and wrapper byte-identical to upstream",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "performance_profile",
+          "status": "missing",
+          "evidence": "Not recorded for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "measure single-stream throughput"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "missing",
+          "evidence": "Not recorded",
+          "evidence_path": null,
+          "next_missing_proof": "measure a serving-capacity profile"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "60/198 (thinking on, temp 0); shipped with a documented cost by owner decision",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-bf16-sft-lora.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "behavior_refusal_eval",
+          "status": "verified",
+          "evidence": "200/200 harmful compliance, 0/83 safe over-refusals, 0 errors",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/abliteration-eval-abliterated-bf16-sft-lora.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Exact vllm serve command on the card",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Gold-standard card, live on the hub",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "Public on the hub",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "missing",
+          "evidence": "Not recorded",
+          "evidence_path": null,
+          "next_missing_proof": "record a clean re-download boot smoke"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "darkstar-nemotron-3-nano-omni-v1.0.0",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "Numbers on the card measured on this artifact",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "next_missing_proof": "none - gate satisfied"
+        }
+      ],
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, performance_profile, serving_capacity_profile, clean_download_boot_smoke."
     },
     {
-      "product": "Abliterated-ModelOpt-NVFP4",
-      "role": "abliterated-nvfp4",
-      "build": "PENDING",
-      "tune": "PENDING",
-      "behavior": "PENDING",
-      "gpqa": "PENDING",
-      "publication": "LIVE https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4 (public, verified 200 card+config)"
+      "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
+      "role": "abliterated-modelopt-nvfp4",
+      "task": "chat",
+      "lifecycle": "in_progress",
+      "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
+      "target_repository_status": "resolved",
+      "served_model_alias": "darkstar-nemotron3nanoomni-abliterated-nvfp4",
+      "runtime_container_name": "vllm-darkstar-nemotron3nanoomni-abliterated-modelopt",
+      "model_card": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+      "recipe": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4.yaml",
+      "publication_claim": false,
+      "candidates": [
+        {
+          "candidate_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
+          "precision_class": "W4A16-NVFP4",
+          "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
+          "selection": "selected",
+          "promotion_status": "promoted",
+          "promotion_note": "Published cell of this family.",
+          "recipe": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4.yaml",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/README.md",
+          "precision_map": {
+            "language_mlp": "W4A16-NVFP4-g16 (routed + shared expert up/down)",
+            "lm_head": "BF16",
+            "self_attention": "BF16",
+            "gdn_projections": "BF16 (Mamba2 projections, conv1d, SSM)",
+            "kv_cache": "BF16",
+            "protected": "vision tower, audio encoder, projectors, embeddings, norms, router (BF16)"
+          }
+        }
+      ],
+      "gates": [
+        {
+          "id": "provenance_ownership",
+          "status": "verified",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_manifest",
+          "status": "missing",
+          "evidence": "No committed manifest for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "commit the shipped manifest.sha256"
+        },
+        {
+          "id": "recipe_edit_manifest",
+          "status": "verified",
+          "evidence": "Schema-2 recipe",
+          "evidence_path": "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4.yaml",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "artifact_validation",
+          "status": "verified",
+          "evidence": "Structural validation recorded in the lineage",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "modelopt_candidate_comparison",
+          "status": "verified",
+          "evidence": "W4A16 NVFP4 selected; recorded in the family record",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/README.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "nvfp4_tensor_scale_validation",
+          "status": "verified",
+          "evidence": "Vision, audio and MTP-equivalent towers protected; BF16 KV",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "kv_cache_effect_measured",
+          "status": "not_applicable",
+          "evidence": "kv_cache is BF16",
+          "evidence_path": null,
+          "next_missing_proof": "none - not applicable"
+        },
+        {
+          "id": "performance_profile",
+          "status": "verified",
+          "evidence": "249.5 tok/s weighted, no speculative decoding",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/performance-ablit-nvfp4.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "serving_capacity_profile",
+          "status": "missing",
+          "evidence": "No separate capacity profile recorded",
+          "evidence_path": null,
+          "next_missing_proof": "measure a serving-capacity profile"
+        },
+        {
+          "id": "gpqa_matched_full_denominator",
+          "status": "verified",
+          "evidence": "58/198 (thinking on, temp 0, full denominator)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-bf16-thisrunner.json",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "behavior_refusal_eval",
+          "status": "missing",
+          "evidence": "200/200 + 0/83 reported in the family README; no stored eval file",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/README.md",
+          "next_missing_proof": "commit the behavior eval result for this exact artifact"
+        },
+        {
+          "id": "serve_profile_frozen",
+          "status": "verified",
+          "evidence": "Exact vllm serve command on the card",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "model_card_final",
+          "status": "verified",
+          "evidence": "Gold-standard card, live on the hub",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "publication_targets_hf_ghcr",
+          "status": "verified",
+          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "clean_download_boot_smoke",
+          "status": "missing",
+          "evidence": "Not recorded for this cell",
+          "evidence_path": null,
+          "next_missing_proof": "record a clean re-download boot smoke"
+        },
+        {
+          "id": "release_tag",
+          "status": "verified",
+          "evidence": "darkstar-nemotron-3-nano-omni-v1.0.0",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        },
+        {
+          "id": "no_inherited_unverified_results",
+          "status": "verified",
+          "evidence": "Numbers on the card measured on this artifact",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
+        }
+      ],
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, serving_capacity_profile, behavior_refusal_eval, clean_download_boot_smoke."
     }
-  ],
-  "release_gates": {
-    "behavior_gate": "PASS (Abliterated-BF16: 200/200, 0/83, 0 errors)",
-    "intelligence_gate": "NOT MET (GPQA 30.3 vs base 46): shipped under explicit Option-1 decision (Devin, 2026-09-01) with documented cost in card",
-    "method_note": "All closed-form projection variants rejected with evidence (GPQA collapse); LoRA-SFT r1 is the canonical transform; r2 (+alpaca mix) rejected (GPQA 6.6%)",
-    "hash_verified_weights": "PENDING (Ablit-BF16 manifest sha256 next)",
-    "cards_ready": "PASS (gold-format cards live on all repos)",
-    "hf_uploaded": "PASS (all 3 published repos live + Ablit-BF16; Base-BF16 = upstream reference)",
-    "release_tag": "PENDING",
-    "nvfp4_product_gates": "PASS-both (behavior 200/200 + 0/83; GPQA lossless quantization; speed +36%)",
-    "gpqa_matched_full_denominator": "PASS (all measured, served artifacts, 198/198 scored: Base-NVFP4 84, Ablit-BF16 58, Ablit-NVFP4 58)",
-    "behavior_refusal_eval": "PASS (Ablit-BF16 199/200+0/83 same-day re-gate; Ablit-NVFP4 200/200+0/83)",
-    "quantization_lossless": "PASS (Ablit-NVFP4 == Ablit-BF16 58/198 same runner/day)"
-  }
+  ]
 }

@@ -102,6 +102,9 @@ build/
 !/contracts/darkstar-release/v2/
 !/contracts/darkstar-release/v2/contract.json
 !/contracts/darkstar-release/v2/ledger.schema.json
+!/contracts/darkstar-release/v3/
+!/contracts/darkstar-release/v3/contract.json
+!/contracts/darkstar-release/v3/ledger.schema.json
 !/docs/
 !/docs/campaign-boundaries.md
 !/docs/darkstar-four-product-release-process.md
@@ -541,6 +544,7 @@ build/
 !/tests/test_quantize_qwen38_nvfp4.py
 !/tests/test_recipe.py
 !/tests/test_release_contract.py
+!/tests/test_release_contract_v3.py
 !/tests/test_repo_integrity.py
 !/tests/test_runner.py
 !/tests/test_scorecard.py

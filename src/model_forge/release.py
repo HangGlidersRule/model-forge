@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import shlex
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -117,15 +118,21 @@ DIFFUSION_WEIGHT_PRECISION_MAP_COMPONENTS: frozenset[str] = frozenset(
 # Hugging Face namespace that owns every actual Darkstar weight repository.
 DARKSTAR_HF_NAMESPACE = "HangGlidersRule"
 
-# Unchanged upstream checkpoints a family may name as its resolved base-bf16 reference. The reference is
-# measured, never owned or republished; every derivative still follows the namespace and precision rules.
-# Each entry must also appear in the v2 ledger schema's target_repository pattern.
+# Unchanged upstream checkpoints a family may name as its resolved base-bf16 or image-base-bf16
+# reference. The reference is measured, never owned or republished; every derivative still follows
+# the namespace and precision rules. Each entry appears in the v3 ledger schema's target_repository
+# pattern. Entries that predate v3 also appear in the v2 pattern.
 UPSTREAM_BF16_REFERENCES: frozenset[str] = frozenset(
     {
         "Qwen/Qwen3.8-27B",
         "Qwen/Qwen3-Embedding-8B",
+        "Qwen/Qwen3-Reranker-4B",
+        "Qwen/Qwen-Image-2.1",
+        "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+        "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
     }
 )
+_UPSTREAM_BF16_ROLES: frozenset[str] = frozenset({"base-bf16", "image-base-bf16"})
 
 # A product-level publication target is either resolved to one concrete, precision-encoded
 # repository id, or explicitly unresolved until a precision winner is selected. There is no third
@@ -142,6 +149,13 @@ _DARKSTAR_REPOSITORY_ID = re.compile(
 _SERVE_MODEL_ALIAS = re.compile(
     r"darkstar-[a-z0-9]+-(?:base|abliterated)-(?:bf16|nvfp4)"
 )
+_SERVED_MODEL_NAME_FLAG = "--served-model-name"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_CONTRACT_ROOT = _REPO_ROOT / "contracts" / "darkstar-release"
+_CONTRACT_MAJORS = frozenset({1, 2, 3})
+_KV_CACHE_EFFECT_GATE = "kv_cache_effect_measured"
+_FP8_KV_STATUSES = frozenset({"verified", "in_progress", "missing"})
+_QUALITY_GATE = "quality_matched_full_denominator"
 _MARKDOWN_FENCE = re.compile(r"```(?P<language>[A-Za-z0-9_-]*)\n(?P<body>.*?)```", re.DOTALL)
 _MARKDOWN_H1 = re.compile(r"^#\s+(.*)$", re.MULTILINE)
 
@@ -175,6 +189,26 @@ def load_json(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"Expected a JSON object in {path}")
     return data
+
+
+def contract_paths_for(ledger: dict[str, Any]) -> tuple[Path, Path]:
+    """Return the contract and ledger schema for a ledger's ``contract_version``.
+
+    Major 1 selects ``v1/``, major 2 selects ``v2/``, and major 3 selects ``v3/``. Any other
+    major version is an error.
+    """
+    version = ledger["contract_version"]
+    if not isinstance(version, str):
+        raise ValueError(f"Unknown contract version {version!r}")
+    major_text = version.split(".", 1)[0]
+    try:
+        major = int(major_text)
+    except ValueError as exc:
+        raise ValueError(f"Unknown contract version {version!r}") from exc
+    if major not in _CONTRACT_MAJORS:
+        raise ValueError(f"Unknown contract version {version!r}")
+    directory = _CONTRACT_ROOT / f"v{major}"
+    return directory / "contract.json", directory / "ledger.schema.json"
 
 
 def validate_ledger_schema(ledger: dict[str, Any], schema: dict[str, Any]) -> None:
@@ -869,11 +903,11 @@ def _serve_model_ids_from_tokens(
                 continue
 
         value: str | None = None
-        if token == "--served-model-name" and index + 1 < len(tokens):
+        if token == _SERVED_MODEL_NAME_FLAG and index + 1 < len(tokens):
             value = tokens[index + 1]
-        elif token.startswith("--served-model-name="):
+        elif token.startswith(_SERVED_MODEL_NAME_FLAG + "="):
             value = token.partition("=")[2]
-        if value is not None and _SERVE_MODEL_ALIAS.fullmatch(value):
+        if value is not None:
             aliases.append(value)
         index += 1
     return aliases
@@ -887,7 +921,7 @@ def _serve_model_ids_from_shell(
     normalized = text.replace("\\\n", " ")
     aliases: list[str] = []
     for line_number, line in enumerate(normalized.splitlines(), start=1):
-        if "--served-model-name" not in line:
+        if _SERVED_MODEL_NAME_FLAG not in line:
             continue
         try:
             tokens = shlex.split(line, comments=True, posix=True)
@@ -936,12 +970,13 @@ def _serve_model_ids_from_yaml(text: str) -> list[str]:
 
 
 def extract_serve_model_ids(text: str, *, source_format: str | None = None) -> list[str]:
-    """Extract concise API aliases passed through ``--served-model-name``.
+    """Extract every value passed through ``--served-model-name``.
 
     Compose YAML is parsed structurally so command scalar lists and strings have the same option
     semantics. Other surfaces are tokenized as shell text. Values passed through ``--model`` are
     deliberately ignored because publication model sources and runtime API aliases are separate
-    identities.
+    identities. Registration against a ledger alias and the concise alias pattern is a separate
+    check; this extractor does not drop values that fall outside that pattern.
     """
     format_name = (source_format or "").lower().lstrip(".")
     aliases: list[str] = []
@@ -1113,11 +1148,11 @@ def target_repository_errors(product: dict[str, Any]) -> list[str]:
     target = product.get("target_repository")
     candidates = product_candidates(product)
 
-    # The four-cell evaluation matrix retains Base BF16 for matched deltas, but that cell is the
+    # The evaluation matrix retains a BF16 control for matched deltas, but that cell is the
     # unchanged upstream reference rather than an owned Darkstar publication. Its resolved target is
     # therefore the exact pinned upstream repository; every derivative still follows the namespace
-    # and precision-encoding rules below.
-    if role == "base-bf16" and status == "resolved" and target in UPSTREAM_BF16_REFERENCES:
+    # and precision-encoding rules below. Image families use the same exception for image-base-bf16.
+    if role in _UPSTREAM_BF16_ROLES and status == "resolved" and target in UPSTREAM_BF16_REFERENCES:
         if candidates:
             errors.append(f"{pid}: the upstream BF16 reference must not declare Darkstar candidates")
         return errors
@@ -1221,3 +1256,231 @@ def expected_card_identity_ids(product: dict[str, Any]) -> list[str]:
     if str(product.get("target_repository_status", "")) == "resolved":
         return [str(product["target_repository"]).split("/")[-1]]
     return [str(c["candidate_id"]) for c in product_candidates(product)]
+
+
+def _is_bf16_kv(value: str) -> bool:
+    return value.strip().casefold().startswith("bf16")
+
+
+def _is_fp8_kv(value: str) -> bool:
+    return "fp8" in value.casefold()
+
+
+def kv_cache_gate_errors(product: dict[str, Any]) -> list[str]:
+    """Check ``kv_cache_effect_measured`` against the selected candidate's KV precision.
+
+    The gate applies to ModelOpt NVFP4 roles. A selected candidate whose ``kv_cache`` starts with
+    ``BF16`` (case-insensitive) must mark the gate ``not_applicable``. A selected candidate that
+    serves FP8 KV must mark it ``verified``, ``in_progress``, or ``missing``.
+    """
+    role = str(product.get("role", ""))
+    if role not in MODELOPT_NVFP4_ROLES:
+        return []
+    errors: list[str] = []
+    pid = str(product.get("product_id", "<unknown>"))
+    gates = product.get("gates", [])
+    gate: dict[str, Any] | None = None
+    if isinstance(gates, list):
+        found = next(
+            (
+                item
+                for item in gates
+                if isinstance(item, dict) and item.get("id") == _KV_CACHE_EFFECT_GATE
+            ),
+            None,
+        )
+        if isinstance(found, dict):
+            gate = found
+    if gate is None:
+        errors.append(f"{pid}: missing gate {_KV_CACHE_EFFECT_GATE}")
+        return errors
+    status = str(gate.get("status", ""))
+    selected = [
+        candidate
+        for candidate in product_candidates(product)
+        if str(candidate.get("selection", "")) == "selected"
+    ]
+    if not selected:
+        if status != "not_applicable":
+            errors.append(
+                f"{pid}: {_KV_CACHE_EFFECT_GATE} must be not_applicable when no candidate is selected "
+                f"(nothing is served), got {status!r}"
+            )
+        return errors
+    for candidate in selected:
+        cid = str(candidate.get("candidate_id", "<unnamed>"))
+        precision_map = candidate.get("precision_map")
+        if not isinstance(precision_map, dict) or "kv_cache" not in precision_map:
+            errors.append(f"{pid}: selected candidate {cid} has no kv_cache precision")
+            continue
+        kv = str(precision_map["kv_cache"])
+        if _is_bf16_kv(kv):
+            if status != "not_applicable":
+                errors.append(
+                    f"{pid}: kv_cache {kv!r} is BF16 so {_KV_CACHE_EFFECT_GATE} "
+                    f"must be not_applicable, got {status!r}"
+                )
+        elif _is_fp8_kv(kv):
+            if status not in _FP8_KV_STATUSES:
+                errors.append(
+                    f"{pid}: FP8 kv_cache {kv!r} requires {_KV_CACHE_EFFECT_GATE} "
+                    f"verified, in_progress, or missing, got {status!r}"
+                )
+        else:
+            errors.append(f"{pid}: selected candidate {cid} has unrecognized kv_cache {kv!r}")
+    return errors
+
+
+def _duplicate_messages(field: str, values: list[str]) -> list[str]:
+    seen: dict[str, int] = {}
+    for value in values:
+        seen[value] = seen.get(value, 0) + 1
+    return [f"duplicate {field} {value!r}" for value, count in seen.items() if count > 1]
+
+
+def ledger_uniqueness_errors(ledger: dict[str, Any]) -> list[str]:
+    """Require unique product ids, resolved targets, serve aliases, and container names.
+
+    A ledger may contain several products with the same role. Unresolved targets are null and are
+    not compared. Duplicate null targets are not a collision.
+    """
+    products = ledger.get("products", [])
+    if not isinstance(products, list):
+        raise TypeError("products must be a list")
+    records = [product for product in products if isinstance(product, dict)]
+    errors = _duplicate_messages(
+        "product_id", [str(product.get("product_id")) for product in records]
+    )
+    targets: list[str] = []
+    aliases: list[str] = []
+    containers: list[str] = []
+    for product in records:
+        status = str(product.get("target_repository_status", ""))
+        target = product.get("target_repository")
+        if status == "resolved" and isinstance(target, str) and target:
+            targets.append(target)
+        alias = product.get("served_model_alias")
+        if isinstance(alias, str):
+            aliases.append(alias)
+        container = product.get("runtime_container_name")
+        if isinstance(container, str):
+            containers.append(container)
+    errors.extend(_duplicate_messages("target_repository", targets))
+    errors.extend(_duplicate_messages("served_model_alias", aliases))
+    errors.extend(_duplicate_messages("runtime_container_name", containers))
+    return errors
+
+
+def quality_gate_errors(product: dict[str, Any]) -> list[str]:
+    """Require the task-scoped full-denominator quality gate declared by contract v3.
+
+    Applicability is read from each gate's ``applies_to_tasks`` in the v3 contract. A task listed
+    there must carry the gate; any other task must not. ``quality_matched_full_denominator`` also
+    requires non-empty ``metric`` and ``protocol`` strings.
+    """
+    errors: list[str] = []
+    pid = str(product.get("product_id", "<unknown>"))
+    task = product.get("task")
+    if not isinstance(task, str) or not task:
+        errors.append(f"{pid}: task is required")
+        return errors
+    contract = load_json(contract_paths_for({"contract_version": "3.0.0"})[0])
+    gates = product.get("gates", [])
+    if not isinstance(gates, list):
+        errors.append(f"{pid}: gates must be a list")
+        return errors
+    present: dict[str, dict[str, Any]] = {}
+    for gate in gates:
+        if isinstance(gate, dict) and "id" in gate:
+            present[str(gate["id"])] = gate
+    for gate_def in contract["gates"]:
+        if "applies_to_tasks" not in gate_def:
+            continue
+        gate_id = str(gate_def["id"])
+        applies = task in gate_def["applies_to_tasks"]
+        recorded = present.get(gate_id)
+        if applies and recorded is None:
+            errors.append(f"{pid}: task {task!r} requires gate {gate_id}")
+        elif not applies and recorded is not None:
+            errors.append(f"{pid}: task {task!r} must not carry gate {gate_id}")
+        if recorded is not None and gate_id == _QUALITY_GATE:
+            for field in ("metric", "protocol"):
+                value = recorded.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(f"{pid}: gate {gate_id} requires non-empty {field}")
+    return errors
+
+
+def _extend_ledger_errors(errors: list[str], path: Path, call: Callable[[], list[str]]) -> None:
+    try:
+        errors.extend(call())
+    except (KeyError, TypeError, ValueError, jsonschema.ValidationError) as exc:
+        errors.append(f"{path}: {type(exc).__name__}: {exc}")
+
+
+def _schema_errors(path: Path, ledger: dict[str, Any], schema_path: Path) -> list[str]:
+    schema = load_json(schema_path)
+    validator = jsonschema.Draft202012Validator(schema)
+    found = sorted(validator.iter_errors(ledger), key=lambda err: (err.json_path, err.message))
+    return [f"{path}: {err.json_path}: {err.message}" for err in found]
+
+
+def validate_ledger(path: Path) -> list[str]:
+    """Validate one publication-readiness ledger and return every error string.
+
+    Runs schema, lifecycle, target-repository, and candidate-precision checks. Contract v3 also
+    runs uniqueness, KV-cache, and task quality-gate checks. A malformed ledger, including a legacy
+    free-form file, becomes a list of error strings rather than an exception.
+    """
+    errors: list[str] = []
+    try:
+        ledger = load_json(path)
+    except (OSError, ValueError, TypeError) as exc:
+        return [f"{path}: {type(exc).__name__}: {exc}"]
+
+    major: int | None = None
+    schema_path: Path | None = None
+    try:
+        _contract_path, schema_path = contract_paths_for(ledger)
+        version = str(ledger["contract_version"])
+        major = int(version.split(".", 1)[0])
+    except (KeyError, TypeError, ValueError) as exc:
+        errors.append(f"{path}: {type(exc).__name__}: {exc}")
+        schema_path = None
+        major = None
+
+    if schema_path is not None:
+        try:
+            errors.extend(_schema_errors(path, ledger, schema_path))
+        except (
+            OSError,
+            ValueError,
+            TypeError,
+            jsonschema.ValidationError,
+            jsonschema.SchemaError,
+        ) as exc:
+            errors.append(f"{path}: {type(exc).__name__}: {exc}")
+
+    _extend_ledger_errors(errors, path, lambda: ledger_lifecycle_errors(ledger))
+    _extend_ledger_errors(errors, path, lambda: ledger_target_repository_errors(ledger))
+    _extend_ledger_errors(errors, path, lambda: ledger_candidate_precision_errors(ledger))
+    if major == 3:
+        _extend_ledger_errors(errors, path, lambda: ledger_uniqueness_errors(ledger))
+        products = ledger.get("products", [])
+        if isinstance(products, list):
+            for index, product in enumerate(products):
+                if not isinstance(product, dict):
+                    errors.append(f"{path}: products[{index}] is not an object")
+                    continue
+
+                def _kv(product: dict[str, Any] = product) -> list[str]:
+                    return kv_cache_gate_errors(product)
+
+                def _quality(product: dict[str, Any] = product) -> list[str]:
+                    return quality_gate_errors(product)
+
+                _extend_ledger_errors(errors, path, _kv)
+                _extend_ledger_errors(errors, path, _quality)
+        else:
+            errors.append(f"{path}: TypeError: products is not a list")
+    return errors
