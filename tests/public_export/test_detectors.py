@@ -429,6 +429,46 @@ def test_fleet_hostname_in_a_file_path_is_detected(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        "Run scripts/run_build_gpuhost.sh first.\n",  # hostname followed by a dot (a script name in prose)
+        "The checkpoint_gpuhost-v2 tag.\n",  # followed by a hyphen
+        "Measured on gpuhost.\n",  # sentence-final
+        "See gpuhost/run.sh for the runner.\n",  # path segment
+    ],
+)
+def test_fleet_hostname_in_content_uses_the_path_word_boundary(tmp_path: Path, text: str) -> None:
+    """PR #31 review: the content rule must use the same word boundary as the path rule, so a hostname next to '.', '-'
+    or '_' (script names quoted in prose, which is exactly how #29 leaked) is still found."""
+    root = tmp_path / "root"
+    (root / "docs").mkdir(parents=True)
+    (root / "docs/a.md").write_text(text, encoding="utf-8")
+    findings = scan_file(
+        root, "docs/a.md", policy=POLICY, fleet_hostnames=frozenset({"gpuhost"}), gitleaks_status=GitleaksStatus.PASSED
+    )
+    assert [f.rule_id for f in findings] == ["identity.fleet-hostname"], text
+
+
+def test_private_repository_names_in_content_and_paths_are_detected(tmp_path: Path) -> None:
+    """Issue #29 / PR #31 review: the private repository's name is a denylist entry too (the exporter cannot hardcode
+    it). A denylisted name containing a hyphen must match as one token, in content and in paths."""
+    root = tmp_path / "root"
+    (root / "models/x/results").mkdir(parents=True)
+    (root / "models/x/results/ledger.json").write_text(
+        '{"related_issues": ["Org/secret-archive-repo#34"]}\n', encoding="utf-8"
+    )
+    (root / "docs").mkdir(parents=True)
+    (root / "docs/ok.md").write_text("The public secret archive is not a repo name here.\n", encoding="utf-8")
+    names = frozenset({"secret-archive-repo"})
+    hit = scan_file(root, "models/x/results/ledger.json", policy=POLICY, fleet_hostnames=names,
+                    gitleaks_status=GitleaksStatus.PASSED)
+    miss = scan_file(root, "docs/ok.md", policy=POLICY, fleet_hostnames=names, gitleaks_status=GitleaksStatus.PASSED)
+    assert [f.rule_id for f in hit] == ["identity.fleet-hostname"]
+    assert "secret-archive-repo" not in hit[0].message
+    assert miss == []
+
+
+@pytest.mark.parametrize(
     "path",
     [
         ".env",

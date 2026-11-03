@@ -185,6 +185,18 @@ wrapper and defaults to `security@hangglidersrule.com`. It must match the
 contact used for export. `MODEL_FORGE_ENVIRONMENT_PYTHON` may select a local
 installed distribution environment other than `SOURCE_REPO/.venv/bin/python`.
 
+`MODEL_FORGE_FLEET_HOSTNAMES` is required by both `scripts/stage_public_root.sh`
+and `scripts/verify_public_export.sh`. It names a private file, never committed,
+with one entry per line (`#` starts a comment): the operator's machine names
+(single-label names such as `gpuhost` are accepted) and any other private
+identifier that must never ship, such as the private repository's name. The
+export rewrites entries in transformed text to `public-host.example`, and the
+`identity.fleet-hostname` detector refuses any entry left in an exported file's
+content or path. An entry matches as a whole token: letters and digits continue
+it, so `gpuhost` is found in `run_gpuhost.sh` and `gpuhost/` but not in
+`gpuhosting`. Both scripts refuse to run without the file, because without it
+the check is silently disabled.
+
 `scripts/stage_public_root.sh OUTPUT_ROOT SUMMARY_JSON [SOURCE_REPO
 [SOURCE_SHA [TRUSTED_WHEELHOUSE]]]` performs the canonical export and independent
 verification, then writes a deterministic JSON staging summary containing the

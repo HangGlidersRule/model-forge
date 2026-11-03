@@ -707,9 +707,11 @@ def _email_findings(
 
 
 def _fleet_findings(scan: _TextScan, fleet_hostnames: frozenset[str]) -> bool:
+    # Issue #29 / PR #31 review: the same boundary as the path rule. Only letters and digits continue a hostname token,
+    # so a name next to '.', '-', '_' or '/' (a script name quoted in prose, a path segment, a sentence end) is found.
     for hostname in sorted(fleet_hostnames):
         pattern = re.compile(
-            rf"(?<![A-Za-z0-9.-]){re.escape(hostname)}(?![A-Za-z0-9.-])",
+            rf"(?<![A-Za-z0-9]){re.escape(hostname)}(?![A-Za-z0-9])",
             re.IGNORECASE,
         )
         completed = _regex_findings(

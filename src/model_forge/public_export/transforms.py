@@ -120,9 +120,11 @@ def _path_placeholder(match: re.Match[str]) -> str:
 
 
 def _replace_private_values(text: str, context: TransformContext) -> str:
+    # Same whole-token boundary as the identity.fleet-hostname detector (PR #31 review): only letters and digits continue
+    # an entry, so a name next to '.', '-', '_' or '/' is rewritten too and never reaches the detector as a leftover.
     for hostname in sorted(context.fleet_hostnames, key=lambda item: (-len(item), item)):
         text = re.sub(
-            rf"(?i)(?<![A-Za-z0-9.-]){re.escape(hostname)}(?![A-Za-z0-9.-])",
+            rf"(?i)(?<![A-Za-z0-9]){re.escape(hostname)}(?![A-Za-z0-9])",
             PUBLIC_HOST_PLACEHOLDER,
             text,
         )
