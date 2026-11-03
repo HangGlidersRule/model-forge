@@ -510,7 +510,6 @@ def load_fleet_hostname_denylist(path: Path) -> frozenset[str]:
         if (
             len(candidate) > MAX_IDENTIFIER_LENGTH
             or _HOSTNAME.fullmatch(candidate) is None
-            or "." not in candidate
         ):
             raise DetectorError("fleet hostname denylist contains an invalid entry")
         hostnames.add(candidate)
@@ -994,6 +993,17 @@ def scan_file(
                 "Secret-like filename detected",
             )
         )
+    # Issue #29: a fleet hostname in the file's own path (directory or file name) is a leak too.
+    for hostname in sorted(normalized_hostnames):
+        if re.search(rf"(?<![a-z0-9]){re.escape(hostname)}(?![a-z0-9])", relative_path.casefold()):
+            findings.append(
+                _path_finding(
+                    RULE_FLEET_HOSTNAME,
+                    relative_path,
+                    "Configured fleet hostname detected in the file path",
+                )
+            )
+            break
 
     candidate = _resolved_file(root, relative_path)
     if candidate is None:

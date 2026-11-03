@@ -45,13 +45,13 @@ a non-Qwen3.8 model.
 ### `scripts/qwen3_8/`
 
 The operational launchers are family-bound by design and encode concrete tensor selectors, module
-names, MTP handling, and mcprue-specific build/checkpoint orchestration:
+names, MTP handling, and GPU-host-specific build/checkpoint orchestration:
 
 - `materialize_abliteration_corpus.py`, `measure_qwen38_refusal_direction.py`,
   `apply_qwen38_abliteration.py`, `validate_qwen38_bf16_edit.py`
 - `quantize_blackfrost_nvfp4.py` (rejected/historical llm-compressor path, pre-Darkstar naming),
   `quantize_qwen38_nvfp4.py`, `quantize_qwen38_modelopt.py` (current NVIDIA ModelOpt path)
-- `run_qwen38_build_mcprue.sh`, `checkpoint_vllm_mcprue.sh`
+- `run_qwen38_build_gpu_host.sh`, `checkpoint_vllm_gpu_host.sh`
 
 ## Validation coverage
 

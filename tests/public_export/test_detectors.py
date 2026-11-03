@@ -394,6 +394,40 @@ def test_fleet_hostname_file_limits_fail_before_unbounded_work(
         load_fleet_hostname_denylist(denylist)
 
 
+def test_fleet_hostname_denylist_accepts_single_label_hosts(tmp_path: Path) -> None:
+    """Issue #29: fleet machines are usually reached by a bare name (`gpuhost`), not a dotted FQDN. The denylist must
+    accept single-label names, and the detector must find them on word boundaries only."""
+    denylist = tmp_path / "fleet-hostnames.txt"
+    denylist.write_text("# private\ngpuhost\nnas-build.internal\n", encoding="utf-8")
+    hostnames = load_fleet_hostname_denylist(denylist)
+    assert hostnames == frozenset({"gpuhost", "nas-build.internal"})
+    root = tmp_path / "root"
+    (root / "docs").mkdir(parents=True)
+    (root / "docs/a.md").write_text("Built on gpuhost overnight.\n", encoding="utf-8")
+    (root / "docs/b.md").write_text("gpuhosting and mygpuhost are different words.\n", encoding="utf-8")
+    hit = scan_file(root, "docs/a.md", policy=POLICY, fleet_hostnames=hostnames, gitleaks_status=GitleaksStatus.PASSED)
+    miss = scan_file(root, "docs/b.md", policy=POLICY, fleet_hostnames=hostnames, gitleaks_status=GitleaksStatus.PASSED)
+    assert [f.rule_id for f in hit] == ["identity.fleet-hostname"]
+    assert miss == []
+
+
+def test_fleet_hostname_in_a_file_path_is_detected(tmp_path: Path) -> None:
+    """Issue #29: a fleet hostname in an exported file NAME leaks as surely as one in its content."""
+    root = tmp_path / "root"
+    target = root / "scripts" / "gpuhost" / "run_build_gpuhost.sh"
+    target.parent.mkdir(parents=True)
+    target.write_text("#!/usr/bin/env bash\necho build\n", encoding="utf-8")
+    findings = scan_file(
+        root,
+        "scripts/gpuhost/run_build_gpuhost.sh",
+        policy=POLICY,
+        fleet_hostnames=frozenset({"gpuhost"}),
+        gitleaks_status=GitleaksStatus.PASSED,
+    )
+    assert [f.rule_id for f in findings] == ["identity.fleet-hostname"]
+    assert "gpuhost" not in findings[0].message
+
+
 @pytest.mark.parametrize(
     "path",
     [

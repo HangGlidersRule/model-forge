@@ -143,8 +143,11 @@ Validated on vLLM `v0.32.0` (`vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f8
 - **Flags:** `--max-model-len 32768`, `--max-num-seqs 32`. No `--enable-lora`.
 
 `vllm serve` loads the weights. The `POST /v1/decide` route comes from `serve_decide.py` in this repository: autotrust's
-JEV-27B server with a two-line change. With `JEV_DECIDE_MERGED=1` it reads the decision head from `JEV_DECIDE_HEAD_DIR` and sends
-System 1 readouts to the base model instead of a LoRA module.
+JEV-27B server with two changes:
+- **Merged checkpoint:** with `JEV_DECIDE_MERGED=1` it reads the decision head from `JEV_DECIDE_HEAD_DIR` and sends System 1
+  readouts to the base model instead of a LoRA module.
+- **Prefix-cache accounting:** the `/v1/decide` `usage` block carries `prompt_tokens_details.cached_tokens`, summed over the
+  internal requests, when vLLM runs with `--enable-prompt-tokens-details`. Without that flag the usage block is unchanged.
 
 ```bash
 hf download HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4 --local-dir jev
@@ -153,6 +156,7 @@ python3 jev/serve_decide.py --model jev \
     --served-model-name darkstar-jev27bqad-base-nvfp4 \
     --max-model-len 32768 --max-num-seqs 32 \
     --logprobs-mode processed_logprobs \
+    --enable-prefix-caching --enable-prompt-tokens-details \
     --trust-request-chat-template
 ```
 

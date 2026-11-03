@@ -1,7 +1,7 @@
 """Idempotency must compare the complete build identity, not marker presence.
 
 Unit coverage for the identity record and its comparison, plus an end-to-end
-proof through the mcprue runner: an unchanged build is skipped, while a marker
+proof through the GPU-host runner: an unchanged build is skipped, while a marker
 recording a different identity is refused instead of being reported as success.
 """
 
@@ -34,7 +34,7 @@ from model_forge.modelopt.pin import OMLP_RECIPE, PRIMARY_RECIPE, load_pin
 from model_forge.pipeline import SUCCESS_MARKER, SuccessManifest
 
 REPO = Path(__file__).resolve().parent.parent
-RUNNER = REPO / "scripts" / "qwen3_8" / "run_qwen38_modelopt_mcprue.sh"
+RUNNER = REPO / "scripts" / "qwen3_8" / "run_qwen38_modelopt_gpu_host.sh"
 PY_SCRIPT = REPO / "scripts" / "qwen3_8" / "quantize_qwen38_modelopt.py"
 OUT_NAME = "Qwen3.8-27B-clean-mlp_only-modelopt-nvfp4"
 

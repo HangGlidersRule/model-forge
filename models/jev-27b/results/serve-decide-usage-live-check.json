@@ -1,0 +1,53 @@
+{
+ "issue": "HangGlidersRule/model-forge#23",
+ "server": {
+  "image": "vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34 (v0.32.0)",
+  "checkpoint": "HangGlidersRule/Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4@7159403d48d9ad8884659e1f18debc353e1fa4a1",
+  "serve_decide_py_sha256": "062c755996db7911d047f3ce3d587970181033272b2665963970bf167b4c6570",
+  "serve_decide_py": "autotrust/JEV-27B@14b425269ed2 serve_decide.py patched by eval/patch_serve_decide.py at this commit",
+  "flags": "the card's /v1/decide flags plus --enable-prefix-caching --enable-prompt-tokens-details",
+  "attention_block_tokens": 784
+ },
+ "request": {
+  "kind": "choice",
+  "options": [
+   "USD",
+   "EUR",
+   "GBP"
+  ],
+  "state_chars": 50656
+ },
+ "with_prompt_tokens_details": [
+  {
+   "call": 1,
+   "prompt_tokens": 12464,
+   "cached_tokens": 0,
+   "choice": "EUR"
+  },
+  {
+   "call": 2,
+   "prompt_tokens": 12464,
+   "cached_tokens": 11760,
+   "choice": "EUR"
+  },
+  {
+   "call": 3,
+   "prompt_tokens": 12464,
+   "cached_tokens": 11760,
+   "choice": "EUR"
+  }
+ ],
+ "engine_prefix_cache_counters": {
+  "queries_total": 37392,
+  "hits_total": 23520
+ },
+ "without_prompt_tokens_details": {
+  "usage": {
+   "prompt_tokens": 66,
+   "completion_tokens": 1,
+   "total_tokens": 67
+  },
+  "usage_keys_identical_to_pre_fix": true
+ },
+ "result": "PASS: calls 2-3 report cached_tokens 11,760 (15 blocks of 784) on a 12,464-token prompt; the engine counted 23,520 hits = 2 x 11,760; without the flag the usage block is the pre-fix shape"
+}

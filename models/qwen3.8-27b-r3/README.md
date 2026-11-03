@@ -53,8 +53,8 @@ unbuilt W4A4 candidates are lineage records, not publication targets.
 
 ## Current status
 
-- ModelOpt migration code, recipes, validators, GPQA harness, and D:-only mcprue runner are in-repo.
-- GPU quantization / remote artifact mutation is a separate mcprue execution step.
+- ModelOpt migration code, recipes, validators, GPQA harness, and D:-only GPU-host runner are in-repo.
+- GPU quantization / remote artifact mutation is a separate GPU-host execution step.
 - Prior compressed-tensors NVFP4 artifacts are rejected/historical.
 - All four evaluation cells are complete, and the three owned checkpoints are public on Hugging Face
   at pinned revisions with config, index, and every weight shard verified. Clean download, boot, and

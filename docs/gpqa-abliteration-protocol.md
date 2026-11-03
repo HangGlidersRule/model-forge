@@ -140,7 +140,7 @@ not folklore). Adapted for Nemotron-H hybrid (Mamba + MoE + attention).
   `transformers.integrations.moe._can_use_grouped_mm = lambda *a, **k: False`
   to force per-expert fallback.
 - Measure/apply run inside ModelOpt container
-  `local/model-forge-modelopt:0.46.0rc2-43fd41a` on mcprue host
+  `local/model-forge-modelopt:0.46.0rc2-43fd41a` on the build host
   (`security@hangglidersrule.com`), source model at `${PUBLIC_ARTIFACT_PATH}`,
   corpus + scripts + run dirs under `${PUBLIC_ARTIFACT_PATH}`.
 

@@ -82,7 +82,7 @@ routed-expert down-projection inputs (KL 0.0795).
 
 - Canonical abliteration methodology, ModelOpt quant recipes/validators, GPQA harness, and throughput
   tuning engine are in-repo (`feat/lightning-abliterated-products`).
-- GPU quantization / remote artifact mutation is a separate mcprue execution step.
+- GPU quantization / remote artifact mutation is a separate GPU-host execution step.
 - All four evaluation cells are complete: build, tune, behavior gate, GPQA (accepted protocol).
 - Both owned checkpoints are staged for public release behind the publication ledger.
 - License: OpenMDW-1.1 — NVIDIA upstream license; derivatives require attribution.

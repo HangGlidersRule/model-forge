@@ -9,8 +9,8 @@ drive one model family's build. They are intentionally **not** generic framework
 - Use an underscore slug (`qwen3_8`) for Python import friendliness even though the recipe/model-record
   id uses dots and dashes (`qwen3.8-27b`).
 - Script names describe the concrete action and target, e.g. `apply_qwen38_abliteration.py`,
-  `quantize_qwen38_modelopt.py`, `run_qwen38_modelopt_mcprue.sh`.
-- `quantize_qwen38_nvfp4.py` / `run_qwen38_build_mcprue.sh` are the rejected compressed-tensors
+  `quantize_qwen38_modelopt.py`, `run_qwen38_modelopt_gpu_host.sh`.
+- `quantize_qwen38_nvfp4.py` / `run_qwen38_build_gpu_host.sh` are the rejected compressed-tensors
   path (historical); new builds use the ModelOpt scripts.
 
 ## Extension boundary
@@ -26,13 +26,13 @@ drive one model family's build. They are intentionally **not** generic framework
 ## Current families
 
 - [`qwen3_8/`](qwen3_8/) — Qwen3.8-27B corpus materialization, refusal-direction measurement,
-  BF16 projection, edit validation, ModelOpt NVFP4 quantization, and D:-only mcprue runners.
+  BF16 projection, edit validation, ModelOpt NVFP4 quantization, and D:-only GPU-host runners.
   - `quantize_qwen38_modelopt.py` — dry-run validates the recipe and prints the exact
     `hf_ptq.py` command; `--execute` runs the pinned ModelOpt container for real, validates the
     export fail-closed, writes a SHA-256 manifest + `_SUCCESS`, and atomically promotes it.
     `--check-build-identity` reports whether an existing artifact was produced by the current
     build identity (exit 0 up to date, 20 build required, 5 refuse).
-  - `run_qwen38_modelopt_mcprue.sh` — D:-only orchestration: append-only runtime snapshot,
+  - `run_qwen38_modelopt_gpu_host.sh` — D:-only orchestration: append-only runtime snapshot,
     free-space and build-identity overwrite guards, real container execution,
     restore-on-failure. An existing artifact is skipped only when its `_SUCCESS.json` records
     the current identity; a stale marker is refused rather than reported as success. It resolves

@@ -26,6 +26,9 @@ readonly source_sha=${4:-$(git -C "$source_repo" rev-parse HEAD)}
 readonly wheelhouse=${5:-}
 readonly manifest="$source_repo/tools/public_export/public-files.yaml"
 readonly python=${MODEL_FORGE_STAGE_PYTHON:-python3}
+# Private fleet hostname denylist (one hostname per line, never committed). Both the export's host-name sanitizer and
+# the fleet-hostname detector run only when it is supplied, so staging refuses to run without one (issue #29).
+readonly fleet_hostnames=${MODEL_FORGE_FLEET_HOSTNAMES:-}
 if [[ -n "${MODEL_FORGE_COMMAND:-}" ]]; then
   model_forge=$MODEL_FORGE_COMMAND
 elif [[ -x "$source_repo/.venv/bin/model-forge" ]]; then
@@ -37,6 +40,10 @@ readonly model_forge
 
 [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] ||
   fail "source SHA must be 40 lowercase hexadecimal characters"
+[[ -n "$fleet_hostnames" ]] ||
+  fail "fleet hostname denylist is required: set MODEL_FORGE_FLEET_HOSTNAMES to the private hostname file"
+[[ -f "$fleet_hostnames" && ! -L "$fleet_hostnames" ]] ||
+  fail "fleet hostname denylist is required: $fleet_hostnames is not a regular file"
 [[ -d "$source_repo" && ! -L "$source_repo" ]] ||
   fail "source repository must be an existing non-symlink directory"
 [[ -f "$manifest" && ! -L "$manifest" ]] ||
@@ -57,13 +64,14 @@ export PYTHONPATH
   --output "$output_root" \
   --manifest "$manifest" \
   --source-sha "$source_sha" \
+  --fleet-hostname-denylist "$fleet_hostnames" \
   --replace
 
 if [[ -n "$wheelhouse" ]]; then
-  "$source_repo/scripts/verify_public_export.sh" \
+  MODEL_FORGE_FLEET_HOSTNAMES="$fleet_hostnames" "$source_repo/scripts/verify_public_export.sh" \
     "$output_root" "$source_repo" "$source_sha" "$wheelhouse"
 else
-  "$source_repo/scripts/verify_public_export.sh" \
+  MODEL_FORGE_FLEET_HOSTNAMES="$fleet_hostnames" "$source_repo/scripts/verify_public_export.sh" \
     "$output_root" "$source_repo" "$source_sha"
 fi
 

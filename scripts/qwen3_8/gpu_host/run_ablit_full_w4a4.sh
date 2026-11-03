@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_ablit_full_w4a4.sh — Build the ABLITERATED full-W4A4 NVFP4 Qwen3.8 artifact on mcprue.
+# run_ablit_full_w4a4.sh — Build the ABLITERATED full-W4A4 NVFP4 Qwen3.8 artifact on the GPU host.
 #
 # WHAT THIS DOES (written 2026-09-16, Devin-approved "run the requant"):
 #   Quantize the ABLITERATED BF16 master (62 GB, 14 shards, the canonical Darkstar
@@ -18,7 +18,7 @@
 #   (in_proj_a/in_proj_b/conv1d) stay BF16. Only GDN projection matmuls + MLPs go W4A4.
 #
 # WHAT YOU MUST KNOW:
-#   - HARD RULE: mcprue runs ONE GPU serve at a time. This script STOPS the production
+#   - HARD RULE: the GPU host runs ONE GPU serve at a time. This script STOPS the production
 #     serve (snapshot/restore pattern), runs the quant, and RESTORES production on exit —
 #     success, failure, or Ctrl-C (trap).
 #   - ModelOpt pin: 0.46.0rc2 commit 43fd41a58d52c4e6e5dec1d1ff5989ecc737ae1a.

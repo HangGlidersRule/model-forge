@@ -1,4 +1,4 @@
-"""Idempotent ModelOpt mcprue runner dry-run tests."""
+"""Idempotent ModelOpt GPU-host runner dry-run tests."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-RUNNER = REPO / "scripts" / "qwen3_8" / "run_qwen38_modelopt_mcprue.sh"
+RUNNER = REPO / "scripts" / "qwen3_8" / "run_qwen38_modelopt_gpu_host.sh"
 # PATH without any virtualenv bin directory: bare `python` is absent here.
 BARE_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
 IMPORT_PROBE = "import model_forge.modelopt.validate"

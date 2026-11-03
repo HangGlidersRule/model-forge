@@ -160,6 +160,7 @@ build/
 !/models/jev-27b/results/qad-artifact-validation.json
 !/models/jev-27b/results/qad-gate-summary.json
 !/models/jev-27b/results/qad-publication-receipt.json
+!/models/jev-27b/results/serve-decide-usage-live-check.json
 !/models/jev-27b/scripts/
 !/models/jev-27b/scripts/merge_lora.py
 !/models/jev-27b/scripts/qad_train.py
@@ -419,16 +420,16 @@ build/
 !/scripts/qwen3_8/
 !/scripts/qwen3_8/apply_qwen38_abliteration.py
 !/scripts/qwen3_8/bench_qwen38_dflash2_backport.py
-!/scripts/qwen3_8/checkpoint_vllm_mcprue.sh
+!/scripts/qwen3_8/checkpoint_vllm_gpu_host.sh
+!/scripts/qwen3_8/gpu_host/
+!/scripts/qwen3_8/gpu_host/run_ablit_full_w4a4.sh
 !/scripts/qwen3_8/materialize_abliteration_corpus.py
-!/scripts/qwen3_8/mcprue/
-!/scripts/qwen3_8/mcprue/run_ablit_full_w4a4.sh
 !/scripts/qwen3_8/measure_qwen38_refusal_direction.py
 !/scripts/qwen3_8/quantize_blackfrost_nvfp4.py
 !/scripts/qwen3_8/quantize_qwen38_modelopt.py
 !/scripts/qwen3_8/quantize_qwen38_nvfp4.py
-!/scripts/qwen3_8/run_qwen38_build_mcprue.sh
-!/scripts/qwen3_8/run_qwen38_modelopt_mcprue.sh
+!/scripts/qwen3_8/run_qwen38_build_gpu_host.sh
+!/scripts/qwen3_8/run_qwen38_modelopt_gpu_host.sh
 !/scripts/qwen3_8/snapshot_runtime.py
 !/scripts/qwen3_8/validate_qwen38_bf16_edit.py
 !/scripts/render_darkstar_serve_profile.py
@@ -540,6 +541,7 @@ build/
 !/tests/test_gpqa_harness.py
 !/tests/test_huggingface_cards.py
 !/tests/test_image_harness.py
+!/tests/test_jev_serve_decide_usage.py
 !/tests/test_kv_cache_matrix.py
 !/tests/test_model_card_gold_standard.py
 !/tests/test_modelopt_build_identity.py

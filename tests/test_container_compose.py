@@ -87,7 +87,7 @@ def test_build_launcher_is_configurable_via_build_script_env() -> None:
     """The build runner selects its launcher from BUILD_SCRIPT, defaulting to the Qwen script."""
     service = _service(BUILD_COMPOSE, "build-runner")
     assert (
-        "BUILD_SCRIPT=${BUILD_SCRIPT:-scripts/qwen3_8/run_qwen38_build_mcprue.sh}"
+        "BUILD_SCRIPT=${BUILD_SCRIPT:-scripts/qwen3_8/run_qwen38_build_gpu_host.sh}"
         in _environment_text(service)
     )
     command = _command_text(service)
@@ -95,7 +95,7 @@ def test_build_launcher_is_configurable_via_build_script_env() -> None:
     # The path is quoted so a launcher path with spaces is passed as a single argument.
     assert '"/repo/$$BUILD_SCRIPT"' in command
     # The launcher path is no longer hardcoded into the command.
-    assert "run_qwen38_build_mcprue.sh" not in command
+    assert "run_qwen38_build_gpu_host.sh" not in command
 
 
 def test_build_launcher_default_is_overridable_without_editing_compose() -> None:
@@ -119,7 +119,7 @@ def test_containers_readme_documents_configurable_build_script() -> None:
     readme = (CONTAINERS / "README.md").read_text(encoding="utf-8")
     lower = readme.lower()
     assert "build_script" in lower
-    assert "scripts/qwen3_8/run_qwen38_build_mcprue.sh" in readme
+    assert "scripts/qwen3_8/run_qwen38_build_gpu_host.sh" in readme
     assert "CONFIG" in readme
     assert "required" in lower
 

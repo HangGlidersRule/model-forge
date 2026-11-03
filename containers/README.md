@@ -4,7 +4,7 @@ Generic Docker Compose assets for building and serving model-forge artifacts. Ev
 environment-specific value is a variable, and no host paths, credentials, or
 private hostnames are baked in. The build runner is a **generic shell with a configurable launcher**:
 its `BUILD_SCRIPT` variable defaults to the Qwen3.8 pipeline
-(`scripts/qwen3_8/run_qwen38_build_mcprue.sh`), so out of the box it builds Qwen. Another family
+(`scripts/qwen3_8/run_qwen38_build_gpu_host.sh`), so out of the box it builds Qwen. Another family
 points `BUILD_SCRIPT` at its own repo-relative launcher — no Compose edits required.
 
 ## Layout
@@ -22,7 +22,7 @@ containers/
 ## Pinned ModelOpt image
 
 `modelopt/Dockerfile` builds the NVFP4 quantization runtime used by the Qwen3.8
-mcprue runner. It is pinned by immutable identifiers (never `latest`): the
+GPU-host runner. It is pinned by immutable identifiers (never `latest`): the
 `nvidia-modelopt` wheel is downloaded from its exact URL and **verified against the
 `pin.json` SHA-256 at build time**, installed as `<wheel>[hf]` so the extra never
 re-installs the package from PyPI over the verified file, and
@@ -48,7 +48,7 @@ DRY_RUN=1 containers/modelopt/build.sh    # print the docker build command only
 - Keep these Compose files generic. Family- or run-specific choices (which recipe, which model path,
   MTP depth) are passed through environment variables, not hardcoded.
 - Family-specific launch logic belongs in `scripts/<family_slug>/`, which these containers invoke
-  through `BUILD_SCRIPT` (default `scripts/qwen3_8/run_qwen38_build_mcprue.sh`). The path is
+  through `BUILD_SCRIPT` (default `scripts/qwen3_8/run_qwen38_build_gpu_host.sh`). The path is
   repo-relative to the mounted repo (`/repo`) and expanded by the container shell, not baked into the
   command.
 - Published image names follow `ghcr.io/hangglidersrule/model-forge-{serve,build}:<version>`.
@@ -92,7 +92,7 @@ generic runner cannot silently select a rejected historical recipe. Common varia
 |---|---|---|
 | `REPO_ROOT` | Repo mounted read-only into the build runner | `.` |
 | `CONFIG` | Recipe consumed by the build runner | **Required; set explicitly to a supported current recipe** |
-| `BUILD_SCRIPT` | Repo-relative launcher the build runner executes | `scripts/qwen3_8/run_qwen38_build_mcprue.sh` |
+| `BUILD_SCRIPT` | Repo-relative launcher the build runner executes | `scripts/qwen3_8/run_qwen38_build_gpu_host.sh` |
 | `DRY_RUN` | Guard against accidental heavy runs | `1` |
 | `VLLM_IMAGE` | Serving image | `vllm/vllm-openai:v0.27.1` |
 | `VLLM_MODEL_PATH` | Model path inside the serve container | `/models/current` |
