@@ -3,7 +3,7 @@
 
 Given a container's ``docker inspect`` JSON, emit a self-contained ``restore.sh``
 that recreates the container (image, name, ports, env, mounts, restart policy,
-original command). Used by the D:-only mcprue runner so restore does not depend
+original command). Used by the D:-only GPU-host runner so restore does not depend
 on a compose file we do not own.
 """
 from __future__ import annotations

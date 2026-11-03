@@ -24,6 +24,36 @@ def test_staging_script_is_bounded_and_uses_canonical_export_and_verify() -> Non
     assert "wget " not in text
 
 
+def test_staging_script_requires_a_fleet_hostname_denylist() -> None:
+    """Issue #29: the fleet-hostname detector and the host-name sanitizer only run with a denylist. The staging script
+    must pass one to both the export and the verify step, and refuse to stage without it, so an export can never again
+    run with the check silently disabled."""
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "MODEL_FORGE_FLEET_HOSTNAMES" in text
+    assert '--fleet-hostname-denylist "$fleet_hostnames"' in text
+    assert "fleet hostname denylist is required" in text
+    verifier = (ROOT / "scripts/verify_public_export.sh").read_text(encoding="utf-8")
+    assert '--fleet-hostname-denylist "$fleet_hostnames"' in verifier
+    assert "fleet hostname denylist is required" in verifier
+
+
+def test_staging_script_refuses_to_run_without_a_denylist(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    (source / "tools/public_export").mkdir(parents=True)
+    (source / "tools/public_export/public-files.yaml").write_text("version: 1\nrules: []\n", encoding="utf-8")
+    environment = os.environ.copy()
+    environment.pop("MODEL_FORGE_FLEET_HOSTNAMES", None)
+    environment["MODEL_FORGE_COMMAND"] = "/bin/true"
+    proc = subprocess.run(
+        [SCRIPT, tmp_path / "public", tmp_path / "summary.json", source, "a" * 40],
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 2
+    assert "fleet hostname denylist is required" in proc.stderr
+
+
 def test_staging_script_writes_deterministic_summary_after_verification(
     tmp_path: Path,
 ) -> None:
@@ -68,6 +98,9 @@ EOF
     environment = os.environ.copy()
     environment["PATH"] = f"{bin_dir}:{environment['PATH']}"
     environment["CALLS"] = str(calls)
+    denylist = tmp_path / "fleet-hostnames.txt"
+    denylist.write_text("forge-worker-07.private\n", encoding="utf-8")
+    environment["MODEL_FORGE_FLEET_HOSTNAMES"] = str(denylist)
     subprocess.run(
         [SCRIPT, output, summary, source, sha, tmp_path / "wheelhouse"],
         check=True,

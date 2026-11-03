@@ -510,7 +510,6 @@ def load_fleet_hostname_denylist(path: Path) -> frozenset[str]:
         if (
             len(candidate) > MAX_IDENTIFIER_LENGTH
             or _HOSTNAME.fullmatch(candidate) is None
-            or "." not in candidate
         ):
             raise DetectorError("fleet hostname denylist contains an invalid entry")
         hostnames.add(candidate)
@@ -708,9 +707,11 @@ def _email_findings(
 
 
 def _fleet_findings(scan: _TextScan, fleet_hostnames: frozenset[str]) -> bool:
+    # Issue #29 / PR #31 review: the same boundary as the path rule. Only letters and digits continue a hostname token,
+    # so a name next to '.', '-', '_' or '/' (a script name quoted in prose, a path segment, a sentence end) is found.
     for hostname in sorted(fleet_hostnames):
         pattern = re.compile(
-            rf"(?<![A-Za-z0-9.-]){re.escape(hostname)}(?![A-Za-z0-9.-])",
+            rf"(?<![A-Za-z0-9]){re.escape(hostname)}(?![A-Za-z0-9])",
             re.IGNORECASE,
         )
         completed = _regex_findings(
@@ -994,6 +995,17 @@ def scan_file(
                 "Secret-like filename detected",
             )
         )
+    # Issue #29: a fleet hostname in the file's own path (directory or file name) is a leak too.
+    for hostname in sorted(normalized_hostnames):
+        if re.search(rf"(?<![a-z0-9]){re.escape(hostname)}(?![a-z0-9])", relative_path.casefold()):
+            findings.append(
+                _path_finding(
+                    RULE_FLEET_HOSTNAME,
+                    relative_path,
+                    "Configured fleet hostname detected in the file path",
+                )
+            )
+            break
 
     candidate = _resolved_file(root, relative_path)
     if candidate is None:

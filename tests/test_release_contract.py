@@ -697,6 +697,16 @@ def test_every_family_ledger_validates(path: Path) -> None:
     assert validate_ledger(path) == []
 
 
+@pytest.mark.parametrize("path", _family_ledger_cases())
+def test_family_ledgers_reference_only_public_issues(path: Path) -> None:
+    """Issue #29: related_issues ship in the public tree, so they must point at the public repository (or be bare
+    numbers, the v1 Qwen3.8 convention). A link into the private archive's tracker names a private repository and
+    resolves for nobody outside it."""
+    ledger = load_json(path)
+    for ref in ledger.get("related_issues", []):
+        assert re.fullmatch(r"(?:HangGlidersRule/model-forge)?#\d+", str(ref)), f"{path.parents[1].name}: {ref}"
+
+
 def test_every_family_has_a_ledger_under_test() -> None:
     """The parametrized ledger test must cover every family directory that publishes, so a new family cannot ship
     without a ledger that validates."""

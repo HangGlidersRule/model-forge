@@ -84,12 +84,12 @@ The three selected owned repositories are public at pinned revisions, and no bar
 BF16 reference and is not branded Darkstar. `R3` remains the internal abliterated-edit lineage id
 only.
 
-## Remote rebuild sequence (mcprue, D: only)
+## Remote rebuild sequence (GPU host, D: only)
 
-1. Dry-run `scripts/qwen3_8/run_qwen38_modelopt_mcprue.sh` (default) to print the plan and
+1. Dry-run `scripts/qwen3_8/run_qwen38_modelopt_gpu_host.sh` (default) to print the plan and
    the exact `hf_ptq.py` command without touching the GPU. The runner picks its own interpreter
    (repo `.venv`, else `python3`/`python`; override with `PYTHON_BIN`) and imports `model_forge`
-   from `<repo>/src`, so no venv activation is required on mcprue; an interpreter that cannot
+   from `<repo>/src`, so no venv activation is required on the GPU host; an interpreter that cannot
    import `model_forge` aborts the run before any work.
 2. `EXECUTE=1 DRY_RUN=0` performs real work: it snapshots the **currently running** runtime
    via `docker inspect`/`docker logs` and renders a usable `restore.sh`
@@ -146,7 +146,7 @@ only.
     same artifact name is refused, never reported as success
 - `src/model_forge/gpqa/` — frozen harness
 - `scripts/qwen3_8/quantize_qwen38_modelopt.py` — dry-run plan / `--execute` real run
-- `scripts/qwen3_8/run_qwen38_modelopt_mcprue.sh` — D:-only orchestration
+- `scripts/qwen3_8/run_qwen38_modelopt_gpu_host.sh` — D:-only orchestration
 - `scripts/qwen3_8/snapshot_runtime.py` — runtime snapshot → restore artifact
 - `containers/modelopt/{Dockerfile,build.sh}` — pinned reproducible image
 - Forge recipes: `recipes/qwen3.8-27b/darkstar-qwen3.8-27b-base-modelopt-nvfp4.yaml`,

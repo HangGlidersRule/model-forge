@@ -60,7 +60,7 @@ mkdir -p "${RUN_ROOT}"
 # --- Step 1: Checkpoint current service ---
 log "Step 1: Checkpointing current service..."
 DRY_RUN=0 CHECKPOINT_ROOT="${RUN_ROOT}/checkpoints" \
-    bash "${SCRIPT_DIR}/checkpoint_vllm_mcprue.sh"
+    bash "${SCRIPT_DIR}/checkpoint_vllm_gpu_host.sh"
 CHECKPOINT_SNAP="$(ls -td "${RUN_ROOT}/checkpoints/"* 2>/dev/null | head -1)"
 
 # --- Step 2: Materialize corpus ---

@@ -49,7 +49,7 @@ curl -sf "${ENDPOINT}/v1/models" > "${SNAP}/models.json" 2>/dev/null || true
 env | grep -E '^(VLLM_|MODEL_|SOURCE_|COMPOSE_)' | sort > "${SNAP}/env.txt" 2>/dev/null || true
 
 # Record command that created this checkpoint
-echo "checkpoint_vllm_mcprue.sh at ${TS}" > "${SNAP}/command.txt"
+echo "checkpoint_vllm_gpu_host.sh at ${TS}" > "${SNAP}/command.txt"
 
 # SHA manifest
 find "${SNAP}" -type f -not -name "manifest.sha256" | sort | while read -r f; do

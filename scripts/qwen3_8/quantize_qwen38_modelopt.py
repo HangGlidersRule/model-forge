@@ -57,7 +57,7 @@ CANDIDATES = {
     "w4a16_optional": MIXED_W4A16_RECIPE,
 }
 
-# Exit codes shared with run_qwen38_modelopt_mcprue.sh.
+# Exit codes shared with run_qwen38_modelopt_gpu_host.sh.
 EXIT_REFUSE_OVERWRITE = 5
 EXIT_NEEDS_BUILD = 20
 

@@ -17,7 +17,7 @@ services:
       # Repo-relative launcher for the mounted repo. Defaults to the Qwen3.8 pipeline;
       # another family selects its own launcher (e.g. scripts/<family>/build.sh) without
       # editing this file. The container shell reads it from the environment below.
-      - BUILD_SCRIPT=${BUILD_SCRIPT:-scripts/qwen3_8/run_qwen38_build_mcprue.sh}
+      - BUILD_SCRIPT=${BUILD_SCRIPT:-scripts/qwen3_8/run_qwen38_build_gpu_host.sh}
     command: >-
       bash -c '
         pip install -e /repo[dev] &&

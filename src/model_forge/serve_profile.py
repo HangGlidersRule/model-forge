@@ -243,7 +243,7 @@ class ServeProfile:
         #   FLASHINFER + MTP4 + mamba align: GPQA 168/198 = 84.85% (bf16-thinking
         #   baseline 85.35%), zero IMAs under full concurrency-30 thinking load,
         #   needles HIT to 210K tokens, KV pool 1.05M tokens at util 0.50.
-        #   Measured 2026-09-16 on mcprue (RTX PRO 6000). NOT validated on stock
+        #   Measured 2026-09-16 on an RTX PRO 6000. NOT validated on stock
         #   0.27.1 (upstream there is SM100-trtllm-gen-only for nvfp4).
         # - turboquant KV remains refused (never validated on any of our runtimes).
         _QUANT_KV_OK_BACKENDS = {"TRITON_ATTN", "FLASHINFER"}

@@ -123,6 +123,9 @@ build was a measurement fault, identified by that re-measurement. Evidence:
   shards' scales. ModelOpt aligns the scales of linears that share an input, including the DeltaNet pair; the validator checks it.
 - **Serving shim.** `serve_decide.py` expects a LoRA module. With `JEV_DECIDE_MERGED=1` and `JEV_DECIDE_HEAD_DIR` it reads the
   decision head from the model directory and sends readouts to the base model.
+- **Prefix-cache accounting (issue #23).** The same patch (`eval/patch_serve_decide.py`) makes `/v1/decide` report
+  `usage.prompt_tokens_details.cached_tokens` when vLLM runs with `--enable-prompt-tokens-details`, so gateways see the
+  prefix-cache hits. Without the flag the usage block is unchanged.
 
 ## License
 

@@ -15,7 +15,7 @@ NVIDIA attribution lines.
 
 ## Gates (all must pass before publish)
 
-1. Build/artifacts on mcprue: BF16 (62G) + NVFP4 (22G, 3 shards) present, quant contract verified.
+1. Build/artifacts on the GPU host: BF16 (62G) + NVFP4 (22G, 3 shards) present, quant contract verified.
 2. Behavior gate: **200/200 harmful compliance, 0/83 safe over-refusals, 0 errors** — ✅ BF16 and NVFP4.
 3. GPQA (accepted protocol) on the **final servable result** (Abliterated-NVFP4 @ MTP10) — running.
 4. Speed/tuning: MTP winners locked (Base-NVFP4 MTP7 541.7, Ablit-BF16 MTP12 501.7,

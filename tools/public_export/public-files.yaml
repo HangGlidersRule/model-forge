@@ -1,6 +1,6 @@
 version: 1
 rules:
-  - id: private-mcprue-ops-serve-config
+  - id: private-gpu-host-ops-serve-config
     source: "containers/serve/serve-production-nvfp4kv.yml"
     disposition: exclude
     public_destination: null
@@ -11,7 +11,7 @@ rules:
     generated: false
     precedence: 1000
     allow_empty: true
-  - id: private-mcprue-ops-rollback-runbook
+  - id: private-gpu-host-ops-rollback-runbook
     source: "containers/serve/ROLLBACK-RUNBOOK.md"
     disposition: exclude
     public_destination: null

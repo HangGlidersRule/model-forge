@@ -133,7 +133,8 @@ The public repository is generated from the private one; nothing is edited by ha
 - `tools/public_export/public-files.yaml` classifies every tracked file: copy, transform (sanitize), or exclude, with a
   reason and an owner. `scripts/stage_public_root.sh` builds the export, runs the detectors (private addresses, host
   names, local paths, raw benchmark keys, secrets), runs gitleaks over the source history, and writes
-  `PUBLIC_EXPORT_MANIFEST.json` with the source commit and a payload tree digest.
+  `PUBLIC_EXPORT_MANIFEST.json` with the source commit and a payload tree digest. The host-name check needs a private
+  denylist (`MODEL_FORGE_FLEET_HOSTNAMES`); the script refuses to run without one.
 - An independent verifier rebuilds the export in a clean environment from a pinned wheelhouse and checks the digest.
 - Before opening the pull request: `diff -r` the export against public main. Only the intended files may differ, and
   earlier families must be byte-identical.

@@ -5,7 +5,7 @@
   "family": "qwen-image-2.1",
   "family_display": "Darkstar Qwen-Image-2.1",
   "source_revision": "Qwen/Qwen-Image-2.1@b3179ad355be050328e483a9dfdd9e60cd62adfa",
-  "note": "Image family ledger. Architecture: diffusion (7B DiT + Qwen3-VL 8B encoder). Consumption paths validated: vLLM-Omni serving (forge doctrine) AND plain-diffusers dequant-on-load (ComfyUI-style). Ablit cells pending the DiT-side shaping mechanism (issue #42) and are NOT published in this ledger revision.",
+  "note": "Image family ledger. Architecture: diffusion (7B DiT + Qwen3-VL 8B encoder). Consumption paths validated: vLLM-Omni serving (forge doctrine) AND plain-diffusers dequant-on-load (ComfyUI-style). Ablit cells pending the DiT-side shaping mechanism (issue #42) and are NOT published in this ledger revision. The image campaign (Phases A-D and the abliteration research) was tracked in the private archive's issue tracker; issue numbers cited in this ledger (#34-#42) refer to that tracker and have no public pages.",
   "any_publication_claim": true,
   "products": [
     {
@@ -319,15 +319,5 @@
     }
   ],
   "rejected_historical": [],
-  "related_issues": [
-    "HangGlidersRule/model-forge-private-archive#34",
-    "HangGlidersRule/model-forge-private-archive#35",
-    "HangGlidersRule/model-forge-private-archive#36",
-    "HangGlidersRule/model-forge-private-archive#37",
-    "HangGlidersRule/model-forge-private-archive#38",
-    "HangGlidersRule/model-forge-private-archive#39",
-    "HangGlidersRule/model-forge-private-archive#40",
-    "HangGlidersRule/model-forge-private-archive#41",
-    "HangGlidersRule/model-forge-private-archive#42"
-  ]
+  "related_issues": []
 }

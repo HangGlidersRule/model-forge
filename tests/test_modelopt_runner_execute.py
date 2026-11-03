@@ -17,7 +17,7 @@ import pytest
 from modelopt_fakes import write_fake_docker, write_fake_source
 
 REPO = Path(__file__).resolve().parent.parent
-RUNNER = REPO / "scripts" / "qwen3_8" / "run_qwen38_modelopt_mcprue.sh"
+RUNNER = REPO / "scripts" / "qwen3_8" / "run_qwen38_modelopt_gpu_host.sh"
 PY_SCRIPT = REPO / "scripts" / "qwen3_8" / "quantize_qwen38_modelopt.py"
 
 
@@ -170,7 +170,7 @@ def test_no_intentional_stub_remains() -> None:
     runner_text = RUNNER.read_text(encoding="utf-8")
     py_text = PY_SCRIPT.read_text(encoding="utf-8")
     for banned in (
-        "gated to the remote mcprue host",
+        "gated to the remote GPU host",
         "stops before GPU quantization",
         "intentionally not embedded",
         "sys.exit(10)",

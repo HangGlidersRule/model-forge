@@ -17,10 +17,15 @@ readonly source_repo=$2
 readonly source_sha=$3
 readonly supplied_wheelhouse="${4:-${MODEL_FORGE_WHEELHOUSE:-}}"
 readonly public_contact="${MODEL_FORGE_PUBLIC_CONTACT:-security@hangglidersrule.com}"
+# Private fleet hostname denylist (issue #29): the verifier recomputes transformed bytes with it and rescans the export
+# for fleet hostnames, so it must match the one the export used and is required.
+readonly fleet_hostnames="${MODEL_FORGE_FLEET_HOSTNAMES:-}"
 temporary=
 
 [[ -d "$export_root" && ! -L "$export_root" ]] ||
   fail "export root must be an existing non-symlink directory"
+[[ -n "$fleet_hostnames" && -f "$fleet_hostnames" && ! -L "$fleet_hostnames" ]] ||
+  fail "fleet hostname denylist is required: set MODEL_FORGE_FLEET_HOSTNAMES to the private hostname file"
 [[ -d "$source_repo" && ! -L "$source_repo" ]] ||
   fail "source repo must be an existing non-symlink directory"
 [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] ||
@@ -79,4 +84,5 @@ model-forge public-verify \
   --manifest tools/public_export/public-files.yaml \
   --wheelhouse "$wheelhouse" \
   --wheelhouse-lock "$wheelhouse_lock" \
-  --public-contact "$public_contact"
+  --public-contact "$public_contact" \
+  --fleet-hostname-denylist "$fleet_hostnames"

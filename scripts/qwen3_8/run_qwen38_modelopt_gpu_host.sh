@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Idempotent ModelOpt build runner for mcprue (D:-only artifacts).
+# Idempotent ModelOpt build runner for the GPU host (D:-only artifacts).
 #
 # Defaults to dry-run. Heavy work requires EXECUTE=1, which really runs the pinned
 # ModelOpt container against examples/hf_ptq/hf_ptq.py, validates the export with
@@ -40,7 +40,7 @@ ALLOW_NO_RUNTIME="${ALLOW_NO_RUNTIME:-0}"
 # it is mounted read-only over the image's baked-in copy).
 MODELOPT_ROOT="${MODELOPT_ROOT:-}"
 
-log() { echo "[modelopt-mcprue] $(date -u +%H:%M:%S) $*"; }
+log() { echo "[modelopt-gpu-host] $(date -u +%H:%M:%S) $*"; }
 die() { log "FATAL: $*"; exit 1; }
 
 # Deprecated pre-rename interfaces (SOURCE_KIND=darkstar, ALLOW_DARKSTAR) are

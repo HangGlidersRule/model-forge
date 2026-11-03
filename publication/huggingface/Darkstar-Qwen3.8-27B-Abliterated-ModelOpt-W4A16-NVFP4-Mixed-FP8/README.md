@@ -236,8 +236,8 @@ public on Hugging Face with clean download/boot/smoke verified. The immutable Gi
 
 ## Serving-stack update (2026-09-16): NVFP4-KV production profile + measured gates
 
-A production serve profile update was measured on this exact artifact (2026-09-16, mcprue
-RTX PRO 6000 Blackwell, single GPU). It is an **alternate serving profile** — the artifact
+A production serve profile update was measured on this exact artifact (2026-09-16, one
+RTX PRO 6000 Blackwell). It is an **alternate serving profile** — the artifact
 weights are unchanged (frozen at `_SUCCESS` SHA-256 `3d89ec57...`).
 
 ### NVFP4-KV serving profile (validated 2026-09-16)
