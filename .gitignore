@@ -268,6 +268,7 @@ build/
 !/models/nemotron-3.5-rerank-8b/eval/build_ledger.py
 !/models/nemotron-3.5-rerank-8b/eval/check_card_numbers.py
 !/models/nemotron-3.5-rerank-8b/eval/compare.py
+!/models/nemotron-3.5-rerank-8b/eval/fused_groups.py
 !/models/nemotron-3.5-rerank-8b/eval/rerank_eval.py
 !/models/nemotron-3.5-rerank-8b/eval/validate_export.py
 !/models/nemotron-3.5-rerank-8b/model-card/
@@ -585,6 +586,7 @@ build/
 !/tests/test_modelopt_runner_execute.py
 !/tests/test_modelopt_vllm_quant_config.py
 !/tests/test_models.py
+!/tests/test_nemotron_rerank_fused_groups.py
 !/tests/test_package_identity.py
 !/tests/test_performance_tools.py
 !/tests/test_pipeline.py

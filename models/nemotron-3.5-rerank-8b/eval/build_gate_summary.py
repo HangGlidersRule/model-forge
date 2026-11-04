@@ -201,7 +201,8 @@ OUT.mkdir(parents=True, exist_ok=True)
 (OUT / "rerank-gate-summary.json").write_text(json.dumps(summary, indent=1) + "\n")
 val = load(f"{SELECTED}.validation.json")
 val.pop("config_quantization_config", None)
-val["fused_group_scales"] = {"groups_checked": 136, "mismatched": 0,
-                             "note": "q/k/v and gate/up shards share input_scale and weight_scale_2 in all 34 layers"}
+fused = val.get("fused_group_scales")
+assert isinstance(fused, dict) and "groups_checked" in fused and "mismatched" in fused, \
+    "the validator report has no fused_group_scales measurement: re-run validate_export.py on the export"
 (OUT / "artifact-validation.json").write_text(json.dumps(val, indent=1) + "\n")
 print(json.dumps({k: summary[k] for k in ("decision", "ranges", "weights_loaded_gib", "endpoint_check_bf16")}))

@@ -114,6 +114,23 @@ report["fp8_block_scales"] = {"total": total_blocks, "non_finite": nan_blocks, "
 if nan_blocks:
     errors.append(f"{nan_blocks} non-finite FP8 block scales")
 
+# 1b. Fused groups: vLLM fuses q/k/v and gate/up into one GEMM each and applies one activation scale (and, for NVFP4, one
+# weight global scale) to the fused weight, so those scales must be identical across a group's shards.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from fused_groups import fused_group_mismatches  # noqa: E402
+
+
+def read_scalar(cname: str) -> float:
+    ename = exp_by_canon[cname]
+    _, h = get(exp_t[ename][1], ename)
+    return float(h.get_tensor(ename).to(torch.float32).item())
+
+
+fused = fused_group_mismatches(read_scalar, PLAN, LAYERS)
+report["fused_group_scales"] = fused
+if fused["mismatched"]:
+    errors.append(f"{fused['mismatched']} fused groups with differing shared scales, e.g. {fused['mismatches'][:2]}")
+
 # 3. Protected tensors: every source tensor that is not a quantized linear's weight must be byte-identical in the export.
 protected = identical = 0
 for sname, (_, spath) in sorted(src_t.items()):
@@ -186,7 +203,8 @@ report["errors"] = errors
 report["verdict"] = "PASS" if not errors else "FAIL"
 OUT.write_text(json.dumps(report, indent=1))
 print(("VALIDATE-OK " if not errors else "VALIDATE-FAIL ") + json.dumps(
-    {k: report[k] for k in ("candidate", "coverage", "fp8_block_scales", "protected_tensors")}), flush=True)
+    {k: report[k] for k in ("candidate", "coverage", "fp8_block_scales", "protected_tensors")}
+    | {"fused_group_scales": {k: report["fused_group_scales"][k] for k in ("groups_checked", "mismatched")}}), flush=True)
 for e in errors[:12]:
     print("  ERROR", e, flush=True)
 sys.exit(0 if not errors else 1)
