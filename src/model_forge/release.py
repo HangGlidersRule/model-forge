@@ -131,6 +131,7 @@ UPSTREAM_BF16_REFERENCES: frozenset[str] = frozenset(
         "Qwen/Qwen-Image-2.1",
         "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
         "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        "nvidia/Nemotron-3.5-Rerank-8B-BF16",
     }
 )
 _UPSTREAM_BF16_ROLES: frozenset[str] = frozenset({"base-bf16", "image-base-bf16"})

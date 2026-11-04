@@ -1372,6 +1372,89 @@ rules:
     generated: false
     precedence: 100
 
+  - id: nemotron-rerank-campaign-runners
+    source: "models/nemotron-3.5-rerank-8b/scripts/*.sh"
+    disposition: exclude
+    public_destination: null
+    reason: Operator launchers for one GPU host (drain window, host-local mounts). The build, dry-run, eval and evidence scripts that reproduce the published numbers ship beside them.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 100
+
+  - id: nemotron-rerank-build-scripts
+    source: "models/nemotron-3.5-rerank-8b/scripts/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The quantization build (calibration on the checkpoint's own classifier, export repairs) and the recipe dry run, so the published artifact is reproducible.
+    transformation: sanitize_python_script
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: nemotron-rerank-calibration-builder
+    source: "models/nemotron-3.5-rerank-8b/calibration/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Deterministic calibration-set builder, so the published calibration is reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: nemotron-rerank-eval-harnesses
+    source: "models/nemotron-3.5-rerank-8b/eval/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The LMEB eval-set builder, gate harness, export validator, comparison, evidence and ledger builders and the card-number checker, so the published numbers are reproducible.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: curated-nemotron-rerank-evidence
+    source: "models/nemotron-3.5-rerank-8b/results/*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated aggregate gate evidence for the published reranker (aggregates only; no per-pair scores or eval text).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 524288
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-readiness-ledger
+      - curated-gpqa-matrix
+      - curated-capacity-profiles
+
+  - id: nemotron-rerank-modelopt-dockerfile
+    source: "containers/modelopt/nemotron-3.5-rerank-8b/Dockerfile"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Pinned ModelOpt 0.48.0 build image for the Nemotron-3.5-Rerank-8B campaign; generic container build instructions.
+    transformation: sanitize_container_script
+    owner: container-runtime
+    max_size_bytes: 32768
+    generated: false
+    precedence: 100
+
+  - id: hf-card-nemotron-rerank-base-nvfp4
+    source: "publication/huggingface/Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Nemotron-3.5-Rerank-8B Base ModelOpt W4A4 NVFP4 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
   - id: embedding-recon
     source: "models/qwen3-embedding-8b/recon.json"
     disposition: copy

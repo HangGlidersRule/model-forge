@@ -21,6 +21,7 @@ TARGETS = {
     "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8",
     "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4",
     "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
+    "Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -83,6 +84,10 @@ EXPECTED_METADATA = {
         "Qwen/Qwen3-Embedding-8B",
         "quantized",
     ),
+    "Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4": (
+        "nvidia/Nemotron-3.5-Rerank-8B-BF16",
+        "quantized",
+    ),
 }
 SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -130,6 +135,9 @@ SOURCE_CARDS = {
     "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4": (
         REPO_ROOT / "models" / "qwen3-embedding-8b" / "model-card" / "base-nvfp4.md"
     ),
+    "Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4": (
+        REPO_ROOT / "models" / "nemotron-3.5-rerank-8b" / "model-card" / "base-nvfp4.md"
+    ),
 }
 EXPECTED_LICENSE = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
@@ -147,6 +155,7 @@ EXPECTED_LICENSE = {
     "Darkstar-JEV-27B-Decision-ModelOpt-W4A4-NVFP4-Mixed-FP8": "apache-2.0",
     "Darkstar-JEV-27B-Decision-QAD-ModelOpt-W4A4-NVFP4": "apache-2.0",
     "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4": "apache-2.0",
+    "Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4": "other",
 }
 EXPECTED_PUBLIC_REVISIONS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8":
@@ -177,7 +186,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 15
+    assert len(cards) == 16
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
@@ -198,7 +207,7 @@ def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
         assert metadata["base_model_relation"] == expected_relation
         assert f"# {card.parent.name}" in text
         assert "**Private checkpoint repository.**" not in text
-        if "Reranker" in card.parent.name:
+        if "Reranker" in card.parent.name or "Rerank-8B" in card.parent.name:
             assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
             assert "--runner pooling" in text
             assert "--chat-template" in text
@@ -245,6 +254,11 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             assert "darkstar-jev-27b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "JEV_DECIDE_MERGED=1" in text
+        elif "Nemotron-3.5-Rerank" in target:
+            assert "darkstar-nemotron-3.5-rerank-8b-v1.0.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "--runner pooling" in text
+            assert '"seq_pooling_type":"MEAN"' in text
         elif "Reranker" in target:
             assert "darkstar-qwen3-reranker-4b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text

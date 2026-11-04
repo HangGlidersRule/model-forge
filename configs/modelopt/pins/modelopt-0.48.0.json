@@ -1,0 +1,33 @@
+{
+  "package": "nvidia-modelopt",
+  "version": "0.48.0",
+  "git_tag": "0.48.0",
+  "git_commit": "e2f328a19de789e73b91aca2908042388cf6d496",
+  "release_date": "2026-11-02",
+  "release_channel": "stable (newest published release)",
+  "requires_python": ">=3.10,<3.15",
+  "wheel": {
+    "filename": "nvidia_modelopt-0.48.0-py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/f4/c8/dc9ced0713f8ccc7688ea1497c595e7cefabbc656d0aac125a226b425fd9/nvidia_modelopt-0.48.0-py3-none-any.whl",
+    "sha256": "bfcfd425eab15e05eccf065b58d11cc33f9c27b4859a6efb78aba74bfb9f225c"
+  },
+  "dependency_versions": {
+    "nvidia-modelopt": "0.48.0",
+    "torch": "2.15.0 (cu132)",
+    "transformers": "5.18.0 (newest inside ModelOpt 0.48.0's <5.19 window)",
+    "datasets": ">=3.0.0,<4.0.0"
+  },
+  "extra_pip_specs": "datasets>=3.0.0,<4.0.0 pyarrow psutil zstandard fire nvidia-ml-py requests pillow",
+  "extra_pip_specs_reason": "pyarrow loads the calibration JSONL; requests is imported by modelopt.torch.utils.dataset_utils; pillow for the checkpoint's image processor; psutil/zstandard/fire/nvidia-ml-py come from examples/hf_ptq.",
+  "entry_point": "examples/hf_ptq/hf_ptq.py",
+  "export": "unified_hf_hf_quant_config_json",
+  "image_dockerfile": "containers/modelopt/nemotron-3.5-rerank-8b/Dockerfile",
+  "scope": "Campaign for public issue HangGlidersRule/model-forge#32 (Nemotron-3.5-Rerank-8B). Earlier families keep their own pins.",
+  "why_this_release": "Newest published ModelOpt (0.48.0 final, 2026-11-02; six commits over 0.48.0rc1, all cherry-picks and lockfile bumps). torch 2.15.0 is the newest release; transformers 5.18.0 is the newest inside ModelOpt 0.48.0's [hf] requirement (<5.19).",
+  "verified": {
+    "wheel_sha256": "computed from the downloaded wheel inside the image build (sha256sum -c), matches PyPI",
+    "tag_commit": "gh api repos/NVIDIA/Model-Optimizer/commits/0.48.0",
+    "recipes": "all three issue-32 recipes load with modelopt.recipe.load_recipe under 0.48.0 and match the planned quantizer counts on the real module tree (meta-device dry run)",
+    "image_self_check": "the image build asserts torch 2.15.0, nvidia-modelopt 0.48.0 and transformers 5.18.0"
+  }
+}

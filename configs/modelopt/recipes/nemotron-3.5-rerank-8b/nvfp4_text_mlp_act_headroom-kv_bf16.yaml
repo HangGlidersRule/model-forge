@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Nemotron-3.5-Rerank-8B, candidate C (issue #32): W4A4 NVFP4 on the text tower's MLP linears (gate/up/down), with
+# nvfp4_act_headroom activation calibration and MSE FP8-scale weight sweeps. Text-tower attention, the vision tower,
+# the projector, embeddings, norms and the score head stay BF16 (default_disabled_quantizers keeps the vision branch and
+# projector off). The recipe that won for Qwen3-Reranker-4B (issue #14), unchanged apart from the patterns being scoped
+# to the text tower.
+#
+# Built from NVIDIA/Model-Optimizer@e2f328a19de789e73b91aca2908042388cf6d496 (0.48.0).
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+
+metadata:
+  recipe_type: ptq
+  description: >-
+    Nemotron-3.5-Rerank-8B candidate C: W4A4 NVFP4 on the text tower MLP only, nvfp4_act_headroom activation
+    calibration, MSE weight scales. Attention, vision tower, projector, score head and KV cache BF16.
+quantize:
+  algorithm:
+    method: nvfp4_act_headroom
+    anchor_percentile: 1
+    upper_percentile: 99.99
+    rho: 16384
+    weight_scale_algorithm:
+      method: mse
+      fp8_scale_sweep: true
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*language_model*mlp*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*language_model*mlp*input_quantizer'
+      cfg:
+        $import: nvfp4
+    - $import: default_disabled_quantizers
