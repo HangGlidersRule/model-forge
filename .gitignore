@@ -237,6 +237,7 @@ build/
 !/models/nemotron-3.5-embed-8b/results/artifact-validation.json
 !/models/nemotron-3.5-embed-8b/results/embed-gate-summary.json
 !/models/nemotron-3.5-embed-8b/results/publication-readiness-ledger.json
+!/models/nemotron-3.5-embed-8b/results/publication-receipt.json
 !/models/nemotron-3.5-embed-8b/scripts/
 !/models/nemotron-3.5-embed-8b/scripts/dryrun_ne8.py
 !/models/nemotron-3.5-embed-8b/scripts/quantize_ne8.py

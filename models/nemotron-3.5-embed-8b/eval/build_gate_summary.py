@@ -69,6 +69,7 @@ for s, d in score.items():
         f"nemotron-{SELECTED}_minus_qwen-w4a4": between[f"nemotron-{SELECTED} minus qwen-fp4"],
         "splits_won_by_nemotron_bf16": sum(1 for g, v in runs["nemotron-bf16"]["per_set_ndcg10"].items() if v > runs["qwen-bf16"]["per_set_ndcg10"][g]),
         "splits": len(runs["nemotron-bf16"]["per_set_ndcg10"]),
+        "per_set_ndcg10": {"qwen-bf16": runs["qwen-bf16"]["per_set_ndcg10"], "qwen-w4a4": runs["qwen-fp4"]["per_set_ndcg10"]},
     }
 for run in ("nemotron-bf16", "nemotron-D", "nemotron-A", "qwen-bf16", "qwen-fp4"):
     s = load(f"s-{run}.json")["cells"]
