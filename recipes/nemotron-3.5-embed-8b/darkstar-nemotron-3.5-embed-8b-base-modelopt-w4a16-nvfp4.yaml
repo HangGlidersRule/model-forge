@@ -1,0 +1,86 @@
+schema_version: "2.0"
+name: darkstar-nemotron-3.5-embed-8b-base-modelopt-w4a16-nvfp4
+family: nemotron-3.5-embed-8b
+
+# Issue #33, candidate D (amendment R33-A1): every linear of the Ministral3 text tower (attention q/k/v/o and MLP
+# gate/up/down, 34 layers, 238 linears) W4A16 NVFP4: FP4 weights with MSE FP8 block scales, BF16 activations. The Pixtral
+# vision tower, the multimodal projector, embeddings and norms stay BF16 and byte-identical to upstream. Built from the
+# upstream BF16 weights with the pinned ModelOpt 0.48.0 image by models/nemotron-3.5-embed-8b/scripts/quantize_ne8.py,
+# which checks bidirectionality, records transformers reference vectors and repairs the export (upstream config.json
+# restored, vLLM-internal exclusion names added).
+
+source:
+  model_id: nvidia/Nemotron-3.5-Embed-8B-BF16
+  revision: 781e779ee4ca9c2d2a4f38321993556baeab49a1
+
+transforms: []
+
+datasets:
+  ms_marco_v1_1:
+    source: microsoft/ms_marco
+    revision: a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a
+    sha256: null
+
+quantization:
+  scheme: NVFP4
+  targets: Linear
+  group_size: 16
+  framework: nvidia-modelopt
+  framework_version: 0.48.0
+  framework_pin_commit: e2f328a19de789e73b91aca2908042388cf6d496
+  algorithm: mse
+  weight_scale_algorithm: mse
+  fp8_scale_sweep: true
+  operator_recipe: configs/modelopt/recipes/nemotron-3.5-embed-8b/w4a16_nvfp4_text_all_mse-kv_bf16.yaml
+  operator_recipe_sha256: 980c52fad59aa52b80a2a00865d9e44d1667a2f3539d9fc1291d4a568cd6d112
+  quant_grp:
+    text_mlp_gate_up_down: W4A16_NVFP4
+    text_self_attn_qkvo: W4A16_NVFP4
+  protected_tensors:
+    - vision_tower
+    - multi_modal_projector
+    - embed_tokens
+    - norm.weight
+  keep_bf16:
+    - vision_tower
+    - multi_modal_projector
+    - embed_tokens
+    - norm.weight
+  ignore:
+    - "re:.*vision_tower.*"
+    - "re:.*multi_modal_projector.*"
+    - "re:.*embed_tokens.*"
+    - "re:.*norm\\.weight$"
+    - lm_head
+  calibration:
+    dataset: "microsoft/ms_marco v1.1 train (256 'query: ' + 256 'passage: ' texts rendered with the checkpoint's chat template), file sha256 a04f7ef04008eaa7c2a52e846109b9357481de87e65f447a8df1512f4ed44773"
+    config: nemotron_embed_query_passage_texts_512
+    samples: 512
+    max_sequence_length: 1024
+    batch_size: 1
+    kv_cache_qformat: none
+    pipeline: modelopt_mtq_quantize_mistral3model
+    shard_size: 10GB
+
+validation:
+  max_refusal_leakage: 0.01
+  quantized_layers_count: 238
+  mtp_present: false
+
+runtime:
+  kv_dtype: bf16
+  context_length: 32768
+  flash_attention: true
+  spec_decode: none
+  vllm_pin: vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34
+
+performance:
+  prompt_lengths: [100, 4000]
+  warmup_repeats: 1
+  measure_repeats: 1
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_nvfp4: HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4

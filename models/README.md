@@ -75,6 +75,11 @@ candidate ids or `null` with status `unresolved_pending_precision_winner`.
   BF16 + LoRA reference and the deployed NVFP4 + LoRA lane. Published, plus an all-NVFP4 speed variant whose FP4
   block scales were trained with ModelOpt QAD. Abliterated cells do not apply.
 
+- [`nemotron-3.5-embed-8b/`](nemotron-3.5-embed-8b/) — embedding family: unchanged upstream
+  `nvidia/Nemotron-3.5-Embed-8B-BF16` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base
+  ModelOpt W4A16 NVFP4, every text-tower linear, weight-only; both W4A4 candidates failed the memory-retrieval bar),
+  published. Abliterated cells do not apply to an embedding model.
+
 - [`qwen3-embedding-8b/`](qwen3-embedding-8b/) — embedding family: unchanged upstream
   `Qwen/Qwen3-Embedding-8B` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base
   ModelOpt W4A4 NVFP4, every decoder linear), published with its compatibility record against stored BF16

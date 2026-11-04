@@ -1,0 +1,706 @@
+{
+ "issue": "HangGlidersRule/model-forge#33",
+ "source": "nvidia/Nemotron-3.5-Embed-8B-BF16@781e779ee4ca9c2d2a4f38321993556baeab49a1",
+ "selected_candidate": "D",
+ "pre_registered_bar": "candidate mean nDCG@10 >= 0.98 x Nemotron BF16 on both sets, in both pairings (all-candidate; BF16 documents x candidate queries); the fastest passing candidate ships",
+ "amendment": "R33-A1 (posted on #33 after A and C failed, before D was scored): candidate D, W4A16 NVFP4 on every text-tower linear; same bar",
+ "eval_sets": {
+  "mteb_nano_full": {
+   "sha256": "a1275b5dba2153ea3625e969176ae0f480e7295dd85ea036ec02bc12e1d80990",
+   "description": "six pinned MTEB Nano retrieval sets with their full corpora (the #18 public retrieval benchmark)"
+  },
+  "lmeb_scene_retrieval": {
+   "sha256": "c2e6840f4f31aa0b3027cfe6635f1f9618ba194192d0e86ec8117d77ce544bbf",
+   "description": "KaLM-Embedding/LMEB@f9d4294b Dialogue: the #32 query ids, each query searched against its whole conversation"
+  }
+ },
+ "calibration_sha256": "a04f7ef04008eaa7c2a52e846109b9357481de87e65f447a8df1512f4ed44773",
+ "quality": {
+  "mteb_nano_full": {
+   "nemotron-bf16": {
+    "mean_ndcg10": 0.6436,
+    "mean_recall10": 0.7545,
+    "per_set_ndcg10": {
+     "NanoNFCorpusRetrieval": 0.4321,
+     "NanoFiQA2018Retrieval": 0.7411,
+     "NanoTouche2020Retrieval": 0.581,
+     "NanoArguAnaRetrieval": 0.6452,
+     "NanoSciFactRetrieval": 0.8403,
+     "NanoMSMARCORetrieval": 0.622
+    }
+   },
+   "nemotron-bf16r": {
+    "mean_ndcg10": 0.6441,
+    "mean_recall10": 0.7545,
+    "all": {
+     "delta": 0.0005,
+     "ci95": [
+      -0.0001,
+      0.0016
+     ],
+     "ratio_to_bf16": 1.0008
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.6431,
+     "delta": -0.0005,
+     "ci95": [
+      -0.0014,
+      0.0
+     ],
+     "ratio_to_bf16": 0.9992
+    },
+    "per_set_ndcg10": {
+     "NanoNFCorpusRetrieval": 0.4323,
+     "NanoFiQA2018Retrieval": 0.7411,
+     "NanoTouche2020Retrieval": 0.5806,
+     "NanoArguAnaRetrieval": 0.6487,
+     "NanoSciFactRetrieval": 0.84,
+     "NanoMSMARCORetrieval": 0.622
+    }
+   },
+   "nemotron-A": {
+    "mean_ndcg10": 0.6465,
+    "mean_recall10": 0.7585,
+    "all": {
+     "delta": 0.0029,
+     "ci95": [
+      -0.0054,
+      0.0115
+     ],
+     "ratio_to_bf16": 1.0044
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.6464,
+     "delta": 0.0027,
+     "ci95": [
+      -0.0043,
+      0.0098
+     ],
+     "ratio_to_bf16": 1.0042
+    },
+    "per_set_ndcg10": {
+     "NanoNFCorpusRetrieval": 0.4224,
+     "NanoFiQA2018Retrieval": 0.7435,
+     "NanoTouche2020Retrieval": 0.6043,
+     "NanoArguAnaRetrieval": 0.6234,
+     "NanoSciFactRetrieval": 0.8543,
+     "NanoMSMARCORetrieval": 0.631
+    },
+    "passes_bar": true
+   },
+   "nemotron-C": {
+    "mean_ndcg10": 0.643,
+    "mean_recall10": 0.7564,
+    "all": {
+     "delta": -0.0006,
+     "ci95": [
+      -0.0076,
+      0.0062
+     ],
+     "ratio_to_bf16": 0.999
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.6457,
+     "delta": 0.0021,
+     "ci95": [
+      -0.0043,
+      0.0084
+     ],
+     "ratio_to_bf16": 1.0033
+    },
+    "per_set_ndcg10": {
+     "NanoNFCorpusRetrieval": 0.4249,
+     "NanoFiQA2018Retrieval": 0.7354,
+     "NanoTouche2020Retrieval": 0.6019,
+     "NanoArguAnaRetrieval": 0.6213,
+     "NanoSciFactRetrieval": 0.8476,
+     "NanoMSMARCORetrieval": 0.6269
+    },
+    "passes_bar": true
+   },
+   "nemotron-D": {
+    "mean_ndcg10": 0.6453,
+    "mean_recall10": 0.7575,
+    "all": {
+     "delta": 0.0017,
+     "ci95": [
+      -0.0033,
+      0.0067
+     ],
+     "ratio_to_bf16": 1.0026
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.6424,
+     "delta": -0.0012,
+     "ci95": [
+      -0.0044,
+      0.0017
+     ],
+     "ratio_to_bf16": 0.9982
+    },
+    "per_set_ndcg10": {
+     "NanoNFCorpusRetrieval": 0.4307,
+     "NanoFiQA2018Retrieval": 0.7336,
+     "NanoTouche2020Retrieval": 0.5908,
+     "NanoArguAnaRetrieval": 0.6444,
+     "NanoSciFactRetrieval": 0.8477,
+     "NanoMSMARCORetrieval": 0.6246
+    },
+    "passes_bar": true
+   },
+   "truncated_dims_mean_ndcg10": {
+    "2000": {
+     "nemotron-A": 0.6325,
+     "nemotron-C": 0.6295,
+     "nemotron-D": 0.6296,
+     "nemotron-bf16": 0.6271,
+     "nemotron-bf16r": 0.6269,
+     "qwen-bf16": 0.6537,
+     "qwen-fp4": 0.6466
+    },
+    "1024": {
+     "nemotron-A": 0.6149,
+     "nemotron-C": 0.6107,
+     "nemotron-D": 0.6142,
+     "nemotron-bf16": 0.6116,
+     "nemotron-bf16r": 0.6116,
+     "qwen-bf16": 0.6479,
+     "qwen-fp4": 0.6469
+    },
+    "768": {
+     "nemotron-A": 0.5926,
+     "nemotron-C": 0.5932,
+     "nemotron-D": 0.5988,
+     "nemotron-bf16": 0.5954,
+     "nemotron-bf16r": 0.5965,
+     "qwen-bf16": 0.6465,
+     "qwen-fp4": 0.6396
+    }
+   }
+  },
+  "lmeb_scene_retrieval": {
+   "nemotron-bf16": {
+    "mean_ndcg10": 0.5788,
+    "mean_recall10": 0.7221,
+    "per_set_ndcg10": {
+     "LoCoMo/single_hop": 0.7135,
+     "LoCoMo/multi_hop": 0.5355,
+     "LoCoMo/temporal_reasoning": 0.786,
+     "LoCoMo/open_domain": 0.4356,
+     "LoCoMo/adversarial": 0.503,
+     "REALTALK/commonsense": 0.4009,
+     "REALTALK/multi_hop": 0.3866,
+     "REALTALK/temporal_reasoning": 0.737,
+     "TMD/content_time_qs": 0.7109
+    }
+   },
+   "nemotron-bf16r": {
+    "mean_ndcg10": 0.5803,
+    "mean_recall10": 0.7211,
+    "all": {
+     "delta": 0.0015,
+     "ci95": [
+      -0.0004,
+      0.0039
+     ],
+     "ratio_to_bf16": 1.0026
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.5794,
+     "delta": 0.0006,
+     "ci95": [
+      -0.0006,
+      0.0024
+     ],
+     "ratio_to_bf16": 1.0011
+    },
+    "per_set_ndcg10": {
+     "LoCoMo/single_hop": 0.7135,
+     "LoCoMo/multi_hop": 0.5349,
+     "LoCoMo/temporal_reasoning": 0.7856,
+     "LoCoMo/open_domain": 0.4348,
+     "LoCoMo/adversarial": 0.5169,
+     "REALTALK/commonsense": 0.3999,
+     "REALTALK/multi_hop": 0.3882,
+     "REALTALK/temporal_reasoning": 0.737,
+     "TMD/content_time_qs": 0.712
+    }
+   },
+   "nemotron-A": {
+    "mean_ndcg10": 0.5477,
+    "mean_recall10": 0.6843,
+    "all": {
+     "delta": -0.0311,
+     "ci95": [
+      -0.0425,
+      -0.02
+     ],
+     "ratio_to_bf16": 0.9463
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.5689,
+     "delta": -0.0099,
+     "ci95": [
+      -0.0166,
+      -0.0037
+     ],
+     "ratio_to_bf16": 0.9829
+    },
+    "per_set_ndcg10": {
+     "LoCoMo/single_hop": 0.6827,
+     "LoCoMo/multi_hop": 0.4883,
+     "LoCoMo/temporal_reasoning": 0.7647,
+     "LoCoMo/open_domain": 0.4071,
+     "LoCoMo/adversarial": 0.4449,
+     "REALTALK/commonsense": 0.3807,
+     "REALTALK/multi_hop": 0.3326,
+     "REALTALK/temporal_reasoning": 0.7335,
+     "TMD/content_time_qs": 0.6949
+    },
+    "passes_bar": false
+   },
+   "nemotron-C": {
+    "mean_ndcg10": 0.5598,
+    "mean_recall10": 0.696,
+    "all": {
+     "delta": -0.019,
+     "ci95": [
+      -0.0285,
+      -0.0096
+     ],
+     "ratio_to_bf16": 0.9672
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.5703,
+     "delta": -0.0085,
+     "ci95": [
+      -0.0152,
+      -0.0021
+     ],
+     "ratio_to_bf16": 0.9854
+    },
+    "per_set_ndcg10": {
+     "LoCoMo/single_hop": 0.6894,
+     "LoCoMo/multi_hop": 0.5168,
+     "LoCoMo/temporal_reasoning": 0.7666,
+     "LoCoMo/open_domain": 0.4334,
+     "LoCoMo/adversarial": 0.4747,
+     "REALTALK/commonsense": 0.3872,
+     "REALTALK/multi_hop": 0.3511,
+     "REALTALK/temporal_reasoning": 0.7254,
+     "TMD/content_time_qs": 0.6938
+    },
+    "passes_bar": false
+   },
+   "nemotron-D": {
+    "mean_ndcg10": 0.5717,
+    "mean_recall10": 0.706,
+    "all": {
+     "delta": -0.0071,
+     "ci95": [
+      -0.0137,
+      -0.0004
+     ],
+     "ratio_to_bf16": 0.9878
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.5751,
+     "delta": -0.0037,
+     "ci95": [
+      -0.008,
+      0.0005
+     ],
+     "ratio_to_bf16": 0.9936
+    },
+    "per_set_ndcg10": {
+     "LoCoMo/single_hop": 0.7192,
+     "LoCoMo/multi_hop": 0.5247,
+     "LoCoMo/temporal_reasoning": 0.7621,
+     "LoCoMo/open_domain": 0.4368,
+     "LoCoMo/adversarial": 0.4985,
+     "REALTALK/commonsense": 0.389,
+     "REALTALK/multi_hop": 0.3675,
+     "REALTALK/temporal_reasoning": 0.7432,
+     "TMD/content_time_qs": 0.7045
+    },
+    "passes_bar": true
+   },
+   "truncated_dims_mean_ndcg10": {
+    "2000": {
+     "nemotron-A": 0.5636,
+     "nemotron-C": 0.5728,
+     "nemotron-D": 0.5735,
+     "nemotron-bf16": 0.5828,
+     "nemotron-bf16r": 0.5843,
+     "qwen-bf16": 0.382,
+     "qwen-fp4": 0.3729
+    },
+    "1024": {
+     "nemotron-A": 0.5622,
+     "nemotron-C": 0.5709,
+     "nemotron-D": 0.5706,
+     "nemotron-bf16": 0.5753,
+     "nemotron-bf16r": 0.5759,
+     "qwen-bf16": 0.3817,
+     "qwen-fp4": 0.3779
+    },
+    "768": {
+     "nemotron-A": 0.5548,
+     "nemotron-C": 0.5598,
+     "nemotron-D": 0.5596,
+     "nemotron-bf16": 0.5629,
+     "nemotron-bf16r": 0.5629,
+     "qwen-bf16": 0.3834,
+     "qwen-fp4": 0.3768
+    }
+   }
+  }
+ },
+ "speed": {
+  "nemotron-bf16": {
+   "short_c1": 4979,
+   "short_c8": 12542,
+   "short_c32": 17534,
+   "short_c64": 18133,
+   "long_c1": 16630,
+   "long_c8": 16546,
+   "long_c32": 16339,
+   "long_c64": 16132,
+   "gpu_memory_under_load_gib": 24.5,
+   "slowest_request_s": 15.0
+  },
+  "nemotron-D": {
+   "short_c1": 5617,
+   "short_c8": 16116,
+   "short_c32": 18686,
+   "short_c64": 18791,
+   "long_c1": 16912,
+   "long_c8": 17270,
+   "long_c32": 17042,
+   "long_c64": 16852,
+   "gpu_memory_under_load_gib": 16.1,
+   "slowest_request_s": 14.4
+  },
+  "nemotron-A": {
+   "short_c1": 6204,
+   "short_c8": 22291,
+   "short_c32": 29438,
+   "short_c64": 38602,
+   "long_c1": 40048,
+   "long_c8": 41917,
+   "long_c32": 41656,
+   "long_c64": 41288,
+   "gpu_memory_under_load_gib": 16.3,
+   "slowest_request_s": 5.9
+  },
+  "qwen-bf16": {
+   "short_c1": 4829,
+   "short_c8": 13209,
+   "short_c32": 18352,
+   "short_c64": 19541,
+   "long_c1": 18074,
+   "long_c8": 17985,
+   "long_c32": 17697,
+   "long_c64": 17474,
+   "gpu_memory_under_load_gib": 20.8,
+   "slowest_request_s": 13.7
+  },
+  "qwen-fp4": {
+   "short_c1": 5754,
+   "short_c8": 21760,
+   "short_c32": 29087,
+   "short_c64": 34134,
+   "long_c1": 44629,
+   "long_c8": 48482,
+   "long_c32": 48139,
+   "long_c64": 47599,
+   "gpu_memory_under_load_gib": 11.5,
+   "slowest_request_s": 5.1
+  }
+ },
+ "comparison_qwen3_embedding_8b": {
+  "mteb_nano_full": {
+   "qwen-bf16": 0.6541,
+   "qwen-w4a4": 0.6499,
+   "qwen_w4a4_vs_own_bf16": {
+    "delta": -0.0043,
+    "ci95": [
+     -0.0138,
+     0.0049
+    ],
+    "ratio_to_bf16": 0.9935
+   },
+   "nemotron-bf16_minus_qwen-bf16": {
+    "delta": -0.0105,
+    "ci95": [
+     -0.0336,
+     0.0127
+    ]
+   },
+   "nemotron-D_minus_qwen-bf16": {
+    "delta": -0.0088,
+    "ci95": [
+     -0.0317,
+     0.014
+    ]
+   },
+   "nemotron-D_minus_qwen-w4a4": {
+    "delta": -0.0046,
+    "ci95": [
+     -0.0283,
+     0.0193
+    ]
+   },
+   "splits_won_by_nemotron_bf16": 3,
+   "splits": 6
+  },
+  "lmeb_scene_retrieval": {
+   "qwen-bf16": 0.3943,
+   "qwen-w4a4": 0.3791,
+   "qwen_w4a4_vs_own_bf16": {
+    "delta": -0.0152,
+    "ci95": [
+     -0.0293,
+     -0.0015
+    ],
+    "ratio_to_bf16": 0.9614
+   },
+   "nemotron-bf16_minus_qwen-bf16": {
+    "delta": 0.1844,
+    "ci95": [
+     0.1579,
+     0.2108
+    ]
+   },
+   "nemotron-D_minus_qwen-bf16": {
+    "delta": 0.1774,
+    "ci95": [
+     0.151,
+     0.2039
+    ]
+   },
+   "nemotron-D_minus_qwen-w4a4": {
+    "delta": 0.1926,
+    "ci95": [
+     0.1652,
+     0.2187
+    ]
+   },
+   "splits_won_by_nemotron_bf16": 9,
+   "splits": 9
+  }
+ },
+ "speed_ratio_to_bf16": {
+  "nemotron-D": {
+   "short": "1.04-1.28x",
+   "long": "1.02-1.04x"
+  },
+  "nemotron-A": {
+   "short": "1.25-2.13x",
+   "long": "2.41-2.56x"
+  }
+ },
+ "speed_method": "the #18 grid: single-input requests of short (~100-token) and long (~4k-token) public text at concurrency 1/8/32/64, one warm-up pass per cell, unique prefixes; one keep-alive connection per client thread; whole GPU (RTX PRO 6000 Blackwell); GPU memory after the grid minus before the serve",
+ "speed_run_note": "A first speed run opened a new TCP connection per request; about 1% of new connections through Docker Desktop's published port stalled ~69 s and five cells were impossible. It was discarded and every serve re-measured with keep-alive clients and a 20 s per-request ceiling.",
+ "weights_loaded_gib": {
+  "nemotron-bf16": 15.74,
+  "nemotron-A": 5.77,
+  "nemotron-C": 7.69,
+  "nemotron-D": 5.82,
+  "qwen-bf16": 14.11,
+  "qwen-w4a4": 4.81
+ },
+ "gemm_kernel": {
+  "nemotron-A": [
+   "FlashInferCutlassNvFp4LinearKernel"
+  ],
+  "nemotron-C": [
+   "FlashInferCutlassNvFp4LinearKernel"
+  ],
+  "nemotron-D": [
+   "MarlinNvFp4LinearKernel"
+  ]
+ },
+ "serving_path_check": {
+  "texts": 16,
+  "cosine_min": 0.99995,
+  "cosine_mean": 0.99996,
+  "what": "vLLM BF16 serve vs transformers BF16 forward + mean pooling on the same rendered texts"
+ },
+ "served_vs_own_fakequant_reference": {
+  "nemotron-A": {
+   "cosine_min": 0.9877,
+   "cosine_mean": 0.99107
+  },
+  "nemotron-C": {
+   "cosine_min": 0.99543,
+   "cosine_mean": 0.99659
+  },
+  "nemotron-D": {
+   "cosine_min": 0.99975,
+   "cosine_mean": 0.99992
+  }
+ },
+ "document_vector_cosine_vs_bf16": {
+  "mteb-nano-full-corpora": {
+   "nemotron-bf16r": {
+    "documents": 24893,
+    "mean": 0.99998,
+    "p1": 0.99995,
+    "p5": 0.99997,
+    "min": 0.99958
+   },
+   "nemotron-A": {
+    "documents": 24893,
+    "mean": 0.93115,
+    "p1": 0.89838,
+    "p5": 0.90947,
+    "min": 0.85951
+   },
+   "nemotron-C": {
+    "documents": 24893,
+    "mean": 0.94353,
+    "p1": 0.91655,
+    "p5": 0.92519,
+    "min": 0.88483
+   },
+   "nemotron-D": {
+    "documents": 24893,
+    "mean": 0.98891,
+    "p1": 0.98478,
+    "p5": 0.98635,
+    "min": 0.94482
+   }
+  },
+  "lmeb-dialogue-scene-retrieval": {
+   "nemotron-bf16r": {
+    "documents": 22289,
+    "mean": 0.99997,
+    "p1": 0.9999,
+    "p5": 0.99995,
+    "min": 0.99902
+   },
+   "nemotron-A": {
+    "documents": 22289,
+    "mean": 0.92509,
+    "p1": 0.90591,
+    "p5": 0.91298,
+    "min": 0.88332
+   },
+   "nemotron-C": {
+    "documents": 22289,
+    "mean": 0.94225,
+    "p1": 0.92572,
+    "p5": 0.93167,
+    "min": 0.90549
+   },
+   "nemotron-D": {
+    "documents": 22289,
+    "mean": 0.98755,
+    "p1": 0.98383,
+    "p5": 0.98526,
+    "min": 0.97422
+   }
+  }
+ },
+ "clean_download_smoke": {
+  "repository_commit": "6f5161271507",
+  "manifest_entries": 16,
+  "hash_mismatches": 0,
+  "model_safetensors_identical_to_evaluated": true,
+  "card_example": {
+   "dims": 4096,
+   "norm": 1.0,
+   "cos_query_paris": 0.5374,
+   "cos_query_bananas": 0.0197
+  },
+  "served_vs_own_fakequant_reference": {
+   "cosine_min": 0.99931,
+   "cosine_mean": 0.99989
+  },
+  "document_vectors_vs_evaluated_serve": {
+   "mteb-nano-full-corpora": {
+    "documents": 24893,
+    "cosine_mean": 0.999985,
+    "cosine_min": 0.999488
+   },
+   "lmeb-dialogue-scene-retrieval": {
+    "documents": 22289,
+    "cosine_mean": 0.999978,
+    "cosine_min": 0.998991
+   }
+  },
+  "quality": {
+   "mteb_nano_full": {
+    "mean_ndcg10": 0.6443,
+    "all": {
+     "delta": 0.0007,
+     "ci95": [
+      -0.0041,
+      0.0058
+     ],
+     "ratio_to_bf16": 1.0011
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.6403,
+     "delta": -0.0033,
+     "ci95": [
+      -0.0075,
+      0.0004
+     ],
+     "ratio_to_bf16": 0.9949
+    },
+    "passes_bar": true
+   },
+   "lmeb_scene_retrieval": {
+    "mean_ndcg10": 0.572,
+    "all": {
+     "delta": -0.0068,
+     "ci95": [
+      -0.0133,
+      -0.0002
+     ],
+     "ratio_to_bf16": 0.9882
+    },
+    "bf16_docs_x_candidate_queries": {
+     "macro_ndcg10": 0.5756,
+     "delta": -0.0032,
+     "ci95": [
+      -0.0078,
+      0.0012
+     ],
+     "ratio_to_bf16": 0.9945
+    },
+    "passes_bar": true
+   }
+  }
+ },
+ "decision": {
+  "passing": [
+   "D"
+  ],
+  "failed": [
+   "A",
+   "C"
+  ],
+  "failed_on": {
+   "A": [
+    "lmeb_scene_retrieval"
+   ],
+   "C": [
+    "lmeb_scene_retrieval"
+   ]
+  }
+ },
+ "provenance": {
+  "vllm_image": "vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34 (v0.32.0)",
+  "gpu": "RTX PRO 6000 Blackwell (SM120, 96 GB). Quality runs shared the GPU with another workload (vectors are deterministic per serve); speed runs had the whole GPU.",
+  "nemotron_serve": "--runner pooling --pooler-config MEAN/use_activation true --chat-template-content-format openai --max-model-len 32768 --max-num-batched-tokens 32768; inputs rendered client-side exactly as the checkpoint's chat template ('query: ' / 'passage: ', '[' and '<' escaped), add_special_tokens false",
+  "qwen_serve": "the embedding lane profile of #18: Matryoshka override, --max-model-len 28672, chunked prefill, 8,192 batched tokens, prefix caching; queries 'Instruct: <task>\\nQuery:' (MTEB: web-search instruction; LMEB: its per-split instruction), documents bare",
+  "qwen_reference_revisions": {
+   "bf16": "Qwen/Qwen3-Embedding-8B@1d8ad4ca9b3dd8059ad90a75d4983776a23d44af",
+   "w4a4": "HangGlidersRule/Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4@9c1435111bdd0ae1ccd6edd7f58a630d303a1b62"
+  },
+  "modelopt": "nvidia-modelopt 0.48.0 (wheel sha256 bfcfd425eab15e05eccf065b58d11cc33f9c27b4859a6efb78aba74bfb9f225c); torch 2.15.0 cu132; transformers 5.18.0"
+ }
+}
