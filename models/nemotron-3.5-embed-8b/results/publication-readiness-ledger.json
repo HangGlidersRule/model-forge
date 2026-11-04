@@ -194,7 +194,7 @@
     {
      "id": "publication_targets_hf_ghcr",
      "status": "verified",
-     "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4 @ 6f51612; GHCR not required (pinned upstream vLLM image)",
+     "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4 @ d4dce54; GHCR not required (pinned upstream vLLM image)",
      "evidence_path": "models/nemotron-3.5-embed-8b/results/publication-receipt.json",
      "next_missing_proof": "none - gate satisfied"
     },
