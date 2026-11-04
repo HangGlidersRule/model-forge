@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Nemotron-3.5-Embed-8B, candidate D (issue #33, amendment R33-A1): W4A16 NVFP4 on every text-tower linear (attention
+# q/k/v/o and MLP gate/up/down). FP4 weights with FP8 block scales from an MSE FP8-scale sweep; activations stay BF16
+# (no activation quantizers). Vision tower, projector, embeddings, norms and KV cache stay BF16.
+#
+# Built from NVIDIA/Model-Optimizer@e2f328a19de789e73b91aca2908042388cf6d496 (0.48.0).
+
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  nvfp4_static: configs/numerics/nvfp4_static
+
+metadata:
+  recipe_type: ptq
+  description: >-
+    Nemotron-3.5-Embed-8B candidate D: W4A16 NVFP4 (weight-only) on every text-tower linear, MSE weight scales.
+    Activations, vision tower, projector and KV cache BF16.
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*language_model*_proj*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - $import: default_disabled_quantizers

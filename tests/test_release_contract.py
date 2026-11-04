@@ -2144,6 +2144,7 @@ UPSTREAM_REFERENCE_FAMILIES = {
     "nemotron-3.5-lightning-r1": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
     "nemotron-3-nano-omni-r1": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
     "nemotron-3.5-rerank-8b": "nvidia/Nemotron-3.5-Rerank-8B-BF16",
+    "nemotron-3.5-embed-8b": "nvidia/Nemotron-3.5-Embed-8B-BF16",
 }
 
 
