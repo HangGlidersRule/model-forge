@@ -80,6 +80,10 @@ candidate ids or `null` with status `unresolved_pending_precision_winner`.
   ModelOpt W4A4 NVFP4, every decoder linear), published with its compatibility record against stored BF16
   vectors and a stable-vectors serving profile. Abliterated cells do not apply to an embedding model.
 
+- [`nemotron-3.5-rerank-8b/`](nemotron-3.5-rerank-8b/) — reranker family: unchanged upstream
+  `nvidia/Nemotron-3.5-Rerank-8B-BF16` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base
+  ModelOpt W4A4 NVFP4, every text-tower linear), published. Abliterated cells do not apply to a scoring model.
+
 - [`qwen3-reranker-4b/`](qwen3-reranker-4b/) — reranker family: unchanged upstream
   `Qwen/Qwen3-Reranker-4B` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base
   ModelOpt W4A4 NVFP4), published. Abliterated cells do not apply to a scoring model.

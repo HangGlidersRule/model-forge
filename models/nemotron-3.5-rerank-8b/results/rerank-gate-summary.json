@@ -1,0 +1,597 @@
+{
+ "issue": "HangGlidersRule/model-forge#32",
+ "source": "nvidia/Nemotron-3.5-Rerank-8B-BF16@f88f8d9104726747791283ab156d2fcdb29e90a7",
+ "selected_candidate": "A",
+ "pre_registered_bar": "candidate macro nDCG@10 >= 0.98 x BF16 on each set; the fastest passing candidate ships",
+ "eval_sets": {
+  "beir6_bm25": {
+   "sha256": "28f2dde20dd4bc3e82d41cdaa0e63df01048a29f9b318cf836129c59c3e450db",
+   "description": "6 MTEB Nano retrieval sets, BM25 hard negatives, 30 candidates per query (the #14 set)"
+  },
+  "lmeb_dialogue": {
+   "sha256": "9373a1be97911f4ad3090a5f7b65a36b0046427ed2c7f35233510dd6b4f24ac0",
+   "description": "KaLM-Embedding/LMEB@f9d4294b Dialogue tasks (LoCoMo, REALTALK, TMD content_time_qs), 60 queries per split, judged turns plus top BM25 non-relevant turns of the same conversation, 30 candidates per query"
+  }
+ },
+ "calibration_sha256": "ddd481866f158e51aaa7c66a9353be6ba1317bb5f2b3a188b1b703b5b961576e",
+ "quality": {
+  "beir6_bm25": {
+   "bf16": {
+    "macro_ndcg10": 0.7349,
+    "per_dataset": {
+     "mteb/NanoNFCorpusRetrieval": 0.5714,
+     "mteb/NanoFiQA2018Retrieval": 0.8505,
+     "mteb/NanoTouche2020Retrieval": 0.6271,
+     "mteb/NanoArguAnaRetrieval": 0.7669,
+     "mteb/NanoSciFactRetrieval": 0.8865,
+     "mteb/NanoMSMARCORetrieval": 0.7066
+    },
+    "n_queries": 299,
+    "n_pairs": 8970
+   },
+   "bf16r": {
+    "macro_ndcg10": 0.7347,
+    "ratio_to_bf16": 0.9998,
+    "delta_vs_bf16": -0.0001,
+    "ci95_vs_bf16": [
+     -0.0012,
+     0.0006
+    ],
+    "per_dataset": {
+     "mteb/NanoNFCorpusRetrieval": 0.5714,
+     "mteb/NanoFiQA2018Retrieval": 0.8518,
+     "mteb/NanoTouche2020Retrieval": 0.6268,
+     "mteb/NanoArguAnaRetrieval": 0.7648,
+     "mteb/NanoSciFactRetrieval": 0.8865,
+     "mteb/NanoMSMARCORetrieval": 0.7069
+    },
+    "spearman": 0.999,
+    "top10_overlap": 0.996,
+    "passes_bar": true
+   },
+   "A": {
+    "macro_ndcg10": 0.7344,
+    "ratio_to_bf16": 0.9994,
+    "delta_vs_bf16": -0.0004,
+    "ci95_vs_bf16": [
+     -0.0055,
+     0.0049
+    ],
+    "per_dataset": {
+     "mteb/NanoNFCorpusRetrieval": 0.5716,
+     "mteb/NanoFiQA2018Retrieval": 0.8609,
+     "mteb/NanoTouche2020Retrieval": 0.6186,
+     "mteb/NanoArguAnaRetrieval": 0.76,
+     "mteb/NanoSciFactRetrieval": 0.8839,
+     "mteb/NanoMSMARCORetrieval": 0.7115
+    },
+    "spearman": 0.982,
+    "top10_overlap": 0.946,
+    "passes_bar": true
+   },
+   "B": {
+    "macro_ndcg10": 0.7351,
+    "ratio_to_bf16": 1.0004,
+    "delta_vs_bf16": 0.0003,
+    "ci95_vs_bf16": [
+     -0.0032,
+     0.0035
+    ],
+    "per_dataset": {
+     "mteb/NanoNFCorpusRetrieval": 0.5733,
+     "mteb/NanoFiQA2018Retrieval": 0.8581,
+     "mteb/NanoTouche2020Retrieval": 0.6328,
+     "mteb/NanoArguAnaRetrieval": 0.76,
+     "mteb/NanoSciFactRetrieval": 0.886,
+     "mteb/NanoMSMARCORetrieval": 0.7007
+    },
+    "spearman": 0.99,
+    "top10_overlap": 0.962,
+    "passes_bar": true
+   },
+   "C": {
+    "macro_ndcg10": 0.7353,
+    "ratio_to_bf16": 1.0006,
+    "delta_vs_bf16": 0.0004,
+    "ci95_vs_bf16": [
+     -0.0039,
+     0.0049
+    ],
+    "per_dataset": {
+     "mteb/NanoNFCorpusRetrieval": 0.575,
+     "mteb/NanoFiQA2018Retrieval": 0.8539,
+     "mteb/NanoTouche2020Retrieval": 0.6324,
+     "mteb/NanoArguAnaRetrieval": 0.7582,
+     "mteb/NanoSciFactRetrieval": 0.8865,
+     "mteb/NanoMSMARCORetrieval": 0.7056
+    },
+    "spearman": 0.991,
+    "top10_overlap": 0.964,
+    "passes_bar": true
+   },
+   "qwen-bf16": {
+    "macro_ndcg10": 0.7121,
+    "ratio_to_bf16": 0.969,
+    "delta_vs_bf16": -0.0227,
+    "ci95_vs_bf16": [
+     -0.042,
+     -0.0041
+    ],
+    "per_dataset": {
+     "mteb/NanoNFCorpusRetrieval": 0.5297,
+     "mteb/NanoFiQA2018Retrieval": 0.7712,
+     "mteb/NanoTouche2020Retrieval": 0.6492,
+     "mteb/NanoArguAnaRetrieval": 0.7437,
+     "mteb/NanoSciFactRetrieval": 0.8556,
+     "mteb/NanoMSMARCORetrieval": 0.7233
+    }
+   },
+   "qwen-fp4": {
+    "macro_ndcg10": 0.7033,
+    "ratio_to_bf16": 0.957,
+    "delta_vs_bf16": -0.0316,
+    "ci95_vs_bf16": [
+     -0.0511,
+     -0.0125
+    ],
+    "per_dataset": {
+     "mteb/NanoNFCorpusRetrieval": 0.5118,
+     "mteb/NanoFiQA2018Retrieval": 0.7465,
+     "mteb/NanoTouche2020Retrieval": 0.6411,
+     "mteb/NanoArguAnaRetrieval": 0.7427,
+     "mteb/NanoSciFactRetrieval": 0.8517,
+     "mteb/NanoMSMARCORetrieval": 0.7258
+    }
+   }
+  },
+  "lmeb_dialogue": {
+   "bf16": {
+    "macro_ndcg10": 0.8089,
+    "per_dataset": {
+     "LoCoMo/single_hop": 0.8873,
+     "LoCoMo/multi_hop": 0.8486,
+     "LoCoMo/temporal_reasoning": 0.9113,
+     "LoCoMo/open_domain": 0.7329,
+     "LoCoMo/adversarial": 0.6546,
+     "REALTALK/commonsense": 0.75,
+     "REALTALK/multi_hop": 0.7734,
+     "REALTALK/temporal_reasoning": 0.8306,
+     "TMD/content_time_qs": 0.8915
+    },
+    "n_queries": 540,
+    "n_pairs": 16200
+   },
+   "bf16r": {
+    "macro_ndcg10": 0.8086,
+    "ratio_to_bf16": 0.9996,
+    "delta_vs_bf16": -0.0003,
+    "ci95_vs_bf16": [
+     -0.0009,
+     0.0001
+    ],
+    "per_dataset": {
+     "LoCoMo/single_hop": 0.8873,
+     "LoCoMo/multi_hop": 0.8488,
+     "LoCoMo/temporal_reasoning": 0.909,
+     "LoCoMo/open_domain": 0.7324,
+     "LoCoMo/adversarial": 0.6544,
+     "REALTALK/commonsense": 0.75,
+     "REALTALK/multi_hop": 0.7734,
+     "REALTALK/temporal_reasoning": 0.8306,
+     "TMD/content_time_qs": 0.8915
+    },
+    "spearman": 0.999,
+    "top10_overlap": 0.994,
+    "passes_bar": true
+   },
+   "A": {
+    "macro_ndcg10": 0.8056,
+    "ratio_to_bf16": 0.9959,
+    "delta_vs_bf16": -0.0033,
+    "ci95_vs_bf16": [
+     -0.0096,
+     0.0027
+    ],
+    "per_dataset": {
+     "LoCoMo/single_hop": 0.8728,
+     "LoCoMo/multi_hop": 0.8487,
+     "LoCoMo/temporal_reasoning": 0.9025,
+     "LoCoMo/open_domain": 0.7297,
+     "LoCoMo/adversarial": 0.6621,
+     "REALTALK/commonsense": 0.7404,
+     "REALTALK/multi_hop": 0.7691,
+     "REALTALK/temporal_reasoning": 0.8291,
+     "TMD/content_time_qs": 0.8959
+    },
+    "spearman": 0.984,
+    "top10_overlap": 0.94,
+    "passes_bar": true
+   },
+   "B": {
+    "macro_ndcg10": 0.8033,
+    "ratio_to_bf16": 0.9931,
+    "delta_vs_bf16": -0.0056,
+    "ci95_vs_bf16": [
+     -0.0107,
+     -0.0008
+    ],
+    "per_dataset": {
+     "LoCoMo/single_hop": 0.8663,
+     "LoCoMo/multi_hop": 0.8512,
+     "LoCoMo/temporal_reasoning": 0.8995,
+     "LoCoMo/open_domain": 0.7344,
+     "LoCoMo/adversarial": 0.6482,
+     "REALTALK/commonsense": 0.7385,
+     "REALTALK/multi_hop": 0.7633,
+     "REALTALK/temporal_reasoning": 0.8326,
+     "TMD/content_time_qs": 0.8959
+    },
+    "spearman": 0.991,
+    "top10_overlap": 0.957,
+    "passes_bar": true
+   },
+   "C": {
+    "macro_ndcg10": 0.8018,
+    "ratio_to_bf16": 0.9913,
+    "delta_vs_bf16": -0.0071,
+    "ci95_vs_bf16": [
+     -0.0126,
+     -0.0018
+    ],
+    "per_dataset": {
+     "LoCoMo/single_hop": 0.8759,
+     "LoCoMo/multi_hop": 0.839,
+     "LoCoMo/temporal_reasoning": 0.903,
+     "LoCoMo/open_domain": 0.726,
+     "LoCoMo/adversarial": 0.6461,
+     "REALTALK/commonsense": 0.7354,
+     "REALTALK/multi_hop": 0.7621,
+     "REALTALK/temporal_reasoning": 0.8325,
+     "TMD/content_time_qs": 0.8966
+    },
+    "spearman": 0.992,
+    "top10_overlap": 0.961,
+    "passes_bar": true
+   },
+   "qwen-bf16": {
+    "macro_ndcg10": 0.7544,
+    "ratio_to_bf16": 0.9326,
+    "delta_vs_bf16": -0.0545,
+    "ci95_vs_bf16": [
+     -0.07,
+     -0.0394
+    ],
+    "per_dataset": {
+     "LoCoMo/single_hop": 0.835,
+     "LoCoMo/multi_hop": 0.7983,
+     "LoCoMo/temporal_reasoning": 0.8551,
+     "LoCoMo/open_domain": 0.6511,
+     "LoCoMo/adversarial": 0.6676,
+     "REALTALK/commonsense": 0.6317,
+     "REALTALK/multi_hop": 0.7162,
+     "REALTALK/temporal_reasoning": 0.7965,
+     "TMD/content_time_qs": 0.8379
+    }
+   },
+   "qwen-fp4": {
+    "macro_ndcg10": 0.7486,
+    "ratio_to_bf16": 0.9255,
+    "delta_vs_bf16": -0.0603,
+    "ci95_vs_bf16": [
+     -0.0763,
+     -0.0446
+    ],
+    "per_dataset": {
+     "LoCoMo/single_hop": 0.8428,
+     "LoCoMo/multi_hop": 0.7966,
+     "LoCoMo/temporal_reasoning": 0.8464,
+     "LoCoMo/open_domain": 0.6458,
+     "LoCoMo/adversarial": 0.6633,
+     "REALTALK/commonsense": 0.6233,
+     "REALTALK/multi_hop": 0.6758,
+     "REALTALK/temporal_reasoning": 0.7918,
+     "TMD/content_time_qs": 0.8517
+    }
+   }
+  }
+ },
+ "speed": {
+  "bf16": {
+   "c1": 17.4,
+   "c4": 18.0,
+   "c8": 17.9,
+   "gpu_memory_under_load_gib": 18.5,
+   "ratio_to_bf16": {
+    "c1": 1.0,
+    "c4": 1.0,
+    "c8": 1.0
+   },
+   "ratio_to_qwen_bf16": {
+    "c1": 0.51,
+    "c4": 0.51,
+    "c8": 0.54
+   }
+  },
+  "A": {
+   "c1": 51.5,
+   "c4": 55.7,
+   "c8": 51.9,
+   "gpu_memory_under_load_gib": 9.5,
+   "ratio_to_bf16": {
+    "c1": 2.96,
+    "c4": 3.09,
+    "c8": 2.9
+   },
+   "ratio_to_qwen_bf16": {
+    "c1": 1.51,
+    "c4": 1.57,
+    "c8": 1.55
+   }
+  },
+  "B": {
+   "c1": 45.6,
+   "c4": 48.6,
+   "c8": 46.7,
+   "gpu_memory_under_load_gib": 9.7,
+   "ratio_to_bf16": {
+    "c1": 2.62,
+    "c4": 2.7,
+    "c8": 2.61
+   },
+   "ratio_to_qwen_bf16": {
+    "c1": 1.33,
+    "c4": 1.37,
+    "c8": 1.4
+   }
+  },
+  "C": {
+   "c1": 37.4,
+   "c4": 37.5,
+   "c8": 38.1,
+   "gpu_memory_under_load_gib": 11.7,
+   "ratio_to_bf16": {
+    "c1": 2.15,
+    "c4": 2.08,
+    "c8": 2.13
+   },
+   "ratio_to_qwen_bf16": {
+    "c1": 1.09,
+    "c4": 1.06,
+    "c8": 1.14
+   }
+  },
+  "qwen-bf16": {
+   "c1": 34.2,
+   "c4": 35.4,
+   "c8": 33.4,
+   "gpu_memory_under_load_gib": 11.4,
+   "ratio_to_bf16": {
+    "c1": 1.97,
+    "c4": 1.97,
+    "c8": 1.87
+   },
+   "ratio_to_qwen_bf16": {
+    "c1": 1.0,
+    "c4": 1.0,
+    "c8": 1.0
+   }
+  },
+  "qwen-fp4": {
+   "c1": 59.4,
+   "c4": 65.7,
+   "c8": 65.0,
+   "gpu_memory_under_load_gib": 7.0,
+   "ratio_to_bf16": {
+    "c1": 3.41,
+    "c4": 3.65,
+    "c8": 3.63
+   },
+   "ratio_to_qwen_bf16": {
+    "c1": 1.74,
+    "c4": 1.86,
+    "c8": 1.95
+   }
+  }
+ },
+ "comparison_qwen3_reranker_4b": {
+  "beir6_bm25": {
+   "A_minus_qwen_bf16": {
+    "delta": 0.0223,
+    "ci95": [
+     0.0038,
+     0.0408
+    ]
+   },
+   "A_minus_qwen_fp4": {
+    "delta": 0.0312,
+    "ci95": [
+     0.0123,
+     0.0507
+    ]
+   },
+   "splits_won_by_selected_vs_qwen_bf16": 4,
+   "splits": 6
+  },
+  "lmeb_dialogue": {
+   "A_minus_qwen_bf16": {
+    "delta": 0.0512,
+    "ci95": [
+     0.0365,
+     0.0659
+    ]
+   },
+   "A_minus_qwen_fp4": {
+    "delta": 0.057,
+    "ci95": [
+     0.0423,
+     0.0724
+    ]
+   },
+   "splits_won_by_selected_vs_qwen_bf16": 8,
+   "splits": 9
+  }
+ },
+ "weights_loaded_gib": {
+  "bf16": 15.74,
+  "A": 5.77,
+  "B": 6.36,
+  "C": 7.69,
+  "qwen-bf16": 7.56,
+  "qwen-fp4": 3.92
+ },
+ "nvfp4_gemm_kernel": {
+  "A": [
+   "FlashInferCutlassNvFp4LinearKernel"
+  ],
+  "B": [
+   "FlashInferCutlassNvFp4LinearKernel"
+  ],
+  "C": [
+   "FlashInferCutlassNvFp4LinearKernel"
+  ]
+ },
+ "endpoint_check_bf16": {
+  "pairs": 64,
+  "max_abs_score_minus_rerank": 0.0,
+  "max_abs_score_minus_classify": 0.0
+ },
+ "decision": {
+  "passing": [
+   "A",
+   "B",
+   "C"
+  ],
+  "fastest_passing_by_c4": "A"
+ },
+ "published_profile_reruns": {
+  "profile": "the model card's serve command (--max-model-len 8192 --max-num-batched-tokens 8192); the selection run used 32768 / 32768",
+  "runs": {
+   "A-clean": {
+    "what": "empty-cache download of the uploaded commit (every manifest entry and model.safetensors byte-identical to the evaluated export)",
+    "beir6_bm25": {
+     "macro_ndcg10": 0.7346,
+     "ratio_to_bf16": 0.9996,
+     "delta_vs_bf16": -0.0003,
+     "ci95_vs_bf16": [
+      -0.0053,
+      0.0052
+     ],
+     "passes_bar": true
+    },
+    "lmeb_dialogue": {
+     "macro_ndcg10": 0.8045,
+     "ratio_to_bf16": 0.9946,
+     "delta_vs_bf16": -0.0044,
+     "ci95_vs_bf16": [
+      -0.0107,
+      0.0018
+     ],
+     "passes_bar": true
+    }
+   },
+   "A-card2": {
+    "what": "the evaluated export, in a fresh container",
+    "beir6_bm25": {
+     "macro_ndcg10": 0.7332,
+     "ratio_to_bf16": 0.9977,
+     "delta_vs_bf16": -0.0016,
+     "ci95_vs_bf16": [
+      -0.0071,
+      0.004
+     ],
+     "passes_bar": true
+    },
+    "lmeb_dialogue": {
+     "macro_ndcg10": 0.8023,
+     "ratio_to_bf16": 0.9918,
+     "delta_vs_bf16": -0.0066,
+     "ci95_vs_bf16": [
+      -0.013,
+      -0.0005
+     ],
+     "passes_bar": true
+    }
+   }
+  },
+  "fresh_container_spread": {
+   "beir6_bm25": {
+    "delta_card2_minus_clean": -0.0013,
+    "ci95_card2_minus_clean": [
+     -0.0049,
+     0.0019
+    ],
+    "pair_scores": {
+     "pairs": 8970,
+     "identical": 152,
+     "abs_diff_p50": 0.0154,
+     "abs_diff_p99": 0.0752,
+     "abs_diff_max": 0.2815
+    },
+    "clean_minus_selection": {
+     "delta": 0.0002,
+     "ci95": [
+      -0.0019,
+      0.0021
+     ]
+    }
+   },
+   "lmeb_dialogue": {
+    "delta_card2_minus_clean": -0.0022,
+    "ci95_card2_minus_clean": [
+     -0.0063,
+     0.0017
+    ],
+    "pair_scores": {
+     "pairs": 16200,
+     "identical": 1004,
+     "abs_diff_p50": 0.0096,
+     "abs_diff_p99": 0.075,
+     "abs_diff_max": 0.1649
+    },
+    "clean_minus_selection": {
+     "delta": -0.0011,
+     "ci95": [
+      -0.0022,
+      -0.0002
+     ]
+    }
+   }
+  },
+  "range_across_three_serves": {
+   "beir6_bm25": {
+    "min": 0.7332,
+    "max": 0.7346,
+    "spread": 0.0014,
+    "ratio_min": 0.9977,
+    "ratio_max": 0.9996,
+    "bf16_replica_spread": 0.0002
+   },
+   "lmeb_dialogue": {
+    "min": 0.8023,
+    "max": 0.8056,
+    "spread": 0.0033,
+    "ratio_min": 0.9918,
+    "ratio_max": 0.9959,
+    "bf16_replica_spread": 0.0003
+   }
+  }
+ },
+ "ranges": {
+  "A": "2.90-3.09x",
+  "B": "2.61-2.70x",
+  "C": "2.08-2.15x",
+  "A_vs_qwen_bf16": "1.51-1.57x"
+ },
+ "provenance": {
+  "vllm_image": "vllm/vllm-openai@sha256:befccf0e7e4089aa23926bb6f887a85c0d46c2a99e6de5c5ffdf5cb7957c5b34 (v0.32.0)",
+  "gpu": "RTX PRO 6000 Blackwell (SM120, 96 GB). Quality runs shared the GPU with another workload (scores are deterministic); speed runs had the whole GPU.",
+  "quality_serve": "--runner pooling --max-model-len 32768 --max-num-batched-tokens 32768; Nemotron: --pooler-config MEAN/use_activation false, its own chat template, --chat-template-content-format openai; Qwen3-Reranker-4B: Qwen3ForSequenceClassification overrides and the judge-prompt deployment template",
+  "speed_serve": "--runner pooling --max-model-len 8192 --max-num-batched-tokens 8192, CUDA graphs on; Qwen3-Reranker-4B KV pool 1.28 GiB",
+  "speed_method": "64 unique pairs of ~1.1k tokens per request, 4 x concurrency requests per run, 1 warm-up then 3 measured runs; median",
+  "qwen_reference_revisions": {
+   "bf16": "Qwen/Qwen3-Reranker-4B@22e683669bc0f0bd69640a1354a6d0aebcfeede5",
+   "w4a4": "HangGlidersRule/Darkstar-Qwen3-Reranker-4B-Base-ModelOpt-W4A4-NVFP4@8878e4b6f8a2a6f3edbdf713e2d74167968be0cd"
+  },
+  "modelopt": "nvidia-modelopt 0.48.0 (wheel sha256 bfcfd425eab15e05eccf065b58d11cc33f9c27b4859a6efb78aba74bfb9f225c, tag commit e2f328a19de789e73b91aca2908042388cf6d496); torch 2.15.0 cu132; transformers 5.18.0"
+ }
+}

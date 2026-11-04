@@ -1,0 +1,49 @@
+{
+ "candidate": "A",
+ "plan": {
+  "q_proj": "nvfp4",
+  "k_proj": "nvfp4",
+  "v_proj": "nvfp4",
+  "o_proj": "nvfp4",
+  "gate_proj": "nvfp4",
+  "up_proj": "nvfp4",
+  "down_proj": "nvfp4"
+ },
+ "export_tensors": 1245,
+ "source_tensors": 531,
+ "coverage": {
+  "nvfp4": 238,
+  "fp8": 0,
+  "bf16": 0
+ },
+ "fp8_block_scales": {
+  "total": 463470592,
+  "non_finite": 0,
+  "zero": 0
+ },
+ "fused_group_scales": {
+  "groups_checked": 136,
+  "mismatched": 0,
+  "mismatches": []
+ },
+ "protected_tensors": {
+  "expected": 293,
+  "byte_identical": 293
+ },
+ "hf_quant_config": {
+  "quant_algo": "NVFP4",
+  "kv_cache_quant_algo": null,
+  "group_size": 16,
+  "exclude_modules": [
+   "model.language_model.embed_tokens",
+   "model.multi_modal_projector*",
+   "model.vision_tower*",
+   "language_model.score",
+   "score",
+   "lm_head",
+   "language_model.lm_head"
+  ]
+ },
+ "errors": [],
+ "verdict": "PASS"
+}

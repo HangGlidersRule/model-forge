@@ -27,6 +27,10 @@ Historical compressed-tensors recipes (rejected for publication, retained for li
 
 - `qwen3-embedding-8b/darkstar-qwen3-embedding-8b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (every decoder linear, `nvfp4_act_headroom` calibration; published). Operator recipe SHA-256 `2a5f6acb073072af0808ee7218bf6d870dcb569d4a241719d06be267de38381c`.
 
+## Nemotron-3.5-Rerank-8B
+
+- `nemotron-3.5-rerank-8b/darkstar-nemotron-3.5-rerank-8b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (every text-tower linear, `nvfp4_act_headroom` calibration; vision tower and score head BF16; published). Operator recipe SHA-256 `71874e44a460f1c5d29509a8d5de66e6eacda4b130a8fa3fd10f3f44a0329fa7`.
+
 ## Qwen3-Reranker-4B
 
 - `qwen3-reranker-4b/darkstar-qwen3-reranker-4b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (decoder MLP only, `nvfp4_act_headroom` calibration; published). Operator recipe SHA-256 `eb9a063a89cc527f58a0c68bcbc860427e9f3cf67c048033316da147c82686d6`.

@@ -1,0 +1,26 @@
+{
+ "repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4",
+ "hf_commit": "e93d763ec646f35a85baffab9c56460cd2ac7a13",
+ "hf_commit_note": "Public head: a card-only commit on top of bf1a99a2 (the clean-download-verified commit); the model.safetensors LFS oid is identical at both commits (hf_publish.py same-weights).",
+ "verified_commit": "bf1a99a21204f30d9708affe538678a4dea2c0d9",
+ "file_count": 20,
+ "files": [".gitattributes", "1_Pooling/config.json", "2_Dense/config.json", "2_Dense/model.safetensors", "LICENSE", "NOTICE", "README.md", "THIRD_PARTY_NOTICES.md", "chat_template.jinja", "config.json", "config_sentence_transformers.json", "hf_quant_config.json", "manifest.sha256", "model.py", "model.safetensors", "modules.json", "processor_config.json", "sentence_bert_config.json", "tokenizer.json", "tokenizer_config.json"],
+ "manifest_sha256_of_manifest_file": "f314383a44cf7487ea76055eab8f6636485c5b2f5f791bc7cdfda1bb5be67682",
+ "lfs_sha256_matches_local": true,
+ "public": true,
+ "anonymous_http_non_200": [],
+ "card_read_back_identical": true,
+ "family_collection": "HangGlidersRule/darkstar-nemotron-35-rerank-8b-6aeac312954418631a63b91d",
+ "releases_collection": "HangGlidersRule/darkstar-releases-6a8dfe8c2340f19e4f3e24c1",
+ "clean_download_boot_smoke": {
+  "download": "empty HF cache, snapshot_download at the verified commit; 19/19 manifest.sha256 entries verified, 0 mismatches; model.safetensors byte-identical to the evaluated export",
+  "serve": "vLLM v0.32.0 by digest, the card's exact serve command (pooling runner, MEAN pooling with use_activation false, --chat-template chat_template.jinja from the download, --max-model-len 8192 --max-num-batched-tokens 8192); FlashInferCutlassNvFp4LinearKernel; weights 5.77 GiB",
+  "health": 200,
+  "served_model": "darkstar-nemotron35rerank8b-base-nvfp4",
+  "card_example": {"endpoint": "/v1/rerank", "relevant_score": -1.3857, "irrelevant_score": -3.3091, "ranking_correct": true, "prompt_tokens": 41},
+  "endpoints": "/v1/score, /v1/rerank and /classify identical on 64 pairs (max difference 0)",
+  "quality_rerun": "both frozen sets re-scored on the downloaded copy: 0.7346 and 0.8045 macro nDCG@10 (results/rerank-gate-summary.json, published_profile_reruns)",
+  "fatal_markers_in_log": 0,
+  "fatal_markers_note": "The log's two 'Traceback' lines are vLLM's startup probe for the checkpoint's remote code (dynamic_module.py, logged as WARNING); the BF16 control's startup log has the same two lines."
+ }
+}
