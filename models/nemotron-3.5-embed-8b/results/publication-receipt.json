@@ -1,0 +1,29 @@
+{
+ "repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4",
+ "hf_commit": "6f5161271507efbbed11168cac37154c8d095b66",
+ "hf_commit_note": "Public head is the clean-download-verified commit itself; no card-only commit on top.",
+ "verified_commit": "6f5161271507efbbed11168cac37154c8d095b66",
+ "file_count": 17,
+ "files": [".gitattributes", "1_Pooling/config.json", "LICENSE", "NOTICE", "README.md", "THIRD_PARTY_NOTICES.md", "chat_template.jinja", "config.json", "config_sentence_transformers.json", "hf_quant_config.json", "manifest.sha256", "model.safetensors", "modules.json", "processor_config.json", "sentence_bert_config.json", "tokenizer.json", "tokenizer_config.json"],
+ "manifest_sha256_of_manifest_file": "73f3ec6aa90e68025176c239ce7b1876415ce7c111961048115cefa5ae2fb413",
+ "lfs_sha256_matches_local": true,
+ "public": true,
+ "made_public_after": "the export PR merged (#37, merge commit 38de1afc6733cb1299f50be6af6ac102b0efbcbf) and the release tag darkstar-nemotron-3.5-embed-8b-v1.0.0 existed",
+ "anonymous_http_non_200": [],
+ "card_read_back_identical": true,
+ "card_links_anonymous_http_200": 9,
+ "family_collection": "HangGlidersRule/darkstar-nemotron-35-embed-8b-6aeb75ea09c9fc26c4961388",
+ "releases_collection": "HangGlidersRule/darkstar-releases-6a8dfe8c2340f19e4f3e24c1",
+ "license_files_source": "LICENSE, NOTICE and THIRD_PARTY_NOTICES.md are byte-identical to nvidia/Nemotron-3-Embed-8B-BF16@d1f2f25730bbd775b99b29185134bc86653bf2d1 (the upstream repository ships none; its text side is that model's, unchanged)",
+ "clean_download_boot_smoke": {
+  "download": "empty HF cache, snapshot_download of the private repository at the verified commit; 16/16 manifest.sha256 entries verified, 0 mismatches; model.safetensors byte-identical to the evaluated export",
+  "serve": "vLLM v0.32.0 by digest, the card's exact serve command (pooling runner, MEAN pooling with normalization, --chat-template-content-format openai, --max-model-len 32768 --max-num-batched-tokens 32768); MarlinNvFp4LinearKernel; weights 5.82 GiB",
+  "health": 200,
+  "served_model": "darkstar-nemotron35embed8b-base-nvfp4",
+  "card_example": "the card's /v1/embeddings request with add_special_tokens false: 4,096-dim normalized vectors; query vs the matching passage cosine 0.5374, vs an unrelated passage 0.0197",
+  "reference_check": "served vectors vs transformers fake-quant reference vectors for 16 fixed texts: cosine min 0.99931 (bar 0.999)",
+  "quality_rerun": "both frozen sets re-embedded and scored on the downloaded copy: 0.6443 and 0.5720 mean nDCG@10, both pass the bar (results/embed-gate-summary.json, clean_download_smoke)",
+  "document_vectors_vs_evaluated_serve": "cosine mean 0.999985 (24,893 documents) and 0.999978 (22,289 turns)",
+  "fatal_markers_in_log": 0
+ }
+}

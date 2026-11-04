@@ -13,7 +13,7 @@ embedding model.
 | Cell | Repository / source | Status |
 |---|---|---|
 | Base BF16 (control) | [`nvidia/Nemotron-3.5-Embed-8B-BF16`](https://huggingface.co/nvidia/Nemotron-3.5-Embed-8B-BF16) @ `781e779ee4ca9c2d2a4f38321993556baeab49a1` | unchanged upstream reference; no HangGlidersRule repository |
-| Base W4A16-NVFP4 | [`Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4) | published |
+| Base W4A16-NVFP4 | [`Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4) @ `6f516127` | published ([receipt](results/publication-receipt.json)) |
 | Abliterated cells | — | not applicable: an embedding model has no refusal behavior to edit |
 
 Release: tag [`darkstar-nemotron-3.5-embed-8b-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3.5-embed-8b-v1.0.0).

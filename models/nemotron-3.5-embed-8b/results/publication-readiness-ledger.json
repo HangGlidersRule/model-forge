@@ -6,7 +6,7 @@
  "family_display": "Darkstar Nemotron-3.5-Embed-8B",
  "source_revision": "nvidia/Nemotron-3.5-Embed-8B-BF16@781e779ee4ca9c2d2a4f38321993556baeab49a1",
  "note": "Embedding family (multimodal embedder: Pixtral vision tower + bidirectional Ministral3 text tower, mean-pooled normalized 4,096-dim vectors). Base quantization of the text tower only; image retrieval is not evaluated. The selected product is weight-only (W4A16): both W4A4 candidates failed the LMEB Dialogue bar. No abliteration cells are planned; the BF16 cell is the unchanged upstream reference. GPQA does not apply; the matched full-denominator gates are the MTEB Nano full-corpus benchmark (#18) and LMEB Dialogue whole-conversation retrieval.",
- "any_publication_claim": false,
+ "any_publication_claim": true,
  "products": [
   {
    "product_id": "Darkstar-Nemotron-3.5-Embed-8B-Base-BF16",
@@ -51,14 +51,14 @@
    "product_id": "Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-NVFP4",
    "role": "base-modelopt-nvfp4",
    "task": "embedding",
-   "lifecycle": "locally_complete_unpublished",
+   "lifecycle": "published",
    "target_repository": "HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4",
    "target_repository_status": "resolved",
    "served_model_alias": "darkstar-nemotron35embed8b-base-nvfp4",
    "runtime_container_name": "vllm-darkstar-nemotron35embed8b-base-nvfp4",
    "model_card": "models/nemotron-3.5-embed-8b/model-card/base-nvfp4.md",
    "recipe": "recipes/nemotron-3.5-embed-8b/darkstar-nemotron-3.5-embed-8b-base-modelopt-w4a16-nvfp4.yaml",
-   "publication_claim": false,
+   "publication_claim": true,
    "candidates": [
     {
      "candidate_id": "Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4",
@@ -193,10 +193,10 @@
     },
     {
      "id": "publication_targets_hf_ghcr",
-     "status": "in_progress",
-     "evidence": "HF target HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4 reserved; upload, clean-download smoke, export PR merge, tag, then public flip",
-     "evidence_path": null,
-     "next_missing_proof": "private upload and the steps after it"
+     "status": "verified",
+     "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4 @ 6f51612; GHCR not required (pinned upstream vLLM image)",
+     "evidence_path": "models/nemotron-3.5-embed-8b/results/publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "clean_download_boot_smoke",
@@ -207,10 +207,10 @@
     },
     {
      "id": "release_tag",
-     "status": "in_progress",
-     "evidence": "Tag darkstar-nemotron-3.5-embed-8b-v1.0.0 follows the export PR merge",
-     "evidence_path": null,
-     "next_missing_proof": "tag the merge commit"
+     "status": "verified",
+     "evidence": "darkstar-nemotron-3.5-embed-8b-v1.0.0",
+     "evidence_path": "models/nemotron-3.5-embed-8b/README.md",
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "no_inherited_unverified_results",

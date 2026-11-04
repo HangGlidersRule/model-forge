@@ -452,7 +452,25 @@
     ]
    },
    "splits_won_by_nemotron_bf16": 3,
-   "splits": 6
+   "splits": 6,
+   "per_set_ndcg10": {
+    "qwen-bf16": {
+     "NanoNFCorpusRetrieval": 0.3815,
+     "NanoFiQA2018Retrieval": 0.6995,
+     "NanoTouche2020Retrieval": 0.6436,
+     "NanoArguAnaRetrieval": 0.6806,
+     "NanoSciFactRetrieval": 0.8042,
+     "NanoMSMARCORetrieval": 0.7155
+    },
+    "qwen-w4a4": {
+     "NanoNFCorpusRetrieval": 0.3706,
+     "NanoFiQA2018Retrieval": 0.687,
+     "NanoTouche2020Retrieval": 0.6526,
+     "NanoArguAnaRetrieval": 0.678,
+     "NanoSciFactRetrieval": 0.803,
+     "NanoMSMARCORetrieval": 0.7081
+    }
+   }
   },
   "lmeb_scene_retrieval": {
    "qwen-bf16": 0.3943,
@@ -487,7 +505,31 @@
     ]
    },
    "splits_won_by_nemotron_bf16": 9,
-   "splits": 9
+   "splits": 9,
+   "per_set_ndcg10": {
+    "qwen-bf16": {
+     "LoCoMo/single_hop": 0.4041,
+     "LoCoMo/multi_hop": 0.363,
+     "LoCoMo/temporal_reasoning": 0.53,
+     "LoCoMo/open_domain": 0.3536,
+     "LoCoMo/adversarial": 0.1947,
+     "REALTALK/commonsense": 0.3174,
+     "REALTALK/multi_hop": 0.3585,
+     "REALTALK/temporal_reasoning": 0.6418,
+     "TMD/content_time_qs": 0.386
+    },
+    "qwen-w4a4": {
+     "LoCoMo/single_hop": 0.4027,
+     "LoCoMo/multi_hop": 0.3264,
+     "LoCoMo/temporal_reasoning": 0.522,
+     "LoCoMo/open_domain": 0.3456,
+     "LoCoMo/adversarial": 0.166,
+     "REALTALK/commonsense": 0.3066,
+     "REALTALK/multi_hop": 0.3266,
+     "REALTALK/temporal_reasoning": 0.6523,
+     "TMD/content_time_qs": 0.364
+    }
+   }
   }
  },
  "speed_ratio_to_bf16": {
