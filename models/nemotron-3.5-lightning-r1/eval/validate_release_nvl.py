@@ -16,11 +16,14 @@
   - hf_quant_config.json: MIXED_PRECISION, KV FP8, per-layer algos exactly NVFP4 x 5,934 experts, FP8 x 46 Mamba
     projections, W4A16_NVFP4 x lm_head; config.json's quantization_config agrees
   - companion files byte-identical to the source
+  - configs, companions and release files are regular files on both sides; a symlink is a failure, never followed
 Usage: validate_release_nvl.py ART SRC_BF16 V110 VARIANTS_G_JSON OUT_JSON"""
 import collections
 import hashlib
 import json
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 
@@ -38,12 +41,37 @@ EXP = re.compile(r"^backbone\.layers\.(\d+)\.mixer\.(experts\.\d+|shared_experts
 MAMBA = re.compile(r"^backbone\.layers\.(\d+)\.mixer\.(in_proj|out_proj)$")
 
 
-def sha(p: Path) -> str:
+def open_regular(p: Path):
+    """Binary reader for p if it is a regular file, else None. A symlink at p is not followed."""
+    try:
+        fd = os.open(p, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError:
+        return None
+    f = os.fdopen(fd, "rb")
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        f.close()
+        return None
+    return f
+
+
+def sha(p: Path) -> str | None:
+    f = open_regular(p)
+    if f is None:
+        return None
     h = hashlib.sha256()
-    with open(p, "rb") as f:
+    with f:
         for c in iter(lambda: f.read(1 << 24), b""):
             h.update(c)
     return h.hexdigest()
+
+
+def regular_json(p: Path) -> dict:
+    f = open_regular(p)
+    if f is None:
+        fails.append(f"{p} is missing or not a regular file")
+        return {}
+    with f:
+        return json.loads(f.read())
 
 
 def index(d: Path) -> dict:
@@ -127,7 +155,7 @@ if nan_fp8 or zero_blk:
     fails.append(f"FP8 tensors: {nan_fp8} NaN bytes, {zero_blk} zero block scales")
 if in_mismatch:
     fails.append(f"{len(in_mismatch)} expert input scales differ from the mse rule, e.g. {in_mismatch[:3]}")
-shard_same = (art / "model-input-scales.safetensors").exists() and sha(art / "model-input-scales.safetensors") == sha(v110 / "model-input-scales.safetensors")
+shard_same = (h := sha(art / "model-input-scales.safetensors")) is not None and h == sha(v110 / "model-input-scales.safetensors")
 
 # ---- experts vs v1.1.0 (reported)
 exp_keys = [k for k in want if EXP.match(k.rsplit(".", 1)[0])]
@@ -171,12 +199,12 @@ if unaccounted:
     fails.append(f"{len(unaccounted)} source tensors missing from the export: {unaccounted[:5]}")
 
 # ---- configs
-cs = json.loads((src / "config.json").read_text())
-ca = json.loads((art / "config.json").read_text())
+cs = regular_json(src / "config.json")
+ca = regular_json(art / "config.json")
 qc = ca.pop("quantization_config", None) or {}
 if ca != cs:
     fails.append(f"config.json differs from the source in {sorted(k for k in set(ca) | set(cs) if ca.get(k) != cs.get(k))}")
-if json.loads((art / "generation_config.json").read_text()) != json.loads((src / "generation_config.json").read_text()):
+if regular_json(art / "generation_config.json") != regular_json(src / "generation_config.json"):
     fails.append("generation_config.json differs from the source")
 hq = json.loads((art / "hf_quant_config.json").read_text())["quantization"]
 ql = hq.get("quantized_layers") or {}
@@ -216,16 +244,23 @@ if qc.get("quant_algo") != "MIXED_PRECISION" or ("quantized_layers" in qc and qc
     fails.append("config.json quantization_config disagrees with hf_quant_config.json")
 
 # ---- companion files + inventory
-comp_bad = [n for n in COMPANION if not (art / n).exists() or not (src / n).exists() or sha(art / n) != sha(src / n)]
+comp_bad = [n for n in COMPANION if (h := sha(art / n)) is None or h != sha(src / n)]
 if comp_bad:
     fails.append(f"companion files differ from or missing vs the source: {comp_bad}")
-present = sorted(p.name for p in art.iterdir() if p.is_file())
+links = sorted(p.name for p in art.iterdir() if p.is_symlink())
+if links:
+    fails.append(f"symlinks in the artifact: {links}")
+present = sorted(p.name for p in art.iterdir() if p.is_file() or p.is_symlink())
 known = set(COMPANION) | {"config.json", "generation_config.json", "hf_quant_config.json", "model.safetensors.index.json"} \
     | {p.name for p in set(ei.values())} | DROP
 unknown = [n for n in present if n not in known]
 if unknown:
     fails.append(f"unclassified files: {unknown}")
 release = [n for n in present if n not in DROP]
+release_files = {n: sha(art / n) for n in release}
+unreadable = sorted(n for n, h in release_files.items() if h is None)
+if unreadable:
+    fails.append(f"release files that are not regular files: {unreadable}")
 res = {
     "artifact": str(art), "verdict": "PASS" if not fails else "FAIL", "failures": fails, "tensors": len(dt),
     "experts": len(experts), "routed": n_routed, "shared": n_shared, "mamba_fp8": len(mamba), "lm_head": dt.get("lm_head.weight"),
@@ -235,7 +270,7 @@ res = {
     "expert_tensors_identical_to_v1_1_0": exp_same, "expert_tensors_differing_from_v1_1_0": exp_diff,
     "expert_differing_examples": diff_examples[:5], "protected_tensors_checked": checked,
     "per_layer_algos": dict(algos), "dropped_files": sorted(n for n in present if n in DROP),
-    "release_file_count": len(release), "release_files": {n: sha(art / n) for n in release},
+    "release_file_count": len(release), "release_files": release_files,
 }
 out.write_text(json.dumps(res, indent=1) + "\n")
 print(json.dumps({k: v for k, v in res.items() if k != "release_files"}, indent=1))
