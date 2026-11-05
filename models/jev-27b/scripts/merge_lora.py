@@ -16,21 +16,59 @@
 Usage: merge_lora.py --base DIR --adapter DIR --out DIR [--report FILE]
 The output dir gets the base's non-weight files (config, tokenizer, processor, chat template),
 the merged shards with the same names and index, and decision_head.json + calibration.json
-copied from the adapter repo for the serving shim.
+copied from the adapter repo for the serving shim. Every file copied or rewritten into the output must be a regular
+file: a symlink is refused, never followed, so nothing outside those directories can end up in the merged checkpoint.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
+import errno
 import hashlib
 import json
+import os
 import shutil
+import stat
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
+
+
+def open_regular(path: Path) -> int:
+    """Open path without following a symlink at its last component; refuse anything but a regular file."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise SystemExit(f"refusing symlink: {path}") from None
+        raise
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        os.close(fd)
+        raise SystemExit(f"refusing non-regular file: {path}")
+    return fd
+
+
+def copy_fd(fd: int, dst: Path) -> None:
+    """copy2 from an open file: the bytes go to a new file beside dst that then replaces dst, never through a link."""
+    st = os.fstat(fd)
+    tmp_fd, tmp = tempfile.mkstemp(dir=dst.parent, prefix=f".{dst.name}.")
+    try:
+        with open(tmp_fd, "wb") as w, open(fd, "rb", closefd=False) as r:
+            r.seek(0)
+            shutil.copyfileobj(r, w)
+            w.flush()
+            os.fchmod(w.fileno(), stat.S_IMODE(st.st_mode))
+            os.utime(w.fileno(), ns=(st.st_atime_ns, st.st_mtime_ns))
+        os.replace(tmp, dst)
+    except BaseException:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(tmp)
+        raise
 
 
 def adapter_target(key: str) -> tuple[str, str] | None:
@@ -85,11 +123,32 @@ def main() -> int:
         raise SystemExit(f"incomplete LoRA pairs: {incomplete[:5]}")
     print(f"adapter pairs: {len(pairs)}", flush=True)
 
-    index = json.loads((a.base / "model.safetensors.index.json").read_text())
+    index_fd = open_regular(a.base / "model.safetensors.index.json")
+    with open(index_fd, "rb", closefd=False) as h:
+        index = json.loads(h.read())
     wmap: dict[str, str] = index["weight_map"]
     missing = sorted(k for k in pairs if k not in wmap)
     if missing:
         raise SystemExit(f"{len(missing)} LoRA targets missing from base, e.g. {missing[:5]}")
+
+    shard_fds: dict[str, int] = {}
+    for s in sorted(set(wmap.values())):
+        if s in (".", "..") or Path(s).name != s:
+            raise SystemExit(f"index names a shard outside the base: {s!r}")
+        shard_fds[s] = open_regular(a.base / s)
+    companions: dict[Path, int] = {}
+    with os.scandir(a.base) as it:
+        for e in sorted(it, key=lambda e: e.name):
+            if e.is_dir(follow_symlinks=False) or e.name.endswith(".safetensors"):
+                continue
+            if e.name in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
+                continue
+            companions[a.out / e.name] = open_regular(a.base / e.name)
+    for extra in ("decision_head.json",):
+        companions[a.out / extra] = open_regular(a.adapter / extra)
+    calib = a.adapter.parent / "calibration.json"
+    if os.path.lexists(calib):
+        companions[a.out / "calibration.json"] = open_regular(calib)
 
     a.out.mkdir(parents=True, exist_ok=True)
     report = {"scale": scale, "r": r, "alpha": alpha, "merged": {}, "copied": 0, "shards": {}}
@@ -100,7 +159,8 @@ def main() -> int:
     t0 = time.time()
     for shard in sorted(by_shard):
         out_tensors: dict[str, torch.Tensor] = {}
-        with safe_open(str(a.base / shard), framework="pt") as f:
+        shard_fd = shard_fds.pop(shard)
+        with safe_open(f"/proc/self/fd/{shard_fd}", framework="pt") as f:
             meta = f.metadata()
             for k in by_shard[shard]:
                 w = f.get_tensor(k)
@@ -119,6 +179,7 @@ def main() -> int:
                 else:
                     out_tensors[k] = w
                     report["copied"] += 1
+        os.close(shard_fd)
         save_file(out_tensors, str(a.out / shard), metadata=meta or {"format": "pt"})
         report["shards"][shard] = len(out_tensors)
         print(f"  {shard}: {len(out_tensors)} tensors, merged so far {merged_count}/{len(pairs)} ({time.time() - t0:.0f}s)", flush=True)
@@ -126,15 +187,11 @@ def main() -> int:
 
     if merged_count != len(pairs):
         raise SystemExit(f"merged {merged_count} of {len(pairs)} pairs")
-    shutil.copy2(a.base / "model.safetensors.index.json", a.out / "model.safetensors.index.json")
-    for p in a.base.iterdir():
-        if p.is_file() and not p.name.endswith(".safetensors") and p.name not in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
-            shutil.copy2(p, a.out / p.name)
-    for extra in ("decision_head.json",):
-        shutil.copy2(a.adapter / extra, a.out / extra)
-    calib = a.adapter.parent / "calibration.json"
-    if calib.exists():
-        shutil.copy2(calib, a.out / "calibration.json")
+    copy_fd(index_fd, a.out / "model.safetensors.index.json")
+    os.close(index_fd)
+    for dst, fd in companions.items():
+        copy_fd(fd, dst)
+        os.close(fd)
     rels = sorted(v["rel_delta_fro"] for v in report["merged"].values())
     report["summary"] = {"pairs": len(pairs), "merged": merged_count, "copied": report["copied"],
                          "rel_delta_fro_median": rels[len(rels) // 2], "rel_delta_fro_max": rels[-1],
