@@ -32,13 +32,13 @@ import time
 import urllib.request
 from pathlib import Path
 
-MTEB = {  # the #18 / #32 pinned revisions
-    "mteb/NanoNFCorpusRetrieval": "2eec9d63140f",
-    "mteb/NanoFiQA2018Retrieval": "ede84da4793c",
-    "mteb/NanoTouche2020Retrieval": "ff81c0caff8b",
-    "mteb/NanoArguAnaRetrieval": "63ac9f026e8f",
-    "mteb/NanoSciFactRetrieval": "8c5f7bbe90bb",
-    "mteb/NanoMSMARCORetrieval": "5a5aa0c3df65",
+MTEB = {  # the #18 / #32 pinned revisions: full commit ids, matched exactly
+    "mteb/NanoNFCorpusRetrieval": "2eec9d63140fb9af7c75ad0fdbf6350aaf20e94e",
+    "mteb/NanoFiQA2018Retrieval": "ede84da4793cd2d4e61bba0dd08fc58de90f3681",
+    "mteb/NanoTouche2020Retrieval": "ff81c0caff8b6febe1495eae9f2ca3eddad074b8",
+    "mteb/NanoArguAnaRetrieval": "63ac9f026e8f6b85dc0622f3d630ed7a1758e9ec",
+    "mteb/NanoSciFactRetrieval": "8c5f7bbe90bb865f46c67710221afa7d9096251b",
+    "mteb/NanoMSMARCORetrieval": "5a5aa0c3df65d6883d85c8f5cdc88e679633595e",
 }
 WEB_TASK = "Given a web search query, retrieve relevant passages that answer the query"
 LMEB = "KaLM-Embedding/LMEB"
@@ -62,15 +62,22 @@ def _jsonl(raw: bytes) -> list[dict]:
     return [json.loads(line) for line in raw.split(b"\n") if line.strip()]
 
 
+def _pinned_base(ds: str, rev: str) -> str:
+    """Blob base URL at the pinned commit `rev`. The live head must be exactly `rev`; the URL is built from `rev`, never
+    from the API response."""
+    live = json.loads(_get(f"https://huggingface.co/api/datasets/{ds}"))["sha"]
+    if live != rev:
+        raise SystemExit(f"{ds}: live commit {live!r} is not the pinned revision {rev}")
+    return f"https://huggingface.co/datasets/{ds}/resolve/{rev}"
+
+
 def build_sets(mteb_out: Path, lmeb_out: Path, rerank_set: Path) -> None:
     import pyarrow.parquet as pq
 
     data, shas = {}, {}
-    for ds, prefix in MTEB.items():
-        sha = json.loads(_get(f"https://huggingface.co/api/datasets/{ds}"))["sha"]
-        assert sha.startswith(prefix), (ds, sha)
-        shas[ds] = sha
-        base = f"https://huggingface.co/datasets/{ds}/resolve/{sha}"
+    for ds, rev in MTEB.items():
+        base = _pinned_base(ds, rev)
+        shas[ds] = rev
         corpus = pq.read_table(io.BytesIO(_get(f"{base}/corpus/train-00000-of-00001.parquet"))).to_pylist()
         queries = pq.read_table(io.BytesIO(_get(f"{base}/queries/train-00000-of-00001.parquet"))).to_pylist()
         qrels = pq.read_table(io.BytesIO(_get(f"{base}/qrels/train-00000-of-00001.parquet"))).to_pylist()
