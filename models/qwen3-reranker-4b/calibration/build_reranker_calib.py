@@ -15,15 +15,21 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
+import os
 import random
+import stat
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
 DATASET = "microsoft/ms_marco"
 REVISION = "a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a"
 PARQUET = "v1.1/train-00000-of-00001.parquet"
+# Hugging Face LFS sha256 of PARQUET at REVISION; any cached or downloaded bytes must match it.
+PARQUET_SHA256 = "11d5e51d70ce87b47b1c132ef7c55f4cfb93b22c122058aa0591a65c4c0dc1f1"
 SEED = 1234
 N_SAMPLES = 512
 
@@ -41,18 +47,59 @@ def render(query: str, passage: str) -> str:
     return PREFIX + body + SUFFIX
 
 
+def default_cache() -> Path:
+    base = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+    return base / "model-forge" / "ms_marco" / REVISION / Path(PARQUET).name
+
+
+def read_verified(path: Path) -> bytes | None:
+    """The file's bytes from a single open, or None unless they hash to PARQUET_SHA256."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+    except OSError:
+        return None
+    with os.fdopen(fd, "rb") as f:
+        if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+            return None
+        data = f.read()
+    return data if hashlib.sha256(data).hexdigest() == PARQUET_SHA256 else None
+
+
+def load_parquet(cache: Path) -> bytes:
+    data = read_verified(cache)
+    if data is not None:
+        return data
+    url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
+    with urllib.request.urlopen(url) as resp:
+        data = resp.read()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != PARQUET_SHA256:
+        raise SystemExit(f"{url} has sha256 {digest}, expected {PARQUET_SHA256}")
+    try:
+        cache.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=cache.parent, prefix=f".{cache.name}.")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+            os.replace(tmp, cache)
+        except BaseException:
+            os.unlink(tmp)
+            raise
+    except OSError as exc:
+        print(f"not caching {cache}: {exc}", file=sys.stderr)
+    return data
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--cache", type=Path, default=Path("/tmp/ms_marco_v1.1_train.parquet"))
+    ap.add_argument("--cache", type=Path, default=default_cache())
     args = ap.parse_args()
 
     import pyarrow.parquet as pq  # imported late so --help works without pyarrow
 
-    if not args.cache.exists():
-        url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
-        urllib.request.urlretrieve(url, args.cache)
-    table = pq.read_table(args.cache, columns=["query_id", "query", "passages"])
+    data = load_parquet(args.cache)
+    table = pq.read_table(io.BytesIO(data), columns=["query_id", "query", "passages"])
     rows = table.to_pylist()
 
     rng = random.Random(SEED)
