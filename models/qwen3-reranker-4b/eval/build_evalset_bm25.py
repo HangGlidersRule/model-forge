@@ -21,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from reranker_eval import DATASETS, MAX_CANDS, SEED  # noqa: E402
+from reranker_eval import DATASETS, MAX_CANDS, SEED, pinned_base  # noqa: E402
 
 TOKEN = re.compile(r"\w+")
 
@@ -71,11 +71,9 @@ def main() -> int:
     data: dict[str, list[dict]] = {}
     shas: dict[str, str] = {}
     stats = []
-    for ds, prefix in DATASETS.items():
-        sha = json.loads(_get(f"https://huggingface.co/api/datasets/{ds}"))["sha"]
-        assert sha.startswith(prefix), (ds, sha)
-        shas[ds] = sha
-        base = f"https://huggingface.co/datasets/{ds}/resolve/{sha}"
+    for ds, rev in DATASETS.items():
+        base = pinned_base(ds, rev)
+        shas[ds] = rev
         corpus = pq.read_table(io.BytesIO(_get(f"{base}/corpus/train-00000-of-00001.parquet"))).to_pylist()
         queries = pq.read_table(io.BytesIO(_get(f"{base}/queries/train-00000-of-00001.parquet"))).to_pylist()
         qrels = pq.read_table(io.BytesIO(_get(f"{base}/qrels/train-00000-of-00001.parquet"))).to_pylist()
