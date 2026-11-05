@@ -15,15 +15,21 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
+import os
 import random
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
 DATASET = "microsoft/ms_marco"
 REVISION = "a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a"
 PARQUET = "v1.1/train-00000-of-00001.parquet"
+# Git LFS object of PARQUET at REVISION.
+PARQUET_SHA256 = "11d5e51d70ce87b47b1c132ef7c55f4cfb93b22c122058aa0591a65c4c0dc1f1"
+PARQUET_SIZE = 175452226
 SEED = 1234
 N_SAMPLES = 512
 
@@ -41,18 +47,68 @@ def render(query: str, passage: str) -> str:
     return PREFIX + body + SUFFIX
 
 
+def default_cache() -> Path:
+    base = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+    return base / "model-forge" / "ms_marco" / REVISION / Path(PARQUET).name
+
+
+def pinned(data: bytes) -> bool:
+    return len(data) == PARQUET_SIZE and hashlib.sha256(data).hexdigest() == PARQUET_SHA256
+
+
+def read_cache(cache: Path) -> bytes | None:
+    try:
+        fd = os.open(cache, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError:
+        return None
+    with os.fdopen(fd, "rb") as f:
+        if os.fstat(f.fileno()).st_size != PARQUET_SIZE:
+            return None
+        return f.read(PARQUET_SIZE + 1)
+
+
+def write_cache(cache: Path, data: bytes) -> None:
+    try:
+        cache.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=cache.parent, prefix=f".{cache.name}.")
+    except OSError as e:
+        print(f"not caching {cache}: {e}", file=sys.stderr)
+        return
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.replace(tmp, cache)
+    except OSError as e:
+        os.unlink(tmp)
+        print(f"not caching {cache}: {e}", file=sys.stderr)
+
+
+def load_parquet(cache: Path) -> bytes:
+    """The pinned parquet's bytes. Callers parse these bytes, never the cache path: any copy of the file can change after
+    it is checked."""
+    data = read_cache(cache)
+    if data is not None and pinned(data):
+        return data
+    url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
+    with urllib.request.urlopen(url) as resp:
+        data = resp.read(PARQUET_SIZE + 1)
+    if not pinned(data):
+        raise SystemExit(f"{url}: {len(data)} bytes, sha256 {hashlib.sha256(data).hexdigest()}; "
+                         f"expected {PARQUET_SIZE} bytes, sha256 {PARQUET_SHA256}")
+    write_cache(cache, data)
+    return data
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--cache", type=Path, default=Path("/tmp/ms_marco_v1.1_train.parquet"))
+    ap.add_argument("--cache", type=Path, default=default_cache())
     args = ap.parse_args()
 
     import pyarrow.parquet as pq  # imported late so --help works without pyarrow
 
-    if not args.cache.exists():
-        url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
-        urllib.request.urlretrieve(url, args.cache)
-    table = pq.read_table(args.cache, columns=["query_id", "query", "passages"])
+    data = load_parquet(args.cache)
+    table = pq.read_table(io.BytesIO(data), columns=["query_id", "query", "passages"])
     rows = table.to_pylist()
 
     rng = random.Random(SEED)
