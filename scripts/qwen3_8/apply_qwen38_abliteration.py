@@ -112,8 +112,8 @@ def main() -> None:
         edited_count = 0
         unchanged_vision_count = 0
 
-        for shard_name in shard_files:
-            src_shard = model_path / shard_name
+        for shard in shard_files:
+            src_shard = model_path / shard
             shard_tensors = load_file(str(src_shard))
             modified_tensors: dict[str, torch.Tensor] = {}
 
@@ -137,7 +137,7 @@ def main() -> None:
                     if is_vision_tensor(tname):
                         unchanged_vision_count += 1
 
-            save_file(modified_tensors, str(partial / shard_name))
+            save_file(modified_tensors, str(partial / shard))
 
         assert edited_count == cfg.abliteration.expected_target_count
 
