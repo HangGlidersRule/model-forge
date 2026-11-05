@@ -23,7 +23,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shutil
+import os
+import stat
 import sys
 import time
 from pathlib import Path
@@ -31,6 +32,36 @@ from pathlib import Path
 import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
+
+
+def open_dir(path: Path) -> int:
+    return os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+
+
+def read_checkpoint_file(path: Path, dir_fd: int) -> bytes:
+    """Read ``path``, which must be a regular file and the entry ``path.name`` of the directory open as ``dir_fd``.
+
+    A link is refused, including one swapped in after the directory was listed, and so is a file reached through a
+    parent that was swapped for a link: the opened inode must be the one that directory lists under that name."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError as e:
+        raise SystemExit(f"{path}: {e.strerror} (checkpoint files must be regular files, not links)") from e
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or not os.path.samestat(
+            st, os.stat(path.name, dir_fd=dir_fd, follow_symlinks=False)
+        ):
+            raise SystemExit(f"{path}: not a regular file in {path.parent}")
+        with open(fd, "rb", closefd=False) as f:
+            return f.read()
+    finally:
+        os.close(fd)
+
+
+def write_output_file(path: Path, data: bytes) -> None:
+    with open(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC, 0o644), "wb") as f:
+        f.write(data)
 
 
 def adapter_target(key: str) -> tuple[str, str] | None:
@@ -85,7 +116,22 @@ def main() -> int:
         raise SystemExit(f"incomplete LoRA pairs: {incomplete[:5]}")
     print(f"adapter pairs: {len(pairs)}", flush=True)
 
-    index = json.loads((a.base / "model.safetensors.index.json").read_text())
+    # Every file copied into the output is read here, before anything is written, from a directory held open.
+    base_fd, adapter_fd, adapter_parent_fd = open_dir(a.base), open_dir(a.adapter), open_dir(a.adapter.parent)
+    index_bytes = read_checkpoint_file(a.base / "model.safetensors.index.json", base_fd)
+    sidecars: dict[str, bytes] = {}
+    for name in sorted(os.listdir(base_fd)):
+        if name.endswith(".safetensors") or name in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
+            continue
+        if stat.S_ISDIR(os.stat(name, dir_fd=base_fd, follow_symlinks=False).st_mode):
+            continue
+        sidecars[name] = read_checkpoint_file(a.base / name, base_fd)
+    for extra in ("decision_head.json",):
+        sidecars[extra] = read_checkpoint_file(a.adapter / extra, adapter_fd)
+    if os.path.lexists(a.adapter.parent / "calibration.json"):
+        sidecars["calibration.json"] = read_checkpoint_file(a.adapter.parent / "calibration.json", adapter_parent_fd)
+
+    index = json.loads(index_bytes)
     wmap: dict[str, str] = index["weight_map"]
     missing = sorted(k for k in pairs if k not in wmap)
     if missing:
@@ -126,15 +172,9 @@ def main() -> int:
 
     if merged_count != len(pairs):
         raise SystemExit(f"merged {merged_count} of {len(pairs)} pairs")
-    shutil.copy2(a.base / "model.safetensors.index.json", a.out / "model.safetensors.index.json")
-    for p in a.base.iterdir():
-        if p.is_file() and not p.name.endswith(".safetensors") and p.name not in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
-            shutil.copy2(p, a.out / p.name)
-    for extra in ("decision_head.json",):
-        shutil.copy2(a.adapter / extra, a.out / extra)
-    calib = a.adapter.parent / "calibration.json"
-    if calib.exists():
-        shutil.copy2(calib, a.out / "calibration.json")
+    write_output_file(a.out / "model.safetensors.index.json", index_bytes)
+    for name, data in sidecars.items():
+        write_output_file(a.out / name, data)
     rels = sorted(v["rel_delta_fro"] for v in report["merged"].values())
     report["summary"] = {"pairs": len(pairs), "merged": merged_count, "copied": report["copied"],
                          "rel_delta_fro_median": rels[len(rels) // 2], "rel_delta_fro_max": rels[-1],
