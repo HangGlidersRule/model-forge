@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 import types
 from pathlib import Path
@@ -77,6 +78,14 @@ def test_ignore_list_never_loses_a_declared_protection(cfg: ExperimentConfig) ->
     )
 
 
+# `SourceDir` binds files through O_PATH descriptors and /proc/self/fd, which only Linux has.
+requires_bound_access = pytest.mark.skipif(
+    not hasattr(os, "O_PATH") or not os.path.isdir("/proc/self/fd"),
+    reason="SourceDir needs Linux O_PATH and /proc/self/fd, which are unavailable on this platform",
+)
+
+
+@requires_bound_access
 def test_graft_source_mtp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = tmp_path / "source"
     output = tmp_path / "output"
@@ -104,20 +113,12 @@ def test_graft_source_mtp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
         def element_size(self) -> int:
             return 2
 
-    class FakeSafeOpen:
-        def __enter__(self) -> "FakeSafeOpen":
-            return self
-
-        def __exit__(self, *_: object) -> None:
-            return None
-
-        def get_tensor(self, _name: str) -> FakeTensor:
-            return FakeTensor()
-
     saved: dict[str, object] = {}
     safetensors = types.ModuleType("safetensors")
-    safetensors.safe_open = lambda *_args, **_kwargs: FakeSafeOpen()  # type: ignore[attr-defined]
     safetensors_torch = types.ModuleType("safetensors.torch")
+    safetensors_torch.load = lambda data: (  # type: ignore[attr-defined]
+        {name: FakeTensor() for name in names} if data == b"fixture" else {}
+    )
     safetensors_torch.save_file = lambda tensors, target, metadata=None: saved.update(  # type: ignore[attr-defined]
         tensors=tensors, target=target, metadata=metadata
     )

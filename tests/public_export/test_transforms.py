@@ -44,7 +44,7 @@ def test_markdown_sanitization_is_deterministic_and_explicit() -> None:
 
 def test_journal_paths_are_removed_but_approved_hashes_are_retained() -> None:
     digest = "1" * 64
-    source = f"Journal: /Users/alice/private/run.md\nJournal SHA256: {digest}\n".encode()
+    source = ("Journal: /Users/alice/private/run.md\n" + f"Journal SHA256: {digest}\n").encode()
 
     result = apply_transform("sanitize_public_markdown", source, context())
 

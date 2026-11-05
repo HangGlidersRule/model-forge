@@ -23,14 +23,47 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shutil
+import os
+import stat
 import sys
 import time
 from pathlib import Path
 
 import torch
-from safetensors import safe_open
-from safetensors.torch import save_file
+from safetensors.torch import load, save
+
+from model_forge.pipeline import (
+    INDEX_NAME,
+    OutputDir,
+    SourceDir,
+    safetensors_metadata,
+    shard_names,
+)
+
+
+def open_dir(path: Path) -> int:
+    return os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+
+
+def read_checkpoint_file(path: Path, dir_fd: int) -> bytes:
+    """Read ``path``, which must be a regular file and the entry ``path.name`` of the directory open as ``dir_fd``.
+
+    A link is refused, including one swapped in after the directory was listed, and so is a file reached through a
+    parent that was swapped for a link: the opened inode must be the one that directory lists under that name."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError as e:
+        raise SystemExit(f"{path}: {e.strerror} (checkpoint files must be regular files, not links)") from e
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or not os.path.samestat(
+            st, os.stat(path.name, dir_fd=dir_fd, follow_symlinks=False)
+        ):
+            raise SystemExit(f"{path}: not a regular file in {path.parent}")
+        with open(fd, "rb", closefd=False) as f:
+            return f.read()
+    finally:
+        os.close(fd)
 
 
 def adapter_target(key: str) -> tuple[str, str] | None:
@@ -73,73 +106,97 @@ def main() -> int:
     scale = alpha / r
     print(f"adapter r={r} alpha={alpha} scale={scale}", flush=True)
 
+    adapter = SourceDir(a.adapter)
     pairs: dict[str, dict[str, torch.Tensor]] = {}
-    with safe_open(str(a.adapter / "adapter_model.safetensors"), framework="pt") as f:
-        for k in f.keys():
-            t = adapter_target(k)
-            if t is None:
-                raise SystemExit(f"unexpected non-LoRA tensor in adapter: {k}")
-            pairs.setdefault(t[0], {})[t[1]] = f.get_tensor(k)
+    for k, v in load(adapter.read_bytes("adapter_model.safetensors")).items():
+        t = adapter_target(k)
+        if t is None:
+            raise SystemExit(f"unexpected non-LoRA tensor in adapter: {k}")
+        pairs.setdefault(t[0], {})[t[1]] = v
     incomplete = [k for k, v in pairs.items() if set(v) != {"A", "B"}]
     if incomplete:
         raise SystemExit(f"incomplete LoRA pairs: {incomplete[:5]}")
     print(f"adapter pairs: {len(pairs)}", flush=True)
 
-    index = json.loads((a.base / "model.safetensors.index.json").read_text())
-    wmap: dict[str, str] = index["weight_map"]
+    # Every file copied into the output is read here, before anything is written, from a directory held open.
+    base_fd, adapter_fd, adapter_parent_fd = open_dir(a.base), open_dir(a.adapter), open_dir(a.adapter.parent)
+    index_bytes = read_checkpoint_file(a.base / INDEX_NAME, base_fd)
+    sidecars: dict[str, bytes] = {}
+    for name in sorted(os.listdir(base_fd)):
+        if name.endswith(".safetensors") or name in (INDEX_NAME, "SOURCE_REVISION", "README.md"):
+            continue
+        if stat.S_ISDIR(os.stat(name, dir_fd=base_fd, follow_symlinks=False).st_mode):
+            continue
+        sidecars[name] = read_checkpoint_file(a.base / name, base_fd)
+    for extra in ("decision_head.json",):
+        sidecars[extra] = read_checkpoint_file(a.adapter / extra, adapter_fd)
+    if os.path.lexists(a.adapter.parent / "calibration.json"):
+        sidecars["calibration.json"] = read_checkpoint_file(a.adapter.parent / "calibration.json", adapter_parent_fd)
+    for fd in (base_fd, adapter_fd, adapter_parent_fd):
+        os.close(fd)
+
+    # Shard names are validated and every shard is bound before the output is touched.
+    index = json.loads(index_bytes)
+    wmap = shard_names(index["weight_map"])
+    base = SourceDir(a.base)
     missing = sorted(k for k in pairs if k not in wmap)
     if missing:
         raise SystemExit(f"{len(missing)} LoRA targets missing from base, e.g. {missing[:5]}")
 
-    a.out.mkdir(parents=True, exist_ok=True)
-    report = {"scale": scale, "r": r, "alpha": alpha, "merged": {}, "copied": 0, "shards": {}}
     by_shard: dict[str, list[str]] = {}
     for k, s in wmap.items():
         by_shard.setdefault(s, []).append(k)
+    shards = {s: base.open(s) for s in sorted(by_shard)}
+
+    a.out.mkdir(parents=True, exist_ok=True)
+    out = OutputDir(a.out)
+    report = {"scale": scale, "r": r, "alpha": alpha, "merged": {}, "copied": 0, "shards": {}}
     merged_count = 0
     t0 = time.time()
-    for shard in sorted(by_shard):
+    for shard, bound in shards.items():
         out_tensors: dict[str, torch.Tensor] = {}
-        with safe_open(str(a.base / shard), framework="pt") as f:
-            meta = f.metadata()
-            for k in by_shard[shard]:
-                w = f.get_tensor(k)
-                if k in pairs:
-                    A, B = pairs[k]["A"].to(torch.float32), pairs[k]["B"].to(torch.float32)
-                    if w.dim() != 2 or B.shape[0] != w.shape[0] or A.shape[1] != w.shape[1] or A.shape[0] != r or B.shape[1] != r:
-                        raise SystemExit(f"shape mismatch for {k}: W{tuple(w.shape)} A{tuple(A.shape)} B{tuple(B.shape)}")
-                    delta = (B @ A) * scale
-                    new = (w.to(torch.float32) + delta).to(w.dtype)
-                    rel = (delta.norm() / w.to(torch.float32).norm()).item()
-                    changed = int((new != w).sum().item())
-                    report["merged"][k] = {"shape": list(w.shape), "rel_delta_fro": rel, "changed_elems": changed,
-                                           "elems": w.numel(), **({"pre": sha(w), "post": sha(new)} if a.hash_all else {})}
-                    out_tensors[k] = new
-                    merged_count += 1
-                else:
-                    out_tensors[k] = w
-                    report["copied"] += 1
-        save_file(out_tensors, str(a.out / shard), metadata=meta or {"format": "pt"})
+        data = bound.read_bytes()
+        meta = safetensors_metadata(data)
+        base_tensors = load(data)
+        del data
+        for k in by_shard[shard]:
+            w = base_tensors.pop(k)
+            if k in pairs:
+                A, B = pairs[k]["A"].to(torch.float32), pairs[k]["B"].to(torch.float32)
+                if w.dim() != 2 or B.shape[0] != w.shape[0] or A.shape[1] != w.shape[1] or A.shape[0] != r or B.shape[1] != r:
+                    raise SystemExit(f"shape mismatch for {k}: W{tuple(w.shape)} A{tuple(A.shape)} B{tuple(B.shape)}")
+                delta = (B @ A) * scale
+                new = (w.to(torch.float32) + delta).to(w.dtype)
+                rel = (delta.norm() / w.to(torch.float32).norm()).item()
+                changed = int((new != w).sum().item())
+                report["merged"][k] = {"shape": list(w.shape), "rel_delta_fro": rel, "changed_elems": changed,
+                                       "elems": w.numel(), **({"pre": sha(w), "post": sha(new)} if a.hash_all else {})}
+                out_tensors[k] = new
+                merged_count += 1
+            else:
+                out_tensors[k] = w
+                report["copied"] += 1
+        del base_tensors
+        out.write_bytes(shard, save(out_tensors, metadata=meta or {"format": "pt"}))
         report["shards"][shard] = len(out_tensors)
         print(f"  {shard}: {len(out_tensors)} tensors, merged so far {merged_count}/{len(pairs)} ({time.time() - t0:.0f}s)", flush=True)
         del out_tensors
 
     if merged_count != len(pairs):
         raise SystemExit(f"merged {merged_count} of {len(pairs)} pairs")
-    shutil.copy2(a.base / "model.safetensors.index.json", a.out / "model.safetensors.index.json")
-    for p in a.base.iterdir():
-        if p.is_file() and not p.name.endswith(".safetensors") and p.name not in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
-            shutil.copy2(p, a.out / p.name)
-    for extra in ("decision_head.json",):
-        shutil.copy2(a.adapter / extra, a.out / extra)
-    calib = a.adapter.parent / "calibration.json"
-    if calib.exists():
-        shutil.copy2(calib, a.out / "calibration.json")
+    out.write_bytes(INDEX_NAME, index_bytes)  # verbatim; every shard name was validated above
+    for name, data in sidecars.items():
+        out.write_bytes(name, data)
+    for src in (base, adapter):
+        src.close()
     rels = sorted(v["rel_delta_fro"] for v in report["merged"].values())
     report["summary"] = {"pairs": len(pairs), "merged": merged_count, "copied": report["copied"],
                          "rel_delta_fro_median": rels[len(rels) // 2], "rel_delta_fro_max": rels[-1],
                          "seconds": round(time.time() - t0, 1)}
-    (a.report or a.out / "merge_report.json").write_text(json.dumps(report, indent=1))
+    if a.report:
+        a.report.write_text(json.dumps(report, indent=1))
+    else:
+        out.write_bytes("merge_report.json", json.dumps(report, indent=1).encode())
     print("MERGE-DONE", json.dumps(report["summary"]), flush=True)
     return 0
 

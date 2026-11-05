@@ -565,6 +565,7 @@ build/
 !/src/model_forge/tools.py
 !/src/model_forge/tune.py
 !/tests/
+!/tests/calib_cache_open_swap.c
 !/tests/governance/
 !/tests/governance/schemas/
 !/tests/governance/schemas/github-issue-form.schema.json
@@ -587,12 +588,17 @@ build/
 !/tests/public_export/test_public_file_manifest.py
 !/tests/public_export/test_public_root_self_hosting.py
 !/tests/public_export/test_public_staging.py
+!/tests/public_export/test_test_function_context_exemption.py
 !/tests/public_export/test_transforms.py
 !/tests/public_export/test_wheelhouse_bootstrap.py
+!/tests/support/
+!/tests/support/shard_toctou_launch.py
 !/tests/test_abliteration.py
 !/tests/test_abliteration_corpus.py
+!/tests/test_calib_cache_integrity.py
 !/tests/test_campaign_canon.py
 !/tests/test_cases_scoring.py
+!/tests/test_checkpoint_symlink_packaging.py
 !/tests/test_cli.py
 !/tests/test_client.py
 !/tests/test_coding.py
@@ -601,6 +607,8 @@ build/
 !/tests/test_diffusion_policy.py
 !/tests/test_diffusion_precision.py
 !/tests/test_diffusion_serve_profile.py
+!/tests/test_diffusion_shell_injection.py
+!/tests/test_evalset_revision_pin.py
 !/tests/test_experiment.py
 !/tests/test_extended.py
 !/tests/test_gpqa_harness.py
@@ -623,10 +631,12 @@ build/
 !/tests/test_pipeline.py
 !/tests/test_quantize_qwen38_nvfp4.py
 !/tests/test_recipe.py
+!/tests/test_release_ansi_c_serve_source.py
 !/tests/test_release_contract.py
 !/tests/test_release_contract_v3.py
 !/tests/test_repo_integrity.py
 !/tests/test_runner.py
+!/tests/test_safetensors_index_shard_paths.py
 !/tests/test_scorecard.py
 !/tests/test_selectors.py
 !/tests/test_serve_launcher.py
