@@ -5,7 +5,8 @@ Processes safetensor shards without holding two full model copies.
 Applies W' = W - r(r^T W) in float32 to exactly the expected 131 tensors.
 Copies all other tensors byte-for-byte. Preserves tokenizer, processor, and config.
 Non-safetensor assets must be regular files. The only symlinks followed are a Hugging Face cache snapshot's links into
-its own blobs directory; any other symlink aborts the run before anything is written.
+its own real blobs directory, and from there a per-repo blob link of the form ../../blobs/<prefix>/<xet_hash> to a
+regular file in the cache-wide shared store. Any other symlink aborts the run before anything is written.
 """
 from __future__ import annotations
 
@@ -36,22 +37,93 @@ from model_forge.pipeline import (
 )
 
 _READ = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+_REAL_DIR = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 Asset = tuple[PurePosixPath, int | None, os.stat_result | None]
 
 
+def _is_symlink(path: str | Path, dir_fd: int | None = None) -> bool:
+    try:
+        return stat.S_ISLNK(os.lstat(path, dir_fd=dir_fd).st_mode)
+    except OSError:
+        return False
+
+
+def _open_real_directory(path: str | Path, dir_fd: int | None = None) -> int:
+    """Open path as a directory. A final-component symlink is refused rather than followed."""
+    try:
+        return os.open(path, _REAL_DIR, dir_fd=dir_fd)
+    except OSError as e:
+        if e.errno in (errno.ELOOP, errno.ENOTDIR) and _is_symlink(path, dir_fd):
+            raise SystemExit(f"ERROR: {path} is a symlink; refusing to copy through it") from None
+        raise
+
+
 def open_hf_blobs(model_path: Path) -> int | None:
-    """The blobs directory of a Hugging Face cache snapshot (<repo>/snapshots/<rev>), opened once; else None."""
+    """The real blobs directory of a Hugging Face cache snapshot (<repo>/snapshots/<rev>), or None."""
     if model_path.parent.name != "snapshots":
         return None
     try:
-        return os.open(model_path.parent.parent / "blobs", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        return _open_real_directory(model_path.parent.parent / "blobs")
     except FileNotFoundError:
         return None
 
 
+def _shared_blob_parts(link: str) -> tuple[str, str] | None:
+    """Split a huggingface_hub>=1.32 per-repo blob link, ../../blobs/<prefix>/<xet_hash>."""
+    parent, name = posixpath.split(link)
+    root, prefix = posixpath.split(parent)
+    if root != "../../blobs" or len(prefix) != 2 or len(name) != 64 or prefix != name[:2]:
+        return None
+    if any(c not in "0123456789abcdef" for c in name):
+        return None
+    return prefix, name
+
+
+def _open_shared_blob(blobs_fd: int, link: str) -> int:
+    """Open the regular file a per-repo blob symlink names in the cache-wide shared store.
+
+    ``link`` is resolved from the already-open real blobs directory, and only the fixed relative shape
+    ``../../blobs/<prefix>/<xet_hash>``. ``blobs``, the prefix directory, and the file are opened with
+    ``O_NOFOLLOW``, so a symlink anywhere in that chain is refused.
+    """
+    parts = _shared_blob_parts(link)
+    if parts is None:
+        raise SystemExit(
+            f"ERROR: blob symlink {link!r} is outside the Hugging Face shared blob store; not copied"
+        )
+    prefix, name = parts
+    repo_fd = _open_real_directory("..", dir_fd=blobs_fd)
+    try:
+        cache_fd = _open_real_directory("..", dir_fd=repo_fd)
+        try:
+            store_fd = _open_real_directory("blobs", dir_fd=cache_fd)
+            try:
+                prefix_fd = _open_real_directory(prefix, dir_fd=store_fd)
+            finally:
+                os.close(store_fd)
+        finally:
+            os.close(cache_fd)
+    finally:
+        os.close(repo_fd)
+    try:
+        try:
+            fd = os.open(name, _READ, dir_fd=prefix_fd)
+        except OSError as e:
+            if e.errno == errno.ELOOP:
+                raise SystemExit(f"ERROR: shared blob {name} is a symlink; refusing to copy it") from None
+            raise
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            os.close(fd)
+            raise SystemExit(f"ERROR: shared blob {name} is not a regular file; refusing to copy it")
+        return fd
+    finally:
+        os.close(prefix_fd)
+
+
 def open_asset(model_path: Path, dir_fd: int, rel: PurePosixPath, blobs_fd: int | None) -> int:
-    """Open rel without following arbitrary symlinks. A relative link that names a file directly inside the cache's
-    blobs directory is resolved by opening that name inside the already-open blobs directory."""
+    """Open rel without following arbitrary symlinks. A relative link that names an entry directly inside the cache's
+    real blobs directory is opened there. A per-repo blob that links to ../../blobs/<prefix>/<xet_hash> is opened as
+    that regular file. Any other symlink aborts."""
     try:
         return os.open(rel.name, _READ, dir_fd=dir_fd)
     except OSError as e:
@@ -64,9 +136,9 @@ def open_asset(model_path: Path, dir_fd: int, rel: PurePosixPath, blobs_fd: int 
     try:
         return os.open(blob, _READ, dir_fd=blobs_fd)
     except OSError as e:
-        if e.errno == errno.ELOOP:
-            raise SystemExit(f"ERROR: blob {blob} for {model_path / rel} is a symlink; refusing to copy it") from None
-        raise
+        if e.errno != errno.ELOOP:
+            raise
+    return _open_shared_blob(blobs_fd, os.readlink(blob, dir_fd=blobs_fd))
 
 
 def bind_assets(model_path: Path, blobs_fd: int | None) -> list[Asset]:
