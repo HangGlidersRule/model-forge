@@ -17,9 +17,12 @@ with only quantization_config added, and vLLM's pooling-adapter lm_head placehol
 Usage (inside the PTQ image, GPU): quantize_ne8.py RECIPE SOURCE_DIR CALIB_JSONL N_SAMPLES MAX_LEN OUT_DIR
 Prints QUANT-OK <out> on success; exits non-zero otherwise. Writes OUT_DIR.ref.json (reference embeddings)."""
 import json
+import os
 import shutil
+import stat
 import sys
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 import modelopt.torch.quantization as mtq
@@ -30,9 +33,65 @@ from modelopt.torch.export import export_hf_checkpoint
 from modelopt.torch.quantization.nn import TensorQuantizer
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
+
+def open_source(root: Path) -> dict[Path, int]:
+    """Open every regular file of the source checkpoint once, before anything else reads it, and return the fds by
+    relative path (top-level hidden entries are checked but not opened: they are never read or copied). The tree is
+    walked by directory fd without following links; a symlink anywhere in it, or anything that is neither a directory
+    nor a regular file, fails the run, since the export copies source files byte for byte and a link would publish its
+    target under the link's name. Each file is opened without following a final link and kept only if it is the very
+    file the walk listed, so later reads and copies use these fds and never look a source path up again."""
+    files: dict[Path, int] = {}
+
+    def walk(dir_fd: int, rel: Path) -> None:
+        with os.scandir(dir_fd) as it:
+            entries = sorted(it, key=lambda e: e.name)
+        for e in entries:
+            child, st = rel / e.name, e.stat(follow_symlinks=False)
+            if stat.S_ISDIR(st.st_mode):
+                fd = os.open(e.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=dir_fd)
+                try:
+                    opened = os.fstat(fd)
+                    if (opened.st_dev, opened.st_ino) != (st.st_dev, st.st_ino):
+                        raise SystemExit(f"QUANT-FAILED: source directory {child} changed while it was scanned")
+                    walk(fd, child)
+                finally:
+                    os.close(fd)
+            elif not stat.S_ISREG(st.st_mode):
+                raise SystemExit(f"QUANT-FAILED: source checkpoint entry {child} is a symlink or special file; refusing it")
+            elif not child.parts[0].startswith("."):
+                try:
+                    fd = os.open(root / child, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                except OSError as exc:
+                    raise SystemExit(f"QUANT-FAILED: cannot open source file {child} without following links: {exc}") from None
+                opened = os.fstat(fd)
+                if not stat.S_ISREG(opened.st_mode) or (opened.st_dev, opened.st_ino) != (st.st_dev, st.st_ino):
+                    os.close(fd)
+                    raise SystemExit(f"QUANT-FAILED: source file {child} changed while it was scanned")
+                files[child] = fd
+
+    root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        walk(root_fd, Path())
+    finally:
+        os.close(root_fd)
+    return files
+
+
+def source_chunks(fd: int) -> Iterator[bytes]:
+    os.lseek(fd, 0, os.SEEK_SET)
+    while chunk := os.read(fd, 1 << 20):
+        yield chunk
+
+
+def read_source(files: dict[Path, int], rel: str) -> bytes:
+    return b"".join(source_chunks(files[Path(rel)]))
+
+
 recipe_path, src, calib_path, n_samples, max_len, out = sys.argv[1:7]
-src, out, n_samples, max_len = Path(src), Path(out), int(n_samples), int(max_len)
+src, out, n_samples, max_len = Path(src).resolve(strict=True), Path(out), int(n_samples), int(max_len)
 t0 = time.time()
+source_files = open_source(src)
 
 cfg = AutoConfig.from_pretrained(src)
 assert cfg.is_causal is False and cfg.text_config.is_causal is False, "expected a bidirectional text tower"
@@ -136,17 +195,20 @@ export_hf_checkpoint(model, export_dir=str(partial))
 model.forward = _forward
 print(f"exported to {partial} ({time.time() - t0:.0f}s)", flush=True)
 
-shards = set(json.loads((src / "model.safetensors.index.json").read_text())["weight_map"].values())
-for p in sorted(src.rglob("*")):
-    rel = p.relative_to(src)
-    if p.is_dir() or rel.name in shards or rel.name == "model.safetensors.index.json" or rel.parts[0].startswith("."):
+shards = set(json.loads(read_source(source_files, "model.safetensors.index.json"))["weight_map"].values())
+for rel, fd in sorted(source_files.items()):
+    if rel.name in shards or rel.name == "model.safetensors.index.json":
         continue
     if not (partial / rel).exists():
         (partial / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(p, partial / rel)
+        with open(partial / rel, "xb") as fdst:
+            for chunk in source_chunks(fd):
+                fdst.write(chunk)
         print(f"  copied missing source file {rel}", flush=True)
 
-cfg_src = json.loads((src / "config.json").read_text())
+cfg_src = json.loads(read_source(source_files, "config.json"))
+for fd in source_files.values():
+    os.close(fd)
 cfg_exp = json.loads((partial / "config.json").read_text())
 qc = cfg_exp.get("quantization_config")
 if not qc:
