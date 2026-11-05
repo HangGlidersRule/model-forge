@@ -21,7 +21,9 @@ copied from the adapter repo for the serving shim.
 Every input file is opened once, relative to its directory, without following a symlink, and
 must be a regular file; the bytes read through that descriptor are the bytes written out. A
 symlinked input (e.g. a Hugging Face cache snapshot) is refused: stage the base with
-`hf download --local-dir` so it holds regular files.
+`hf download --local-dir` so it holds regular files. Companion files and merged shards are
+written through the output directory descriptor with O_NOFOLLOW, so a name that is already
+a symlink is refused and its target is left untouched.
 """
 from __future__ import annotations
 
@@ -30,6 +32,7 @@ import errno
 import hashlib
 import json
 import os
+import secrets
 import stat
 import sys
 import time
@@ -80,7 +83,8 @@ def read_regular(dir_fd: int, name: str, label: Path) -> bytes:
         os.close(fd)
 
 
-def write_regular(dir_fd: int, name: str, data: bytes) -> None:
+def open_write(dir_fd: int, name: str) -> int:
+    """Open `name` directly inside `dir_fd` for writing, without following a symlink."""
     try:
         fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC, 0o644, dir_fd=dir_fd)
     except OSError as e:
@@ -90,11 +94,70 @@ def write_regular(dir_fd: int, name: str, data: bytes) -> None:
     try:
         if not stat.S_ISREG(os.fstat(fd).st_mode):
             raise SystemExit(f"refusing to write {name}: output is not a regular file")
+    except BaseException:
+        os.close(fd)
+        raise
+    return fd
+
+
+def write_regular(dir_fd: int, name: str, data: bytes) -> None:
+    fd = open_write(dir_fd, name)
+    try:
         view = memoryview(data)
         while view:
             view = view[os.write(fd, view):]
     finally:
         os.close(fd)
+
+
+@contextmanager
+def _shard_staging(dir_fd: int) -> Iterator[int]:
+    """Private directory created on `dir_fd`, yielded as its directory descriptor."""
+    name = ".merge-shard-" + secrets.token_hex(8)
+    os.mkdir(name, 0o700, dir_fd=dir_fd)
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=dir_fd)
+    except OSError:
+        try:
+            os.rmdir(name, dir_fd=dir_fd)
+        except OSError:
+            os.unlink(name, dir_fd=dir_fd)
+        raise
+    try:
+        yield fd
+    finally:
+        try:
+            for entry in list(os.scandir(fd)):
+                os.unlink(entry.name, dir_fd=fd)
+        finally:
+            os.close(fd)
+            os.rmdir(name, dir_fd=dir_fd)
+
+
+def write_shard(dir_fd: int, name: str, tensors: dict[str, torch.Tensor], metadata: dict[str, str]) -> None:
+    """Write one merged shard through `dir_fd`.
+
+    `save_file` only takes a path. That lookup follows a symlink planted at the shard name
+    (older safetensors) or replaces the symlink (newer ones). Companion files are refused
+    with O_NOFOLLOW instead. Serialize into a directory created on `dir_fd`, then copy
+    those bytes onto a no-follow descriptor for `name`.
+    """
+    require_plain_name(name, Path(name))
+    with _shard_staging(dir_fd) as stg_fd:
+        # /dev/fd/N is the directory inode, so this does not look up `name` in the output.
+        save_file(tensors, f"/dev/fd/{stg_fd}/shard.safetensors", metadata=metadata)
+        src = open_regular(stg_fd, "shard.safetensors", Path(name))
+        try:
+            fd = open_write(dir_fd, name)
+            try:
+                while chunk := os.read(src, 1 << 20):
+                    view = memoryview(chunk)
+                    while view:
+                        view = view[os.write(fd, view):]
+            finally:
+                os.close(fd)
+        finally:
+            os.close(src)
 
 
 @contextmanager
@@ -221,7 +284,7 @@ def merge(a: argparse.Namespace, fds: ExitStack) -> int:
                 else:
                     out_tensors[k] = w
                     report["copied"] += 1
-        save_file(out_tensors, str(a.out / shard), metadata=meta or {"format": "pt"})
+        write_shard(out_fd, shard, out_tensors, meta or {"format": "pt"})
         report["shards"][shard] = len(out_tensors)
         print(f"  {shard}: {len(out_tensors)} tensors, merged so far {merged_count}/{len(pairs)} ({time.time() - t0:.0f}s)", flush=True)
         del out_tensors
