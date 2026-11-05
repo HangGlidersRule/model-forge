@@ -20,13 +20,16 @@ from model_forge.abliteration import (
     matches_selector,
     project_weight,
 )
-from model_forge.checkpoint_files import INDEX_NAME, OutputDir, SourceDir, shard_names
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
+    INDEX_NAME,
+    OutputDir,
     RunLock,
+    SourceDir,
     StageContext,
     SuccessManifest,
     sha256_file,
+    shard_names,
 )
 
 

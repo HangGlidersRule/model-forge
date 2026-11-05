@@ -30,7 +30,7 @@ from pathlib import Path
 import torch
 from safetensors.torch import load, save
 
-from model_forge.checkpoint_files import (
+from model_forge.pipeline import (
     INDEX_NAME,
     OutputDir,
     SourceDir,

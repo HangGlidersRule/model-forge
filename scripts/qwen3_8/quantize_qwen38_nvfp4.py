@@ -16,13 +16,15 @@ import shutil
 import sys
 from pathlib import Path
 
-from model_forge.checkpoint_files import INDEX_NAME, SourceDir, shard_names
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
+    INDEX_NAME,
     RunLock,
+    SourceDir,
     StageContext,
     SuccessManifest,
     sha256_file,
+    shard_names,
 )
 
 
