@@ -2,7 +2,9 @@
 
 from pathlib import Path
 
+from model_forge.modelopt import diffusion_execution
 from model_forge.modelopt.diffusion_execution import (
+    CONTAINER_LAUNCHER,
     DIFFUSERS_QUANT_ENTRY,
     QWEN_IMAGE_21_SLUG,
     build_diffusion_docker_run_plan,
@@ -50,12 +52,14 @@ def test_docker_plan_applies_overlay_and_env() -> None:
     argv = plan.argv
     assert "--gpus=all" in argv
     assert "-e NCCL_CUMEM_ENABLE=0" in " ".join(argv)
-    # overlay applied: bash -c invokes the overlay then quantize.py
-    assert "bash" in argv and "-c" in argv
-    cmd = argv[-1]
-    assert "qwen-image-21-overlay.py" in cmd
-    assert DIFFUSERS_QUANT_ENTRY in cmd
-    assert "--model qwen-image-2.1" in cmd
+    # overlay applied: the mounted launcher applies the overlay, then execs quantize.py
+    assert "bash" not in argv and "-c" not in argv
+    launcher = argv.index(CONTAINER_LAUNCHER)
+    assert argv[launcher - 2 : launcher] == ["python", "-I"]
+    assert argv[launcher + 1 : launcher + 4] == ["--overlay", "qwen-image-21-overlay.py", "--"]
+    assert argv[launcher + 4 :] == plan.quantize_args
+    assert argv[argv.index("--model") + 1] == QWEN_IMAGE_21_SLUG
+    assert f"{Path(diffusion_execution.__file__).resolve()}:{CONTAINER_LAUNCHER}:ro" in argv
 
 
 def test_docker_plan_without_overlay() -> None:
