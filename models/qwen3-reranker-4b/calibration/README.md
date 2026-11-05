@@ -3,7 +3,7 @@
 `build_reranker_calib.py` builds the 512-sample calibration JSONL for the ModelOpt NVFP4 candidates.
 The output file is not committed; rebuild it and check the digest.
 
-- **Source:** `microsoft/ms_marco` v1.1 train at revision `a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a` (`v1.1/train-00000-of-00001.parquet`).
+- **Source:** `microsoft/ms_marco` v1.1 train at revision `a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a` (`v1.1/train-00000-of-00001.parquet`, sha256 `11d5e51d70ce87b47b1c132ef7c55f4cfb93b22c122058aa0591a65c4c0dc1f1`). The builder refuses a parquet with any other digest; it caches the download under `${XDG_CACHE_HOME:-~/.cache}/model-forge/` (override with `--cache`).
 - **Samples:** 512 query-passage pairs, 256 relevant (`is_selected=1`) and 256 irrelevant, shuffled with seed 1234.
 - **Format:** each pair is rendered exactly as served: the Qwen3-Reranker judge system prompt, the default web-search instruction, and the assistant turn with an empty think block. One `{"text": ...}` object per line.
 - **Expected output:** sha256 `cada916c2205153cc32ee6a4b30e5a121f8960e6f68f8578130ffc6a47e95261`. Rendered lengths are 486-1,232 characters (median 825).

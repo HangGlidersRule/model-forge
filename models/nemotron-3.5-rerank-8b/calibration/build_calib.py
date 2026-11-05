@@ -13,15 +13,19 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
+import os
 import random
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
 DATASET = "microsoft/ms_marco"
 REVISION = "a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a"
 PARQUET = "v1.1/train-00000-of-00001.parquet"
+PARQUET_SHA256 = "11d5e51d70ce87b47b1c132ef7c55f4cfb93b22c122058aa0591a65c4c0dc1f1"
 SEED = 1234
 N_SAMPLES = 512
 ZWNJ = "\u200c"
@@ -36,18 +40,49 @@ def render(query: str, passage: str) -> str:
     return "query: " + escape(query) + "\n\npassage: " + escape(passage)
 
 
+def default_cache() -> Path:
+    root = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+    return root / "model-forge" / DATASET / REVISION / PARQUET
+
+
+def pinned_parquet(cache: Path) -> bytes:
+    """The pinned parquet's bytes, read once and checked against PARQUET_SHA256. Callers parse these bytes, never the
+    cache path, which can be replaced after the check. A missing cache is downloaded and stored only once it matches."""
+    try:
+        data = cache.read_bytes()
+    except FileNotFoundError:
+        url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
+        with urllib.request.urlopen(url) as resp:
+            data = resp.read()
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != PARQUET_SHA256:
+            raise SystemExit(f"{url}: sha256 {digest}, expected {PARQUET_SHA256}")
+        cache.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd, partial = tempfile.mkstemp(dir=cache.parent, prefix=cache.name + ".", suffix=".partial")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+            os.replace(partial, cache)
+        except BaseException:
+            os.unlink(partial)
+            raise
+        return data
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != PARQUET_SHA256:
+        raise SystemExit(f"{cache}: sha256 {digest}, expected {PARQUET_SHA256}; remove it to download the pinned file")
+    return data
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--cache", type=Path, default=Path("/tmp/ms_marco_v1.1_train.parquet"))
+    ap.add_argument("--cache", type=Path, default=default_cache())
     args = ap.parse_args()
 
     import pyarrow.parquet as pq
 
-    if not args.cache.exists():
-        url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
-        urllib.request.urlretrieve(url, args.cache)
-    rows = pq.read_table(args.cache, columns=["query_id", "query", "passages"]).to_pylist()
+    data = pinned_parquet(args.cache)
+    rows = pq.read_table(io.BytesIO(data), columns=["query_id", "query", "passages"]).to_pylist()
     rng = random.Random(SEED)
     rng.shuffle(rows)
     samples: list[dict[str, object]] = []
