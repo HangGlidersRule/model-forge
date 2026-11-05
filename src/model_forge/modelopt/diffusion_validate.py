@@ -7,13 +7,12 @@ protected modules), NVFP4 scale integrity. Results feed ``_SUCCESS.json``.
 
 from __future__ import annotations
 
-import json
-import struct
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from model_forge.modelopt.diffusion_policy import DiffusionPolicy
+from model_forge.modelopt.validate import read_safetensors_header
 
 
 @dataclass
@@ -30,8 +29,7 @@ class ValidationReport:
 def _safetensors_header(path: Path) -> dict[str, Any]:
     """Parse a safetensors file's header without loading tensors."""
     with path.open("rb") as f:
-        n = struct.unpack("<Q", f.read(8))[0]
-        header: dict[str, Any] = json.loads(f.read(n))
+        header, _data_start = read_safetensors_header(f, label=path.name)
         return header
 
 

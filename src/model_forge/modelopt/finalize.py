@@ -10,7 +10,6 @@ dependency) so ``no NaN/Inf/zero scales`` is checked against the actual bytes.
 
 from __future__ import annotations
 
-import json
 import os
 import struct
 from array import array
@@ -20,6 +19,7 @@ from typing import Any
 from model_forge.modelopt.validate import (
     SCALE_NAME_MARKERS,
     ValidationError,
+    read_safetensors_header,
     validate_checkpoint_contract,
 )
 from model_forge.pipeline import (
@@ -60,6 +60,27 @@ def _decode_floats(dtype: str, raw: bytes, limit: int) -> list[float]:
     return []
 
 
+def _scale_data_offsets(
+    shard: str, name: str, meta: dict[str, Any], data_size: int
+) -> tuple[int, int]:
+    offsets = meta.get("data_offsets")
+    if not (
+        isinstance(offsets, list)
+        and len(offsets) == 2
+        and all(type(value) is int for value in offsets)
+    ):
+        raise ValidationError(
+            f"{shard}: {name} data_offsets must be two integers, got {offsets!r}"
+        )
+    begin, end = offsets
+    if not 0 <= begin <= end <= data_size:
+        raise ValidationError(
+            f"{shard}: {name} data_offsets {offsets!r} must satisfy "
+            f"0 <= begin <= end <= {data_size}"
+        )
+    return begin, end
+
+
 def read_scale_samples(
     export_dir: Path,
     *,
@@ -75,9 +96,8 @@ def read_scale_samples(
     samples: dict[str, list[float]] = {}
     for shard in _iter_safetensors(export_dir):
         with shard.open("rb") as handle:
-            header_len = struct.unpack("<Q", handle.read(8))[0]
-            header = json.loads(handle.read(header_len))
-            data_start = 8 + header_len
+            header, data_start = read_safetensors_header(handle, label=shard.name)
+            data_size = os.fstat(handle.fileno()).st_size - data_start
             for name, meta in header.items():
                 if name == "__metadata__" or not isinstance(meta, dict):
                     continue
@@ -86,7 +106,7 @@ def read_scale_samples(
                 dtype = meta.get("dtype")
                 if dtype not in _FLOAT_DTYPES:
                     continue
-                begin, end = meta.get("data_offsets", (0, 0))
+                begin, end = _scale_data_offsets(shard.name, name, meta, data_size)
                 handle.seek(data_start + begin)
                 raw = handle.read(min(end - begin, max_per_tensor * 8))
                 decoded = _decode_floats(dtype, raw, max_per_tensor)
