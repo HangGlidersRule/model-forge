@@ -104,20 +104,12 @@ def test_graft_source_mtp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
         def element_size(self) -> int:
             return 2
 
-    class FakeSafeOpen:
-        def __enter__(self) -> "FakeSafeOpen":
-            return self
-
-        def __exit__(self, *_: object) -> None:
-            return None
-
-        def get_tensor(self, _name: str) -> FakeTensor:
-            return FakeTensor()
-
     saved: dict[str, object] = {}
     safetensors = types.ModuleType("safetensors")
-    safetensors.safe_open = lambda *_args, **_kwargs: FakeSafeOpen()  # type: ignore[attr-defined]
     safetensors_torch = types.ModuleType("safetensors.torch")
+    safetensors_torch.load = lambda data: (  # type: ignore[attr-defined]
+        {name: FakeTensor() for name in names} if data == b"fixture" else {}
+    )
     safetensors_torch.save_file = lambda tensors, target, metadata=None: saved.update(  # type: ignore[attr-defined]
         tensors=tensors, target=target, metadata=metadata
     )

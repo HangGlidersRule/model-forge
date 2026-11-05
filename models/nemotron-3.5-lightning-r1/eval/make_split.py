@@ -4,33 +4,51 @@
 the big shards and carries only its own small shard. Tensor values are unchanged.
 Usage: make_split.py EXPORT_DIR OUT_DIR"""
 import json
-import shutil
 import sys
 from pathlib import Path
 
-from safetensors import safe_open
-from safetensors.torch import save_file
+from safetensors.torch import load, save
+
+from model_forge.pipeline import (
+    INDEX_NAME,
+    OutputDir,
+    SourceDir,
+    safetensors_metadata,
+    shard_names,
+)
 
 exp, out = Path(sys.argv[1]), Path(sys.argv[2])
+src = SourceDir(exp)
+idx = json.loads(src.read_bytes(INDEX_NAME))
+wm = shard_names(idx["weight_map"])
+shards = {f: src.open(f) for f in sorted(set(wm.values()))}
+assets = {}
+for name in src.listdir():
+    if name.endswith(".safetensors") or name == INDEX_NAME:
+        continue
+    try:
+        assets[name] = src.open(name)
+    except (IsADirectoryError, FileNotFoundError):
+        continue
 out.mkdir(parents=True, exist_ok=True)
-idx = json.loads((exp / "model.safetensors.index.json").read_text())
-wm = idx["weight_map"]
+dst = OutputDir(out)
 new_map, scales = {}, {}
-for f in sorted(set(wm.values())):
+for f, shard in shards.items():
+    data = shard.read_bytes()
+    meta = safetensors_metadata(data) or {"format": "pt"}
     tensors = {}
-    with safe_open(exp / f, "pt") as h:
-        meta = h.metadata() or {"format": "pt"}
-        for k in h.keys():
-            (scales if k.endswith(".input_scale") else tensors)[k] = h.get_tensor(k)
-    save_file(tensors, out / f, metadata=meta)
+    for k, t in load(data).items():
+        (scales if k.endswith(".input_scale") else tensors)[k] = t
+    del data
+    dst.write_bytes(f, save(tensors, metadata=meta))
     new_map.update({k: f for k in tensors})
     print(f, len(tensors), "tensors", flush=True)
-save_file(scales, out / "model-input-scales.safetensors", metadata={"format": "pt"})
+dst.write_bytes("model-input-scales.safetensors", save(scales, metadata={"format": "pt"}))
 new_map.update({k: "model-input-scales.safetensors" for k in scales})
 idx["weight_map"] = dict(sorted(new_map.items()))
-(out / "model.safetensors.index.json").write_text(json.dumps(idx, indent=2) + "\n")
-for p in exp.iterdir():
-    if p.is_file() and not p.name.endswith(".safetensors") and p.name != "model.safetensors.index.json":
-        shutil.copy2(p, out / p.name)
+dst.write_bytes(INDEX_NAME, (json.dumps(idx, indent=2) + "\n").encode())
+for name, asset in assets.items():
+    dst.write_bytes(name, asset.read_bytes())
+src.close()
 assert len(new_map) == len(wm), (len(new_map), len(wm))
 print(json.dumps({"input_scales": len(scales), "tensors_total": len(new_map)}))
