@@ -4,14 +4,20 @@
 Processes safetensor shards without holding two full model copies.
 Applies W' = W - r(r^T W) in float32 to exactly the expected 131 tensors.
 Copies all other tensors byte-for-byte. Preserves tokenizer, processor, and config.
+Non-safetensor assets must be regular files. The only symlinks followed are a Hugging Face cache snapshot's links into
+its own blobs directory; any other symlink aborts the run before anything is written.
 """
 from __future__ import annotations
 
 import argparse
+import errno
 import json
+import os
+import posixpath
 import shutil
+import stat
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import torch
 
@@ -28,6 +34,81 @@ from model_forge.pipeline import (
     SuccessManifest,
     sha256_file,
 )
+
+_READ = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+Asset = tuple[PurePosixPath, int | None, os.stat_result | None]
+
+
+def open_hf_blobs(model_path: Path) -> int | None:
+    """The blobs directory of a Hugging Face cache snapshot (<repo>/snapshots/<rev>), opened once; else None."""
+    if model_path.parent.name != "snapshots":
+        return None
+    try:
+        return os.open(model_path.parent.parent / "blobs", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    except FileNotFoundError:
+        return None
+
+
+def open_asset(model_path: Path, dir_fd: int, rel: PurePosixPath, blobs_fd: int | None) -> int:
+    """Open rel without following arbitrary symlinks. A relative link that names a file directly inside the cache's
+    blobs directory is resolved by opening that name inside the already-open blobs directory."""
+    try:
+        return os.open(rel.name, _READ, dir_fd=dir_fd)
+    except OSError as e:
+        if e.errno != errno.ELOOP:
+            raise
+    target = os.readlink(rel.name, dir_fd=dir_fd)
+    head, blob = posixpath.split(posixpath.normpath(posixpath.join("snapshots", "rev", str(rel.parent), target)))
+    if blobs_fd is None or posixpath.isabs(target) or head != "blobs" or blob in ("", ".", ".."):
+        raise SystemExit(f"ERROR: {model_path / rel} is a symlink outside the Hugging Face blob store; not copied")
+    try:
+        return os.open(blob, _READ, dir_fd=blobs_fd)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise SystemExit(f"ERROR: blob {blob} for {model_path / rel} is a symlink; refusing to copy it") from None
+        raise
+
+
+def bind_assets(model_path: Path, blobs_fd: int | None) -> list[Asset]:
+    """Open every non-safetensor asset once, before any output exists: (rel, fd, stat) per file, (rel, None, None) per
+    directory, parents first. The copy later reads these descriptors, not the paths."""
+    bound: list[Asset] = []
+
+    def walk(dir_fd: int, rel_dir: PurePosixPath, top: bool) -> None:
+        for name in sorted(os.listdir(dir_fd)):
+            if top and (name.endswith(".safetensors") or name.startswith(".")):
+                continue
+            rel = rel_dir / name
+            fd = open_asset(model_path, dir_fd, rel, blobs_fd)
+            st = os.fstat(fd)
+            if stat.S_ISREG(st.st_mode):
+                bound.append((rel, fd, st))
+            elif stat.S_ISDIR(st.st_mode):
+                bound.append((rel, None, None))
+                walk(fd, rel, top=False)
+                os.close(fd)
+            else:
+                raise SystemExit(f"ERROR: {model_path / rel} is not a regular file or directory")
+
+    root_fd = os.open(model_path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    walk(root_fd, PurePosixPath("."), top=True)
+    os.close(root_fd)
+    return bound
+
+
+def copy_assets(bound: list[Asset], dest_root: Path) -> None:
+    """shutil.copy2 / copytree from the bound descriptors into fresh entries under dest_root."""
+    for rel, fd, st in bound:
+        dest = dest_root / rel
+        if fd is None or st is None:
+            dest.mkdir()
+            continue
+        out = os.open(dest, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+        with os.fdopen(fd, "rb") as fsrc, os.fdopen(out, "wb") as fdst:
+            shutil.copyfileobj(fsrc, fdst, 1 << 24)
+            os.fchmod(fdst.fileno(), stat.S_IMODE(st.st_mode))
+            fdst.flush()
+            os.utime(fdst.fileno(), ns=(st.st_atime_ns, st.st_mtime_ns))
 
 
 def main() -> None:
@@ -93,6 +174,8 @@ def main() -> None:
         )
         sys.exit(1)
 
+    assets = bind_assets(model_path, open_hf_blobs(model_path))
+
     print(f"Applying projection to {len(target_names)} tensors...")
     lock = RunLock(args.run_root / "apply_abliteration.lock")
     with lock:
@@ -133,17 +216,7 @@ def main() -> None:
 
         assert edited_count == cfg.abliteration.expected_target_count
 
-        # Copy non-safetensor assets
-        for asset in model_path.iterdir():
-            if asset.name.endswith(".safetensors"):
-                continue
-            if asset.name.startswith("."):
-                continue
-            dest = partial / asset.name
-            if asset.is_file():
-                shutil.copy2(asset, dest)
-            elif asset.is_dir():
-                shutil.copytree(asset, dest)
+        copy_assets(assets, partial)
 
         # Write edit report
         report_path = partial / "abliteration_report.json"
