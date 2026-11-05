@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
+import os
 import sys
 from pathlib import Path
 
@@ -24,8 +24,10 @@ from model_forge.abliteration import (
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
     RunLock,
+    SourceTree,
     StageContext,
     SuccessManifest,
+    UnsafeSourceError,
     sha256_file,
 )
 
@@ -74,7 +76,12 @@ def main() -> None:
         print("ERROR: model.safetensors.index.json not found", file=sys.stderr)
         sys.exit(1)
 
-    index = json.loads(index_path.read_text())
+    source = SourceTree(model_path)
+    try:
+        index = json.loads(source.read_bytes(index_path.name))
+    except UnsafeSourceError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
     weight_map: dict[str, str] = index["weight_map"]
 
     selectors = list(cfg.abliteration.target_selectors)
@@ -95,18 +102,34 @@ def main() -> None:
 
     print(f"Applying projection to {len(target_names)} tensors...")
     lock = RunLock(args.run_root / "apply_abliteration.lock")
-    with lock:
+    with lock, source:
         partial = ctx.partial_dir
         target_set = set(target_names)
         shard_files = sorted(set(weight_map.values()))
+
+        # Copy non-safetensor assets
+        try:
+            source.copy_entries(
+                partial, skip=lambda name: name.endswith(".safetensors") or name.startswith(".")
+            )
+        except UnsafeSourceError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            sys.exit(1)
 
         edit_report: list[dict[str, object]] = []
         edited_count = 0
         unchanged_vision_count = 0
 
         for shard_name in shard_files:
-            src_shard = model_path / shard_name
-            shard_tensors = load_file(str(src_shard))
+            try:
+                shard_fd = source.open_file(shard_name)
+            except UnsafeSourceError as e:
+                print(f"ERROR: {e}", file=sys.stderr)
+                sys.exit(1)
+            try:
+                shard_tensors = load_file(f"/proc/self/fd/{shard_fd}")
+            finally:
+                os.close(shard_fd)
             modified_tensors: dict[str, torch.Tensor] = {}
 
             for tname, tensor in shard_tensors.items():
@@ -132,18 +155,6 @@ def main() -> None:
             save_file(modified_tensors, str(partial / shard_name))
 
         assert edited_count == cfg.abliteration.expected_target_count
-
-        # Copy non-safetensor assets
-        for asset in model_path.iterdir():
-            if asset.name.endswith(".safetensors"):
-                continue
-            if asset.name.startswith("."):
-                continue
-            dest = partial / asset.name
-            if asset.is_file():
-                shutil.copy2(asset, dest)
-            elif asset.is_dir():
-                shutil.copytree(asset, dest)
 
         # Write edit report
         report_path = partial / "abliteration_report.json"
