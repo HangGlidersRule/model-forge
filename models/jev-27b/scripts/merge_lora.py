@@ -23,7 +23,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shutil
 import sys
 import time
 from pathlib import Path
@@ -31,6 +30,11 @@ from pathlib import Path
 import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+from model_forge.pipeline import CheckpointTree, OutputDir  # noqa: E402
+
+BASE_SKIP = ("model.safetensors.index.json", "SOURCE_REVISION", "README.md")
 
 
 def adapter_target(key: str) -> tuple[str, str] | None:
@@ -64,7 +68,10 @@ def main() -> int:
     ap.add_argument("--hash-all", action="store_true", help="sha256 every tensor (slow on 27B)")
     a = ap.parse_args()
 
-    cfg = json.loads((a.adapter / "adapter_config.json").read_text())
+    # Every input is opened (no symlinks, regular files only) before anything is written.
+    adapter = CheckpointTree(a.adapter)
+    base = CheckpointTree(a.base)
+    cfg = json.loads(adapter.open("adapter_config.json").read_bytes())
     r, alpha = int(cfg["r"]), float(cfg["lora_alpha"])
     if cfg.get("use_rslora") or cfg.get("use_dora") or cfg.get("rank_pattern") or cfg.get("alpha_pattern"):
         raise SystemExit("unsupported adapter options (rslora/dora/rank or alpha patterns)")
@@ -74,7 +81,7 @@ def main() -> int:
     print(f"adapter r={r} alpha={alpha} scale={scale}", flush=True)
 
     pairs: dict[str, dict[str, torch.Tensor]] = {}
-    with safe_open(str(a.adapter / "adapter_model.safetensors"), framework="pt") as f:
+    with safe_open(adapter.open("adapter_model.safetensors").path, framework="pt") as f:
         for k in f.keys():
             t = adapter_target(k)
             if t is None:
@@ -85,22 +92,28 @@ def main() -> int:
         raise SystemExit(f"incomplete LoRA pairs: {incomplete[:5]}")
     print(f"adapter pairs: {len(pairs)}", flush=True)
 
-    index = json.loads((a.base / "model.safetensors.index.json").read_text())
+    index_file = base.open("model.safetensors.index.json")
+    index = json.loads(index_file.read_bytes())
     wmap: dict[str, str] = index["weight_map"]
     missing = sorted(k for k in pairs if k not in wmap)
     if missing:
         raise SystemExit(f"{len(missing)} LoRA targets missing from base, e.g. {missing[:5]}")
-
-    a.out.mkdir(parents=True, exist_ok=True)
-    report = {"scale": scale, "r": r, "alpha": alpha, "merged": {}, "copied": 0, "shards": {}}
     by_shard: dict[str, list[str]] = {}
     for k, s in wmap.items():
         by_shard.setdefault(s, []).append(k)
+    shard_files = {shard: base.open(shard) for shard in sorted(by_shard)}
+    companions = {name: base.open(name) for name in base.listdir()[0]
+                  if not name.endswith(".safetensors") and name not in BASE_SKIP}
+    decision_head = adapter.open("decision_head.json")
+    calib = CheckpointTree(a.adapter.parent).open_optional("calibration.json")
+
+    out = OutputDir.create(a.out)
+    report = {"scale": scale, "r": r, "alpha": alpha, "merged": {}, "copied": 0, "shards": {}}
     merged_count = 0
     t0 = time.time()
     for shard in sorted(by_shard):
         out_tensors: dict[str, torch.Tensor] = {}
-        with safe_open(str(a.base / shard), framework="pt") as f:
+        with safe_open(shard_files[shard].path, framework="pt") as f:
             meta = f.metadata()
             for k in by_shard[shard]:
                 w = f.get_tensor(k)
@@ -119,27 +132,27 @@ def main() -> int:
                 else:
                     out_tensors[k] = w
                     report["copied"] += 1
-        save_file(out_tensors, str(a.out / shard), metadata=meta or {"format": "pt"})
+        save_file(out_tensors, out.path(shard), metadata=meta or {"format": "pt"})
         report["shards"][shard] = len(out_tensors)
         print(f"  {shard}: {len(out_tensors)} tensors, merged so far {merged_count}/{len(pairs)} ({time.time() - t0:.0f}s)", flush=True)
         del out_tensors
 
     if merged_count != len(pairs):
         raise SystemExit(f"merged {merged_count} of {len(pairs)} pairs")
-    shutil.copy2(a.base / "model.safetensors.index.json", a.out / "model.safetensors.index.json")
-    for p in a.base.iterdir():
-        if p.is_file() and not p.name.endswith(".safetensors") and p.name not in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
-            shutil.copy2(p, a.out / p.name)
-    for extra in ("decision_head.json",):
-        shutil.copy2(a.adapter / extra, a.out / extra)
-    calib = a.adapter.parent / "calibration.json"
-    if calib.exists():
-        shutil.copy2(calib, a.out / "calibration.json")
+    out.copy("model.safetensors.index.json", index_file, keep_metadata=True)
+    for name, member in companions.items():
+        out.copy(name, member, keep_metadata=True)
+    out.copy("decision_head.json", decision_head, keep_metadata=True)
+    if calib is not None:
+        out.copy("calibration.json", calib, keep_metadata=True)
     rels = sorted(v["rel_delta_fro"] for v in report["merged"].values())
     report["summary"] = {"pairs": len(pairs), "merged": merged_count, "copied": report["copied"],
                          "rel_delta_fro_median": rels[len(rels) // 2], "rel_delta_fro_max": rels[-1],
                          "seconds": round(time.time() - t0, 1)}
-    (a.report or a.out / "merge_report.json").write_text(json.dumps(report, indent=1))
+    if a.report:
+        a.report.write_text(json.dumps(report, indent=1))
+    else:
+        out.write_text("merge_report.json", json.dumps(report, indent=1))
     print("MERGE-DONE", json.dumps(report["summary"]), flush=True)
     return 0
 

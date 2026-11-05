@@ -4,33 +4,39 @@
 the big shards and carries only its own small shard. Tensor values are unchanged.
 Usage: make_split.py EXPORT_DIR OUT_DIR"""
 import json
-import shutil
 import sys
 from pathlib import Path
 
 from safetensors import safe_open
 from safetensors.torch import save_file
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+from model_forge.pipeline import CheckpointTree, OutputDir  # noqa: E402
+
 exp, out = Path(sys.argv[1]), Path(sys.argv[2])
-out.mkdir(parents=True, exist_ok=True)
-idx = json.loads((exp / "model.safetensors.index.json").read_text())
+# Every input is opened (no symlinks, regular files only) before anything is written.
+tree = CheckpointTree(exp)
+idx = json.loads(tree.open("model.safetensors.index.json").read_bytes())
 wm = idx["weight_map"]
+shards = {f: tree.open(f) for f in sorted(set(wm.values()))}
+companions = {name: tree.open(name) for name in tree.listdir()[0]
+              if not name.endswith(".safetensors") and name != "model.safetensors.index.json"}
+dst = OutputDir.create(out)
 new_map, scales = {}, {}
-for f in sorted(set(wm.values())):
+for f, shard in shards.items():
     tensors = {}
-    with safe_open(exp / f, "pt") as h:
+    with safe_open(shard.path, "pt") as h:
         meta = h.metadata() or {"format": "pt"}
         for k in h.keys():
             (scales if k.endswith(".input_scale") else tensors)[k] = h.get_tensor(k)
-    save_file(tensors, out / f, metadata=meta)
+    save_file(tensors, dst.path(f), metadata=meta)
     new_map.update({k: f for k in tensors})
     print(f, len(tensors), "tensors", flush=True)
-save_file(scales, out / "model-input-scales.safetensors", metadata={"format": "pt"})
+save_file(scales, dst.path("model-input-scales.safetensors"), metadata={"format": "pt"})
 new_map.update({k: "model-input-scales.safetensors" for k in scales})
 idx["weight_map"] = dict(sorted(new_map.items()))
-(out / "model.safetensors.index.json").write_text(json.dumps(idx, indent=2) + "\n")
-for p in exp.iterdir():
-    if p.is_file() and not p.name.endswith(".safetensors") and p.name != "model.safetensors.index.json":
-        shutil.copy2(p, out / p.name)
+dst.write_text("model.safetensors.index.json", json.dumps(idx, indent=2) + "\n")
+for name, member in companions.items():
+    dst.copy(name, member, keep_metadata=True)
 assert len(new_map) == len(wm), (len(new_map), len(wm))
 print(json.dumps({"input_scales": len(scales), "tensors_total": len(new_map)}))

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -23,6 +22,8 @@ from model_forge.abliteration import (
 )
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
+    CheckpointTree,
+    OutputDir,
     RunLock,
     StageContext,
     SuccessManifest,
@@ -69,13 +70,28 @@ def main() -> None:
         print(f"Downloading {cfg.source.model_id}@{cfg.source.revision[:12]}...")
         model_path = Path(snapshot_download(cfg.source.model_id, revision=cfg.source.revision))
 
-    index_path = model_path / "model.safetensors.index.json"
-    if not index_path.exists():
+    # Every source file is opened (no symlinks except Hugging Face cache pointers, regular files only) before anything
+    # under the run root is created.
+    tree = CheckpointTree(model_path)
+    index_file = tree.open_optional("model.safetensors.index.json")
+    if index_file is None:
         print("ERROR: model.safetensors.index.json not found", file=sys.stderr)
         sys.exit(1)
 
-    index = json.loads(index_path.read_text())
+    index = json.loads(index_file.read_bytes())
     weight_map: dict[str, str] = index["weight_map"]
+    shard_files = {name: tree.open(name) for name in sorted(set(weight_map.values()))}
+
+    top_files, top_dirs = tree.listdir()
+    asset_files = [name for name in top_files if not name.endswith(".safetensors") and not name.startswith(".")]
+    asset_dirs: list[str] = []
+    for name in top_dirs:
+        if name.endswith(".safetensors") or name.startswith("."):
+            continue
+        sub_files, sub_dirs = tree.walk(name)
+        asset_dirs += [name, *sub_dirs]
+        asset_files += sub_files
+    assets = {rel: tree.open(rel) for rel in asset_files}
 
     selectors = list(cfg.abliteration.target_selectors)
     target_names = [name for name in weight_map if matches_selector(name, selectors)]
@@ -97,16 +113,15 @@ def main() -> None:
     lock = RunLock(args.run_root / "apply_abliteration.lock")
     with lock:
         partial = ctx.partial_dir
+        out = OutputDir.create(partial)
         target_set = set(target_names)
-        shard_files = sorted(set(weight_map.values()))
 
         edit_report: list[dict[str, object]] = []
         edited_count = 0
         unchanged_vision_count = 0
 
-        for shard_name in shard_files:
-            src_shard = model_path / shard_name
-            shard_tensors = load_file(str(src_shard))
+        for shard_name, src_shard in shard_files.items():
+            shard_tensors = load_file(src_shard.path)
             modified_tensors: dict[str, torch.Tensor] = {}
 
             for tname, tensor in shard_tensors.items():
@@ -129,21 +144,15 @@ def main() -> None:
                     if is_vision_tensor(tname):
                         unchanged_vision_count += 1
 
-            save_file(modified_tensors, str(partial / shard_name))
+            save_file(modified_tensors, out.path(shard_name))
 
         assert edited_count == cfg.abliteration.expected_target_count
 
         # Copy non-safetensor assets
-        for asset in model_path.iterdir():
-            if asset.name.endswith(".safetensors"):
-                continue
-            if asset.name.startswith("."):
-                continue
-            dest = partial / asset.name
-            if asset.is_file():
-                shutil.copy2(asset, dest)
-            elif asset.is_dir():
-                shutil.copytree(asset, dest)
+        for rel in asset_dirs:
+            out.mkdir(rel)
+        for rel, member in assets.items():
+            out.copy(rel, member, keep_metadata=True)
 
         # Write edit report
         report_path = partial / "abliteration_report.json"

@@ -17,10 +17,9 @@ with only quantization_config added, and vLLM's pooling-adapter lm_head placehol
 Usage (inside the PTQ image, GPU): quantize_ne8.py RECIPE SOURCE_DIR CALIB_JSONL N_SAMPLES MAX_LEN OUT_DIR
 Prints QUANT-OK <out> on success; exits non-zero otherwise. Writes OUT_DIR.ref.json (reference embeddings)."""
 import json
-import shutil
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import modelopt.torch.quantization as mtq
 import torch
@@ -30,9 +29,27 @@ from modelopt.torch.export import export_hf_checkpoint
 from modelopt.torch.quantization.nn import TensorQuantizer
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+from model_forge.pipeline import CheckpointTree, OutputDir  # noqa: E402
+
 recipe_path, src, calib_path, n_samples, max_len, out = sys.argv[1:7]
 src, out, n_samples, max_len = Path(src), Path(out), int(n_samples), int(max_len)
 t0 = time.time()
+
+# The source files this script republishes (config.json, files the exporter skipped) are opened now, before anything is
+# loaded or written: no symlinks except Hugging Face cache pointers, regular files only. They are copied from these
+# descriptors below.
+src_tree = CheckpointTree(src)
+src_index = json.loads(src_tree.open("model.safetensors.index.json").read_bytes())
+src_config = json.loads(src_tree.open("config.json").read_bytes())
+shards = set(src_index["weight_map"].values())
+src_top_files, src_top_dirs = src_tree.listdir()
+src_rels = [name for name in src_top_files if not name.startswith(".")]
+for name in src_top_dirs:
+    if not name.startswith("."):
+        src_rels += src_tree.walk(name)[0]
+src_files = {rel: src_tree.open(rel) for rel in sorted(src_rels)
+             if PurePosixPath(rel).name not in shards and PurePosixPath(rel).name != "model.safetensors.index.json"}
 
 cfg = AutoConfig.from_pretrained(src)
 assert cfg.is_causal is False and cfg.text_config.is_causal is False, "expected a bidirectional text tower"
@@ -136,17 +153,13 @@ export_hf_checkpoint(model, export_dir=str(partial))
 model.forward = _forward
 print(f"exported to {partial} ({time.time() - t0:.0f}s)", flush=True)
 
-shards = set(json.loads((src / "model.safetensors.index.json").read_text())["weight_map"].values())
-for p in sorted(src.rglob("*")):
-    rel = p.relative_to(src)
-    if p.is_dir() or rel.name in shards or rel.name == "model.safetensors.index.json" or rel.parts[0].startswith("."):
-        continue
+export_dir = OutputDir.create(partial)
+for rel, member in src_files.items():
     if not (partial / rel).exists():
-        (partial / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(p, partial / rel)
+        export_dir.copy(rel, member)
         print(f"  copied missing source file {rel}", flush=True)
 
-cfg_src = json.loads((src / "config.json").read_text())
+cfg_src = src_config
 cfg_exp = json.loads((partial / "config.json").read_text())
 qc = cfg_exp.get("quantization_config")
 if not qc:
@@ -173,7 +186,7 @@ for container, key in ((hq["quantization"], "exclude_modules"), (qc, "ignore")):
             if twin not in names:
                 names.append(twin)
 hq_path.write_text(json.dumps(hq, indent=4) + "\n")
-shutil.copyfile(partial / "config.json", partial / "config.transformers5.json")
+export_dir.copy("config.transformers5.json", CheckpointTree(partial).open("config.json"))
 (partial / "config.json").write_text(json.dumps({**cfg_src, "quantization_config": qc}, indent=2) + "\n")
 print(f"  restored source config.json (+ quantization_config, quant_algo {qc.get('quant_algo')}); "
       f"exclusions +{list(VLLM_HEADS)} for vLLM's pooling adapter", flush=True)
