@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -26,6 +25,8 @@ from model_forge.pipeline import (
     RunLock,
     StageContext,
     SuccessManifest,
+    UnsafeCheckpointFile,
+    copy_checkpoint_assets,
     sha256_file,
 )
 
@@ -100,6 +101,17 @@ def main() -> None:
         target_set = set(target_names)
         shard_files = sorted(set(weight_map.values()))
 
+        # Copy non-safetensor assets
+        try:
+            copy_checkpoint_assets(
+                model_path,
+                partial,
+                skip=lambda name: name.endswith(".safetensors") or name.startswith("."),
+            )
+        except UnsafeCheckpointFile as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            sys.exit(1)
+
         edit_report: list[dict[str, object]] = []
         edited_count = 0
         unchanged_vision_count = 0
@@ -132,18 +144,6 @@ def main() -> None:
             save_file(modified_tensors, str(partial / shard_name))
 
         assert edited_count == cfg.abliteration.expected_target_count
-
-        # Copy non-safetensor assets
-        for asset in model_path.iterdir():
-            if asset.name.endswith(".safetensors"):
-                continue
-            if asset.name.startswith("."):
-                continue
-            dest = partial / asset.name
-            if asset.is_file():
-                shutil.copy2(asset, dest)
-            elif asset.is_dir():
-                shutil.copytree(asset, dest)
 
         # Write edit report
         report_path = partial / "abliteration_report.json"
