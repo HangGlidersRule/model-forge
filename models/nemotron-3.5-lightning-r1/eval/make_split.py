@@ -11,12 +11,22 @@ from pathlib import Path
 from safetensors import safe_open
 from safetensors.torch import save_file
 
+
+def shard_name(value: object) -> str:
+    """A weight_map value names one .safetensors file directly in the checkpoint directory."""
+    if (not isinstance(value, str) or not value.endswith(".safetensors") or value.startswith(".")
+            or "/" in value or "\\" in value or "\0" in value):
+        raise SystemExit(f"index shard name is not a single .safetensors file name: {value!r}")
+    return value
+
+
 exp, out = Path(sys.argv[1]), Path(sys.argv[2])
-out.mkdir(parents=True, exist_ok=True)
 idx = json.loads((exp / "model.safetensors.index.json").read_text())
 wm = idx["weight_map"]
+shards = sorted({shard_name(f) for f in wm.values()})
+out.mkdir(parents=True, exist_ok=True)
 new_map, scales = {}, {}
-for f in sorted(set(wm.values())):
+for f in shards:
     tensors = {}
     with safe_open(exp / f, "pt") as h:
         meta = h.metadata() or {"format": "pt"}
