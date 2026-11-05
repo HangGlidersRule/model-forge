@@ -31,7 +31,7 @@ from model_forge.modelopt.identity import (
     normalize_source_kind,
 )
 from model_forge.modelopt.pin import OMLP_RECIPE, PRIMARY_RECIPE, load_pin
-from model_forge.pipeline import SUCCESS_MARKER, SuccessManifest
+from model_forge.pipeline import SUCCESS_MARKER, SuccessManifest, sha256_file
 
 REPO = Path(__file__).resolve().parent.parent
 RUNNER = REPO / "scripts" / "qwen3_8" / "run_qwen38_modelopt_gpu_host.sh"
@@ -87,8 +87,15 @@ def test_identity_sha_changes_with_the_pin() -> None:
 
 def _write_marker(export_dir: Path, config_sha: str) -> None:
     export_dir.mkdir(parents=True, exist_ok=True)
+    weights = export_dir / "model.safetensors"
+    weights.write_bytes(b"weights")
     (export_dir / SUCCESS_MARKER).write_text(
-        SuccessManifest(stage="s", config_sha=config_sha).to_json(), encoding="utf-8"
+        SuccessManifest(
+            stage="s",
+            config_sha=config_sha,
+            output_hashes={weights.name: sha256_file(weights)},
+        ).to_json(),
+        encoding="utf-8",
     )
 
 
@@ -277,6 +284,7 @@ def _rewrite_as_pre_rename_build(out_dir: Path, **drift: object) -> str:
     marker = out_dir / SUCCESS_MARKER
     manifest = json.loads(marker.read_text())
     manifest["config_sha"] = legacy_sha
+    manifest["output_hashes"]["provenance.json"] = sha256_file(provenance_path)
     marker.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return legacy_sha
 

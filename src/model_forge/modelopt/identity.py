@@ -13,6 +13,7 @@ so what is hashed is exactly what is recorded.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import MappingProxyType
@@ -20,7 +21,14 @@ from typing import Any
 
 from model_forge.modelopt.calibration import CalibrationContract
 from model_forge.modelopt.pin import ModelOptPin
-from model_forge.pipeline import SUCCESS_MARKER, SuccessManifest, config_hash
+from model_forge.pipeline import (
+    SUCCESS_MARKER,
+    ArtifactVerificationError,
+    config_hash,
+    open_artifact_dir,
+    read_success_marker,
+    verify_artifact_tree,
+)
 
 IDENTITY_SCHEMA_VERSION = "1"
 
@@ -30,6 +38,7 @@ ARTIFACT_MATCH = "match"
 ARTIFACT_NO_MARKER = "no_marker"
 ARTIFACT_UNREADABLE_MARKER = "unreadable_marker"
 ARTIFACT_IDENTITY_MISMATCH = "identity_mismatch"
+ARTIFACT_UNVERIFIED = "unverified"
 
 CANONICAL_SOURCE_KINDS: tuple[str, ...] = ("clean", "abliterated")
 
@@ -105,22 +114,36 @@ def classify_artifact(
     They are accepted as a match so a pure rename does not strand artifacts
     whose every other pinned input is unchanged.
     """
-    if not export_dir.exists():
+    if not os.path.lexists(export_dir):
         return ARTIFACT_ABSENT, f"no existing artifact at {export_dir}"
-    marker = export_dir / SUCCESS_MARKER
-    if not marker.exists():
-        return ARTIFACT_NO_MARKER, f"existing directory carries no {SUCCESS_MARKER}"
     try:
-        manifest = SuccessManifest.from_json(marker.read_text(encoding="utf-8"))
-    except (OSError, TypeError, ValueError):
-        return ARTIFACT_UNREADABLE_MARKER, f"unreadable {SUCCESS_MARKER}"
-    if manifest.config_sha == expected_identity_sha:
-        return ARTIFACT_MATCH, f"build identity {expected_identity_sha} matches"
-    if manifest.config_sha and manifest.config_sha in equivalent_identity_shas:
-        return ARTIFACT_MATCH, (
-            f"build identity {manifest.config_sha} matches {expected_identity_sha} "
-            "under superseded source-kind terminology"
-        )
+        root_fd = open_artifact_dir(export_dir)
+    except OSError:
+        return ARTIFACT_UNVERIFIED, f"existing path is not a plain directory: {export_dir}"
+    try:
+        try:
+            manifest = read_success_marker(root_fd)
+        except ArtifactVerificationError:
+            return ARTIFACT_UNREADABLE_MARKER, f"unreadable {SUCCESS_MARKER}"
+        if manifest is None:
+            return ARTIFACT_NO_MARKER, f"existing directory carries no {SUCCESS_MARKER}"
+        if manifest.config_sha == expected_identity_sha:
+            detail = f"build identity {expected_identity_sha} matches"
+        elif manifest.config_sha and manifest.config_sha in equivalent_identity_shas:
+            detail = (
+                f"build identity {manifest.config_sha} matches {expected_identity_sha} "
+                "under superseded source-kind terminology"
+            )
+        else:
+            detail = ""
+        if detail:
+            try:
+                verify_artifact_tree(root_fd, manifest)
+            except ArtifactVerificationError as e:
+                return ARTIFACT_UNVERIFIED, f"{SUCCESS_MARKER} does not verify: {e}"
+            return ARTIFACT_MATCH, detail
+    finally:
+        os.close(root_fd)
     recorded = manifest.config_sha or "<none>"
     return (
         ARTIFACT_IDENTITY_MISMATCH,
