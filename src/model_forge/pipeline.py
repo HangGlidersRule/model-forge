@@ -192,8 +192,10 @@ class StageContext:
 # cannot change what is read.
 #
 # The only symlinks accepted are Hugging Face cache pointers: when the directory is ``<repo>/snapshots/<revision>``, a
-# member may be the relative link ``../../blobs/<hash>`` (one more ``../`` per subdirectory) that huggingface_hub writes,
-# and the blob is opened with O_NOFOLLOW from the repo's own ``blobs`` directory. Any other symlink is refused.
+# member may be the relative link ``../../blobs/<hash>`` (one more ``../`` per subdirectory) that huggingface_hub writes.
+# That blob is opened with O_NOFOLLOW from the repo's own ``blobs`` directory. Since the shared blob store, that name may
+# itself be the relative link ``../../blobs/<prefix>/<xet hash>`` into the cache root; each of those components is opened
+# with O_NOFOLLOW as well. Any other symlink is refused.
 #
 # Outputs are written to an O_EXCL temporary in the destination directory and renamed over the name, so a symlink already
 # at the destination is replaced, never written through. Linux only (``/proc/self/fd``).
@@ -204,6 +206,9 @@ class StageContext:
 _DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _FILE_FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
 _BLOB = re.compile(r"[0-9a-f]{40}(?:[0-9a-f]{24})?")
+# ``<repo>/blobs/<etag>`` -> ``../../blobs/<prefix>/<xet hash>``, prefix = hash[:2]. huggingface_hub writes this for the
+# cache-root shared store and keeps the snapshot pointer pointed at the repo blob.
+_SHARED_BLOB = re.compile(r"\.\./\.\./blobs/([0-9a-f]{2})/(\1[0-9a-f]{62})")
 _CHUNK = 1 << 30
 
 
@@ -270,6 +275,25 @@ def _open_blobs(root_fd: int) -> int | None:
         os.close(parent)
 
 
+def _open_shared_blob(blobs_fd: int, name: str) -> int:
+    """Open the regular file a repo ``blobs/<etag>`` symlink names in the cache-root shared store."""
+    target = os.readlink(name, dir_fd=blobs_fd)
+    found = _SHARED_BLOB.fullmatch(target)
+    if found is None:
+        raise OSError(errno.ELOOP, "not a Hugging Face shared-blob pointer", name)
+    prefix, blob = found.group(1), found.group(2)
+    opened: list[int] = []
+    try:
+        dir_fd = blobs_fd
+        for step in ("..", "..", "blobs", prefix):
+            dir_fd = os.open(step, _DIR_FLAGS, dir_fd=dir_fd)
+            opened.append(dir_fd)
+        return os.open(blob, _FILE_FLAGS, dir_fd=dir_fd)
+    finally:
+        for fd in opened:
+            os.close(fd)
+
+
 class CheckpointTree:
     """A checkpoint directory whose members are opened relative to one directory descriptor."""
 
@@ -314,7 +338,12 @@ class CheckpointTree:
         try:
             return os.open(blob, _FILE_FLAGS, dir_fd=self._blobs)
         except OSError as e:
-            raise self._refuse(rel, f"cache blob {blob} cannot be opened without following links") from e
+            if e.errno != errno.ELOOP:
+                raise self._refuse(rel, f"cache blob {blob} cannot be opened without following links") from e
+            try:
+                return _open_shared_blob(self._blobs, blob)
+            except OSError as shared_error:
+                raise self._refuse(rel, f"cache blob {blob} cannot be opened without following links") from shared_error
 
     def open_optional(self, rel: str) -> Member | None:
         """Open ``rel`` as a regular file; None if nothing exists at that name."""
