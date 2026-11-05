@@ -71,9 +71,7 @@ def main() -> int:
     data: dict[str, list[dict]] = {}
     shas: dict[str, str] = {}
     stats = []
-    for ds, prefix in DATASETS.items():
-        sha = json.loads(_get(f"https://huggingface.co/api/datasets/{ds}"))["sha"]
-        assert sha.startswith(prefix), (ds, sha)
+    for ds, sha in DATASETS.items():
         shas[ds] = sha
         base = f"https://huggingface.co/datasets/{ds}/resolve/{sha}"
         corpus = pq.read_table(io.BytesIO(_get(f"{base}/corpus/train-00000-of-00001.parquet"))).to_pylist()

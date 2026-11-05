@@ -33,13 +33,13 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-DATASETS = {
-    "mteb/NanoNFCorpusRetrieval": "2eec9d63140f",
-    "mteb/NanoFiQA2018Retrieval": "ede84da4793c",
-    "mteb/NanoTouche2020Retrieval": "ff81c0caff8b",
-    "mteb/NanoArguAnaRetrieval": "63ac9f026e8f",
-    "mteb/NanoSciFactRetrieval": "8c5f7bbe90bb",
-    "mteb/NanoMSMARCORetrieval": "5a5aa0c3df65",
+DATASETS = {  # full commit ids
+    "mteb/NanoNFCorpusRetrieval": "2eec9d63140fb9af7c75ad0fdbf6350aaf20e94e",
+    "mteb/NanoFiQA2018Retrieval": "ede84da4793cd2d4e61bba0dd08fc58de90f3681",
+    "mteb/NanoTouche2020Retrieval": "ff81c0caff8b6febe1495eae9f2ca3eddad074b8",
+    "mteb/NanoArguAnaRetrieval": "63ac9f026e8f6b85dc0622f3d630ed7a1758e9ec",
+    "mteb/NanoSciFactRetrieval": "8c5f7bbe90bb865f46c67710221afa7d9096251b",
+    "mteb/NanoMSMARCORetrieval": "5a5aa0c3df65d6883d85c8f5cdc88e679633595e",
 }
 SEED = 1234
 MAX_CANDS = 30
@@ -58,10 +58,7 @@ def build_eval_set(out: Path) -> None:
     rng = random.Random(SEED)
     data: dict[str, list[dict]] = {}
     shas: dict[str, str] = {}
-    for ds, prefix in DATASETS.items():
-        info = json.loads(_get(f"https://huggingface.co/api/datasets/{ds}"))
-        sha = info["sha"]
-        assert sha.startswith(prefix), (ds, sha)
+    for ds, sha in DATASETS.items():
         shas[ds] = sha
         base = f"https://huggingface.co/datasets/{ds}/resolve/{sha}"
         corpus = pq.read_table(io.BytesIO(_get(f"{base}/corpus/train-00000-of-00001.parquet"))).to_pylist()
