@@ -10,26 +10,18 @@ seeded shuffle. BM25: Okapi, k1=1.5, b=0.75, lowercase \\w+ tokens, title + text
 from __future__ import annotations
 
 import hashlib
-import io
 import json
 import math
 import random
 import re
 import sys
-import urllib.request
 from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from reranker_eval import DATASETS, MAX_CANDS, SEED  # noqa: E402
+from reranker_eval import DATASETS, MAX_CANDS, SEED, load_pinned  # noqa: E402
 
 TOKEN = re.compile(r"\w+")
-
-
-def _get(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "model-forge-eval"})
-    with urllib.request.urlopen(req, timeout=300) as r:
-        return r.read()
 
 
 def tokens(text: str) -> list[str]:
@@ -64,21 +56,14 @@ class BM25:
 
 
 def main() -> int:
-    import pyarrow.parquet as pq
-
     out = Path(sys.argv[1])
     rng = random.Random(SEED)
     data: dict[str, list[dict]] = {}
     shas: dict[str, str] = {}
     stats = []
-    for ds, prefix in DATASETS.items():
-        sha = json.loads(_get(f"https://huggingface.co/api/datasets/{ds}"))["sha"]
-        assert sha.startswith(prefix), (ds, sha)
+    for ds, sha in DATASETS.items():
+        corpus, queries, qrels = load_pinned(ds)
         shas[ds] = sha
-        base = f"https://huggingface.co/datasets/{ds}/resolve/{sha}"
-        corpus = pq.read_table(io.BytesIO(_get(f"{base}/corpus/train-00000-of-00001.parquet"))).to_pylist()
-        queries = pq.read_table(io.BytesIO(_get(f"{base}/queries/train-00000-of-00001.parquet"))).to_pylist()
-        qrels = pq.read_table(io.BytesIO(_get(f"{base}/qrels/train-00000-of-00001.parquet"))).to_pylist()
         idk = "_id" if "_id" in corpus[0] else "id"
         docs = {c[idk]: ((c.get("title") or "").strip() + "\n" + (c.get("text") or "").strip()).strip() for c in corpus}
         qtext = {q[idk]: q["text"] for q in queries}
