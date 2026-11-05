@@ -12,9 +12,9 @@ winner using a traffic-weighted decision rule.
 Idempotency: every candidate's results are stored under
   <results>/<artifact-sha>/<sweep-config-sha>/<candidate-key>.json
 Re-running with the same artifact + sweep config loads cached results unless
---force is passed. Partial sweeps resume: only missing candidates boot. Artifact
-shards are identified by path and size, not content, as a performance tradeoff;
-artifacts with identical JSON and shard layouts/sizes therefore collide.
+--force is passed. Partial sweeps resume: only missing candidates boot. The
+artifact SHA covers the full contents of every JSON file and weight shard, so
+changing any shard's bytes (even at the same size) starts a fresh sweep.
 """
 
 from __future__ import annotations
@@ -353,25 +353,28 @@ class Remote:
 # ---------------------------------------------------------------------------
 
 
-def artifact_sha(artifact_dir: str) -> str:
-    """Stable SHA over artifact JSON content and shard paths/sizes.
+_ARTIFACT_SHA_SCHEME = b"model-forge-artifact-sha/v2-content\0"
+# JSON configs plus every weight format vLLM's default loader will read.
+_ARTIFACT_SHA_SUFFIXES = frozenset({".json", ".safetensors", ".bin", ".pt"})
 
-    Shard content is deliberately not hashed for performance. Two artifacts
-    with identical JSON and shard layouts/sizes will therefore collide.
+
+def artifact_sha(artifact_dir: str) -> str:
+    """Stable SHA over the paths and full contents of artifact JSON and weights.
+
+    Each file contributes the sha256 of the bytes read once here; nothing is
+    re-read or re-stat'ed afterwards, so the cache key always describes the
+    bytes that were hashed. The scheme tag keeps digests from the former
+    path-and-size identity from ever matching.
     """
     root = Path(artifact_dir)
     if not root.is_dir():
         raise FileNotFoundError(f"artifact directory not found: {root}")
-    h = hashlib.sha256()
+    h = hashlib.sha256(_ARTIFACT_SHA_SCHEME)
     for p in sorted(root.rglob("*")):
-        if p.is_file() and p.suffix in {".json", ".safetensors"}:
+        if p.is_file() and p.suffix in _ARTIFACT_SHA_SUFFIXES:
             h.update(str(p.relative_to(root)).encode())
             h.update(b"\0")
-            if p.suffix == ".json":
-                h.update(p.read_bytes())
-            else:
-                # Performance tradeoff: shard identity uses size, not contents.
-                h.update(str(p.stat().st_size).encode())
+            h.update(hashlib.sha256(p.read_bytes()).hexdigest().encode())
             h.update(b"\0")
     return h.hexdigest()
 
