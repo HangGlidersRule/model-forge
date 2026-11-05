@@ -234,18 +234,104 @@ def product_gate_statuses(product: dict[str, Any]) -> dict[str, str]:
     return {str(gate["id"]): str(gate["status"]) for gate in product["gates"]}
 
 
-def product_publication_ready(product: dict[str, Any]) -> bool:
-    """A product is publication-ready only when every applicable gate is verified."""
-    applicable = [
-        str(gate["status"])
-        for gate in product["gates"]
-        if gate["status"] != "not_applicable"
-    ]
-    return bool(applicable) and all(status == "verified" for status in applicable)
+@functools.lru_cache(maxsize=None)
+def _load_contract(path: Path) -> dict[str, Any]:
+    return load_json(path)
+
+
+def contract_for(ledger: dict[str, Any]) -> dict[str, Any]:
+    """The contract selected by a ledger's ``contract_version``."""
+    return _load_contract(contract_paths_for(ledger)[0])
+
+
+def _default_product_contract(product: dict[str, Any]) -> dict[str, Any]:
+    """Contract used when a product is judged without its ledger.
+
+    ``task`` exists only from contract v3 on, so a product that declares one is judged by v3. A
+    product without one is judged by v2, whose applicability equals v1 for every v1 role and adds
+    the image roles. Ledger-level validation always passes the ledger's own contract instead.
+    """
+    version = "3.0.0" if "task" in product else "2.0.0"
+    return contract_for({"contract_version": version})
+
+
+def applicable_gate_ids(contract: dict[str, Any], role: str, task: str | None) -> list[str]:
+    """Gate ids the contract requires for a role (and, for task-scoped gates, the task).
+
+    A gate with ``applies_to_tasks`` applies only when the task is listed there.
+    """
+    ids: list[str] = []
+    for gate in contract["gates"]:
+        if role not in gate["applies_to"]:
+            continue
+        tasks = gate.get("applies_to_tasks")
+        if tasks is not None and task not in tasks:
+            continue
+        ids.append(str(gate["id"]))
+    return ids
+
+
+def product_applicable_gate_ids(
+    product: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    if contract is None:
+        contract = _default_product_contract(product)
+    task = product.get("task")
+    return applicable_gate_ids(
+        contract, str(product.get("role", "")), task if isinstance(task, str) else None
+    )
+
+
+def _applicable_gate_satisfied(product: dict[str, Any], gate_id: str, status: str | None) -> bool:
+    if status == "verified":
+        return True
+    # The contract defines one condition under which an applicable gate is not_applicable: the
+    # KV-cache gate when the selected candidate serves BF16 KV (or nothing is selected).
+    if status == "not_applicable" and gate_id == _KV_CACHE_EFFECT_GATE:
+        return not kv_cache_gate_errors(product)
+    return False
+
+
+def _required_gates_verified(
+    product: dict[str, Any], contract: dict[str, Any] | None, *, build_only: bool
+) -> bool:
+    """Every contract-applicable gate is present and satisfied, and every listed gate is verified.
+
+    Applicability comes from the contract, never from the rows the ledger happens to list, so an
+    omitted applicable gate is never satisfied.
+    """
+    required = product_applicable_gate_ids(product, contract)
+    if build_only:
+        required = [gate_id for gate_id in required if gate_id not in PUBLICATION_ONLY_GATES]
+        listed = product_build_gate_statuses(product)
+    else:
+        listed = [
+            str(gate["status"])
+            for gate in product["gates"]
+            if gate["status"] != "not_applicable"
+        ]
+    if not required or not all(status == "verified" for status in listed):
+        return False
+    statuses = product_gate_statuses(product)
+    return all(
+        _applicable_gate_satisfied(product, gate_id, statuses.get(gate_id)) for gate_id in required
+    )
+
+
+def product_publication_ready(
+    product: dict[str, Any], contract: dict[str, Any] | None = None
+) -> bool:
+    """A product is publication-ready only when every applicable gate is verified.
+
+    Applicable gates come from ``contract`` (see ``_default_product_contract`` when omitted). An
+    applicable gate the ledger leaves out blocks publication, as does an applicable gate marked
+    ``not_applicable`` outside the KV-cache rule.
+    """
+    return _required_gates_verified(product, contract, build_only=False)
 
 
 def product_build_gate_statuses(product: dict[str, Any]) -> list[str]:
-    """Applicable *build* gate statuses (publication-only gates excluded)."""
+    """Listed *build* gate statuses that are not ``not_applicable`` (publication-only gates excluded)."""
     return [
         str(gate["status"])
         for gate in product["gates"]
@@ -253,24 +339,69 @@ def product_build_gate_statuses(product: dict[str, Any]) -> list[str]:
     ]
 
 
-def product_build_complete(product: dict[str, Any]) -> bool:
+def product_build_complete(
+    product: dict[str, Any], contract: dict[str, Any] | None = None
+) -> bool:
     """A product is build-complete (a finished local artifact) when every applicable build gate is
     verified. Publication-only gates are ignored, so a locally complete but unpublished product is
-    build-complete even though it is not yet publication-ready."""
-    build = product_build_gate_statuses(product)
-    return bool(build) and all(status == "verified" for status in build)
+    build-complete even though it is not yet publication-ready. An omitted applicable build gate
+    blocks build completion."""
+    return _required_gates_verified(product, contract, build_only=True)
 
 
-def expected_lifecycle(product: dict[str, Any]) -> str:
+def expected_lifecycle(product: dict[str, Any], contract: dict[str, Any] | None = None) -> str:
     """The lifecycle a product's gate statuses imply, independent of its declared `lifecycle`."""
-    if product_publication_ready(product):
+    if product_publication_ready(product, contract):
         return "published"
-    if product_build_complete(product):
+    if product_build_complete(product, contract):
         return "locally_complete_unpublished"
     return "in_progress"
 
 
-def product_lifecycle_errors(product: dict[str, Any]) -> list[str]:
+def product_gate_presence_errors(
+    product: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Every contract-applicable gate must be listed, and only the KV-cache rule may mark one N/A."""
+    pid = str(product.get("product_id", "<unknown>"))
+    role = str(product.get("role", ""))
+    gates = product.get("gates", [])
+    if not isinstance(gates, list):
+        return [f"{pid}: gates must be a list"]
+    statuses = {
+        str(gate["id"]): str(gate.get("status", ""))
+        for gate in gates
+        if isinstance(gate, dict) and "id" in gate
+    }
+    errors: list[str] = []
+    for gate_id in product_applicable_gate_ids(product, contract):
+        status = statuses.get(gate_id)
+        if status is None:
+            errors.append(f"{pid}: missing gate {gate_id} required for role {role!r}")
+        elif status == "not_applicable" and gate_id != _KV_CACHE_EFFECT_GATE:
+            errors.append(
+                f"{pid}: gate {gate_id} applies to role {role!r} and must not be not_applicable"
+            )
+    return errors
+
+
+def ledger_gate_presence_errors(
+    ledger: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    if contract is None:
+        contract = contract_for(ledger)
+    products = ledger.get("products", [])
+    if not isinstance(products, list):
+        return []
+    errors: list[str] = []
+    for product in products:
+        if isinstance(product, dict):
+            errors.extend(product_gate_presence_errors(product, contract))
+    return errors
+
+
+def product_lifecycle_errors(
+    product: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
     """Return inconsistencies between a product's declared `lifecycle` and its gate statuses.
 
     The declared lifecycle is not free text: it must match what the gates prove. A product that
@@ -284,7 +415,7 @@ def product_lifecycle_errors(product: dict[str, Any]) -> list[str]:
     if declared not in LIFECYCLE_STATES:
         errors.append(f"{pid}: lifecycle {declared!r} is not one of {LIFECYCLE_STATES}")
         return errors
-    implied = expected_lifecycle(product)
+    implied = expected_lifecycle(product, contract)
     if declared != implied:
         errors.append(
             f"{pid}: declared lifecycle {declared!r} disagrees with gate statuses "
@@ -295,10 +426,15 @@ def product_lifecycle_errors(product: dict[str, Any]) -> list[str]:
     return errors
 
 
-def ledger_lifecycle_errors(ledger: dict[str, Any]) -> list[str]:
+def ledger_lifecycle_errors(
+    ledger: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Lifecycle errors for every product, judged by the contract the ledger selects."""
+    if contract is None:
+        contract = contract_for(ledger)
     errors: list[str] = []
     for product in ledger["products"]:
-        errors.extend(product_lifecycle_errors(product))
+        errors.extend(product_lifecycle_errors(product, contract))
     return errors
 
 
@@ -1448,10 +1584,9 @@ def _extend_ledger_errors(errors: list[str], path: Path, call: Callable[[], list
         errors.append(f"{path}: {type(exc).__name__}: {exc}")
 
 
-@functools.lru_cache(maxsize=1)
 def _v3_contract() -> dict[str, Any]:
     """The v3 contract, read once per process (the every-ledger CI test calls it for every product)."""
-    return load_json(contract_paths_for({"contract_version": "3.0.0"})[0])
+    return contract_for({"contract_version": "3.0.0"})
 
 
 def publication_claim_flag_errors(ledger: dict[str, Any]) -> list[str]:
@@ -1519,7 +1654,9 @@ def _schema_errors(path: Path, ledger: dict[str, Any], schema_path: Path) -> lis
 def validate_ledger(path: Path) -> list[str]:
     """Validate one publication-readiness ledger and return every error string.
 
-    Runs schema, lifecycle, target-repository, and candidate-precision checks. Contract v3 also
+    Runs schema, gate-presence, lifecycle, target-repository, and candidate-precision checks.
+    Gate presence and lifecycle are judged by the contract the ledger's ``contract_version``
+    selects, so every gate that contract applies to a product must be listed. Contract v3 also
     runs uniqueness, KV-cache, and task quality-gate checks. A malformed ledger, including a legacy
     free-form file, becomes a list of error strings rather than an exception.
     """
@@ -1531,14 +1668,17 @@ def validate_ledger(path: Path) -> list[str]:
 
     major: int | None = None
     schema_path: Path | None = None
+    contract: dict[str, Any] | None = None
     try:
-        _contract_path, schema_path = contract_paths_for(ledger)
+        contract_path, schema_path = contract_paths_for(ledger)
         version = str(ledger["contract_version"])
         major = int(version.split(".", 1)[0])
-    except (KeyError, TypeError, ValueError) as exc:
+        contract = _load_contract(contract_path)
+    except (KeyError, TypeError, ValueError, OSError) as exc:
         errors.append(f"{path}: {type(exc).__name__}: {exc}")
         schema_path = None
         major = None
+        contract = None
 
     if schema_path is not None:
         try:
@@ -1552,7 +1692,12 @@ def validate_ledger(path: Path) -> list[str]:
         ) as exc:
             errors.append(f"{path}: {type(exc).__name__}: {exc}")
 
-    _extend_ledger_errors(errors, path, lambda: ledger_lifecycle_errors(ledger))
+    if contract is not None:
+        bound_contract = contract
+        _extend_ledger_errors(
+            errors, path, lambda: ledger_gate_presence_errors(ledger, bound_contract)
+        )
+        _extend_ledger_errors(errors, path, lambda: ledger_lifecycle_errors(ledger, bound_contract))
     _extend_ledger_errors(errors, path, lambda: ledger_target_repository_errors(ledger))
     _extend_ledger_errors(errors, path, lambda: ledger_candidate_precision_errors(ledger))
     if major == 3:
