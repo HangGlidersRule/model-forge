@@ -20,12 +20,13 @@ from model_forge.abliteration import (
     matches_selector,
     project_weight,
 )
-from model_forge.checkpoint_files import UnsafeCheckpointFile, copy_checkpoint_assets
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
     RunLock,
     StageContext,
     SuccessManifest,
+    UnsafeCheckpointFile,
+    copy_checkpoint_assets,
     sha256_file,
 )
 
