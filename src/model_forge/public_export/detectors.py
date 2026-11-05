@@ -47,8 +47,9 @@ _POSIX_PATH = re.compile(
     r"(?:/[^/\s\"'<>]+)*|"
     r"(?<![/:A-Za-z0-9._])/Volumes/[^/\s\"'<>]+(?:/[^/\s\"'<>]+)*|"
     # Host mount roots (WSL drives under /mnt, removable media, served data). Two-level
-    # container mounts such as /mnt/export and globs such as /mnt/d/* stay public.
-    r"(?<![/:A-Za-z0-9._])/(?:mnt|media|srv)/[^/\s\"'<>*?|;(){}]+/[^/\s\"'<>*?|;(){}]+"
+    # container mounts such as :/mnt/export and globs such as /mnt/d/* stay public.
+    # Colon is a boundary: the sanitizer leaves PATH suffixes and volume targets alone.
+    r"(?<![/A-Za-z0-9._])/(?:mnt|media|srv)/[^/\s\"'<>*?|;(){}]+/[^/\s\"'<>*?|;(){}]+"
 )
 _STRUCTURED_POSIX_PATH = re.compile(
     r"(?i)(?<![A-Za-z0-9_])[\"']?(?:artifact|cache|directory|dir|file_path|"

@@ -257,6 +257,55 @@ def test_private_operator_absolute_paths_are_detected(tmp_path: Path, text: str)
     assert any(finding.rule_id.startswith("path.absolute-") for finding in findings)
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "PATH_EXTRA=/usr/bin:/mnt/d/model-forge/bin\n",
+        "bind=hfcache:/media/operator/drive/models\n",
+        "bind=data:/srv/team/checkpoints/run\n",
+    ],
+)
+def test_colon_prefixed_host_mounts_are_detected(tmp_path: Path, text: str) -> None:
+    root = tmp_path / "root"
+    target = root / "docs/example.txt"
+    target.parent.mkdir(parents=True)
+    target.write_text(text, encoding="utf-8")
+
+    findings = scan_file(
+        root,
+        "docs/example.txt",
+        policy=POLICY,
+        gitleaks_status=GitleaksStatus.PASSED,
+    )
+
+    assert "path.absolute-posix" in {finding.rule_id for finding in findings}
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "bind=hfcache:/mnt/export\n",
+        "bind=hfcache:/mnt/hf_cache\n",
+        "bind=hfcache:/mnt/d/*\n",
+        'case "${ROOT}" in /mnt/d/*) ;; esac\n',
+    ],
+)
+def test_public_container_mounts_stay_unflagged(tmp_path: Path, text: str) -> None:
+    root = tmp_path / "root"
+    target = root / "docs/example.txt"
+    target.parent.mkdir(parents=True)
+    target.write_text(text, encoding="utf-8")
+
+    findings = scan_file(
+        root,
+        "docs/example.txt",
+        policy=POLICY,
+        gitleaks_status=GitleaksStatus.PASSED,
+    )
+
+    assert "path.absolute-posix" not in {finding.rule_id for finding in findings}
+
+
 def test_python_test_fixture_literals_are_parsed_as_code_context(tmp_path: Path) -> None:
     root = tmp_path / "root"
     target = root / "tests/test_private_ip_detector.py"
