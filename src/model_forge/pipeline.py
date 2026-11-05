@@ -196,20 +196,24 @@ def copy_checkpoint_assets(
 
     Only regular files and directories are copied; any other entry, and any link, is refused.
     The one exception is a Hugging Face cache snapshot (``<repo>/snapshots/<revision>``), whose
-    files are links into the repository's own ``blobs/``: such a link is read from that
-    directory, and a link anywhere else is refused.
+    files are links into the repository's own ``blobs/``. That directory is opened without
+    following a link, and a link is read only when it names a regular file directly inside it;
+    a link anywhere else is refused.
 
     Every directory is held open for the walk and every file is opened once without following
     a link; the opened file must be the inode its directory lists under that name. Nothing is
     written until every file has been opened that way. Returns the copied paths relative to
     ``source``.
     """
-    blobs = _snapshot_blobs(source)
     root_fd = os.open(source, _DIR_FLAGS)
-    blobs_fd = os.open(blobs, _DIR_FLAGS) if blobs is not None else None
+    blobs: Path | None = None
+    blobs_fd: int | None = None
     dirs: list[Path] = []
     files: list[tuple[Path, int]] = []
     try:
+        opened = _snapshot_blobs(source)
+        if opened is not None:
+            blobs, blobs_fd = opened
         _open_checkpoint_dir(source, root_fd, Path(), skip, blobs, blobs_fd, dirs, files)
         for rel in dirs:
             (dest / rel).mkdir(exist_ok=True)
@@ -227,12 +231,24 @@ def copy_checkpoint_assets(
     return [rel.as_posix() for rel, _ in files]
 
 
-def _snapshot_blobs(source: Path) -> Path | None:
+def _snapshot_blobs(source: Path) -> tuple[Path, int] | None:
+    """Open ``<repo>/blobs`` when ``source`` is ``<repo>/snapshots/<revision>``.
+
+    The directory is opened with ``O_NOFOLLOW``. ``Path.is_dir`` and a plain open both follow
+    a directory symlink, so a ``blobs`` entry that points outside the repository would otherwise
+    be read as the snapshot's blob store.
+    """
     absolute = Path(os.path.abspath(source))
     if absolute.parent.name != "snapshots":
         return None
     blobs = absolute.parent.parent / "blobs"
-    return blobs if blobs.is_dir() else None
+    try:
+        fd = os.open(blobs, _DIR_FLAGS | os.O_NOFOLLOW)
+    except OSError as e:
+        if e.errno in (errno.ENOENT, errno.ENOTDIR, errno.ELOOP):
+            return None
+        raise
+    return blobs, fd
 
 
 def _open_checkpoint_dir(
