@@ -188,8 +188,27 @@ class StageContext:
 # was checked, never whatever a path points at later. The one kind of link accepted is a Hugging
 # Face cache snapshot link (<repo>/snapshots/<revision>/<file> -> ../../blobs/<name>): the link
 # text is checked to name a blob directly and that blob is opened in <repo>/blobs; the link itself
-# is never followed.
+# is never followed. A blob that is itself a symlink is accepted only when its text names a regular
+# file in the cache-root shared store (<cache>/blobs/<prefix>/<hash>); that file is opened from the
+# store, and neither link is followed.
 _READ_NOFOLLOW = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+_DIR_NOFOLLOW = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+
+
+def _open_dir_nofollow(path: Path) -> int | None:
+    """Open a real directory, or None when it is missing or itself a symlink.
+
+    ``O_NOFOLLOW`` on a symlink is ``ELOOP`` or ``ENOTDIR``. Both are a soft miss so a linked
+    ``blobs`` directory becomes the usual source error instead of a raw ``OSError``.
+    """
+    try:
+        return os.open(path, _DIR_NOFOLLOW)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            return None
+        raise
 
 
 class UnsafeSourceError(RuntimeError):
@@ -226,13 +245,22 @@ class SourceTree:
         self.root = root
         self._blobs_fd: int | None = None
         self._blobs_abs = ""
+        self._shared_fd: int | None = None
+        self._shared_abs = ""
         repo = root.parent.parent
         if root.parent.name == "snapshots" and repo.name.startswith("models--"):
-            with contextlib.suppress(FileNotFoundError, NotADirectoryError):
-                self._blobs_fd = os.open(
-                    repo / "blobs", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
-                )
-                self._blobs_abs = os.path.abspath(repo / "blobs")
+            blobs = repo / "blobs"
+            self._blobs_fd = _open_dir_nofollow(blobs)
+            if self._blobs_fd is not None:
+                self._blobs_abs = os.path.abspath(blobs)
+            shared = repo.parent / "blobs"
+            try:
+                self._shared_fd = _open_dir_nofollow(shared)
+            except BaseException:
+                self.close()
+                raise
+            if self._shared_fd is not None:
+                self._shared_abs = os.path.abspath(shared)
 
     def __enter__(self) -> SourceTree:
         return self
@@ -244,6 +272,9 @@ class SourceTree:
         if self._blobs_fd is not None:
             os.close(self._blobs_fd)
             self._blobs_fd = None
+        if self._shared_fd is not None:
+            os.close(self._shared_fd)
+            self._shared_fd = None
 
     def open_file(self, name: str) -> int:
         """Open the top-level regular file ``name``; the caller closes the descriptor."""
@@ -287,13 +318,70 @@ class SourceTree:
         try:
             fd = os.open(blob, _READ_NOFOLLOW, dir_fd=self._blobs_fd)
         except OSError as e:
-            if e.errno == errno.ELOOP:
+            if e.errno != errno.ELOOP:
+                raise
+            shared = self._open_shared_blob(blob)
+            if shared is None:
                 raise UnsafeSourceError(f"cache blob is a symlink: {blob}") from None
-            raise
+            fd = shared
         if not stat.S_ISREG(os.fstat(fd).st_mode):
             os.close(fd)
             raise UnsafeSourceError(f"cache blob is not a regular file: {blob}")
         return fd
+
+    def _open_shared_blob(self, blob: str) -> int | None:
+        """Open the shared-store file a repo blob symlink names, or None to refuse it.
+
+        The link text is checked and the file is opened from ``<cache>/blobs``; the symlink is
+        not followed. A further symlink, in the prefix directory or the file, is refused.
+        """
+        blobs_fd = self._blobs_fd
+        shared_fd = self._shared_fd
+        if blobs_fd is None or shared_fd is None:
+            return None
+        target = os.readlink(blob, dir_fd=blobs_fd)
+        parts = self._shared_blob_name(target)
+        if parts is None:
+            return None
+        prefix, digest = parts
+        try:
+            prefix_fd = os.open(prefix, _DIR_NOFOLLOW, dir_fd=shared_fd)
+        except OSError as e:
+            # A symlink is ELOOP, or ENOTDIR when O_DIRECTORY is set. Either way it is not the
+            # real prefix directory and must not be followed.
+            if e.errno in (errno.ELOOP, errno.ENOTDIR):
+                return None
+            raise
+        try:
+            return os.open(digest, _READ_NOFOLLOW, dir_fd=prefix_fd)
+        except OSError as e:
+            if e.errno == errno.ELOOP:
+                return None
+            raise
+        finally:
+            os.close(prefix_fd)
+
+    def _shared_blob_name(self, target: str) -> tuple[str, str] | None:
+        """Prefix and hash a repo blob link names in the shared store, from the link text.
+
+        huggingface_hub writes ``../../blobs/<prefix>/<hash>`` (64 lowercase hex digits, prefix
+        the first two) or, as a fallback, that path in absolute form.
+        """
+        relative = "../../blobs/"
+        if target.startswith(relative):
+            rest = target[len(relative):]
+        elif self._shared_abs and target.startswith(self._shared_abs + "/"):
+            rest = target[len(self._shared_abs) + 1:]
+        else:
+            return None
+        prefix, slash, digest = rest.partition("/")
+        if slash != "/" or "/" in digest:
+            return None
+        if len(prefix) != 2 or len(digest) != 64 or not digest.startswith(prefix):
+            return None
+        if any(c not in "0123456789abcdef" for c in digest):
+            return None
+        return prefix, digest
 
     def _blob_name(self, target: str, depth: int) -> str | None:
         """The blob a snapshot link names, from the link text alone.
