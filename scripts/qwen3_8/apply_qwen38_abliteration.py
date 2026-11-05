@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
+import os
 import sys
 from pathlib import Path
 
@@ -23,10 +23,16 @@ from model_forge.abliteration import (
 )
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
+    INDEX_NAME,
+    OutputDir,
     RunLock,
+    SourceDir,
     StageContext,
     SuccessManifest,
+    UnsafeCheckpointFile,
+    copy_checkpoint_assets,
     sha256_file,
+    shard_names,
 )
 
 
@@ -56,7 +62,7 @@ def main() -> None:
         print("ERROR: Direction not measured. Run measure_qwen38_refusal_direction.py first.", file=sys.stderr)
         sys.exit(1)
 
-    from safetensors.torch import load_file, save_file
+    from safetensors.torch import load, load_file, save
 
     direction_tensors = load_file(str(direction_file))
     direction = direction_tensors["direction"]
@@ -68,14 +74,18 @@ def main() -> None:
 
         print(f"Downloading {cfg.source.model_id}@{cfg.source.revision[:12]}...")
         model_path = Path(snapshot_download(cfg.source.model_id, revision=cfg.source.revision))
+    # A Hugging Face cache snapshot holds links into its repository's blobs/, so the repository bounds it.
+    absolute = Path(os.path.abspath(model_path))
+    source_root = absolute.parents[1] if absolute.parent.name == "snapshots" else None
+    source = SourceDir(model_path, root=source_root)
 
-    index_path = model_path / "model.safetensors.index.json"
-    if not index_path.exists():
-        print("ERROR: model.safetensors.index.json not found", file=sys.stderr)
+    try:
+        index_bytes = source.read_bytes(INDEX_NAME)  # the validated bytes are the bytes written out
+        index = json.loads(index_bytes)
+    except FileNotFoundError:
+        print(f"ERROR: {INDEX_NAME} not found", file=sys.stderr)
         sys.exit(1)
-
-    index = json.loads(index_path.read_text())
-    weight_map: dict[str, str] = index["weight_map"]
+    weight_map = shard_names(index["weight_map"])
 
     selectors = list(cfg.abliteration.target_selectors)
     target_names = [name for name in weight_map if matches_selector(name, selectors)]
@@ -93,20 +103,33 @@ def main() -> None:
         )
         sys.exit(1)
 
+    shards = {name: source.open(name) for name in sorted(set(weight_map.values()))}
+
     print(f"Applying projection to {len(target_names)} tensors...")
     lock = RunLock(args.run_root / "apply_abliteration.lock")
     with lock:
         partial = ctx.partial_dir
         target_set = set(target_names)
-        shard_files = sorted(set(weight_map.values()))
+
+        # Copy non-safetensor assets: links are refused, except Hugging Face snapshot links into blobs/, and
+        # every asset is opened before anything is written. The index is written below from the validated bytes.
+        try:
+            copy_checkpoint_assets(
+                model_path,
+                partial,
+                skip=lambda name: name.endswith(".safetensors") or name.startswith(".") or name == INDEX_NAME,
+            )
+        except UnsafeCheckpointFile as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            sys.exit(1)
+        out = OutputDir(partial)
 
         edit_report: list[dict[str, object]] = []
         edited_count = 0
         unchanged_vision_count = 0
 
-        for shard_name in shard_files:
-            src_shard = model_path / shard_name
-            shard_tensors = load_file(str(src_shard))
+        for shard_name, shard in shards.items():
+            shard_tensors = load(shard.read_bytes())
             modified_tensors: dict[str, torch.Tensor] = {}
 
             for tname, tensor in shard_tensors.items():
@@ -129,21 +152,13 @@ def main() -> None:
                     if is_vision_tensor(tname):
                         unchanged_vision_count += 1
 
-            save_file(modified_tensors, str(partial / shard_name))
+            out.write_bytes(shard_name, save(modified_tensors))
 
         assert edited_count == cfg.abliteration.expected_target_count
 
-        # Copy non-safetensor assets
-        for asset in model_path.iterdir():
-            if asset.name.endswith(".safetensors"):
-                continue
-            if asset.name.startswith("."):
-                continue
-            dest = partial / asset.name
-            if asset.is_file():
-                shutil.copy2(asset, dest)
-            elif asset.is_dir():
-                shutil.copytree(asset, dest)
+        out.write_bytes(INDEX_NAME, index_bytes)
+        source.close()
+        out.close()
 
         # Write edit report
         report_path = partial / "abliteration_report.json"

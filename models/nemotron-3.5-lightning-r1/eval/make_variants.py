@@ -11,6 +11,7 @@ Usage: make_variants.py STATS_JSON BASE_DIR VROOT"""
 import json
 import os
 import re
+import stat
 import sys
 from pathlib import Path
 
@@ -63,11 +64,19 @@ for rule, fn in RULES.items():
     vd = vroot / rule
     vd.mkdir(parents=True, exist_ok=True)
     for p in base.iterdir():
-        if p.is_file() and p.name != "model-input-scales.safetensors":
-            dst = vd / p.name
-            if dst.exists():
-                dst.unlink()
-            os.link(p, dst)
+        st = p.lstat()
+        if stat.S_ISDIR(st.st_mode) or p.name == "model-input-scales.safetensors":
+            continue
+        if not stat.S_ISREG(st.st_mode):
+            raise SystemExit(f"{p}: not a regular file (a variant may only hardlink regular files)")
+        dst = vd / p.name
+        if os.path.lexists(dst):
+            dst.unlink()
+        os.link(p, dst, follow_symlinks=False)
+        # The link names whatever inode p held at link time; it must be the regular file checked above.
+        if not os.path.samestat(st, dst.lstat()):
+            dst.unlink()
+            raise SystemExit(f"{p} changed while it was linked into {vd}")
     new = {k: torch.full_like(t, g[stream_of(k)] / 2688.0) for k, t in a_scales.items()}
     save_file(new, vd / "model-input-scales.safetensors", metadata={"format": "pt"})
     edge = [s for s in streams if rule == "mse" and g[s] in (GRID[0], GRID[-1])]

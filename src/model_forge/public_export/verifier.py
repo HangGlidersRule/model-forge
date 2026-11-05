@@ -806,7 +806,12 @@ def _validate_markdown_links(root: Path, paths: set[str]) -> None:
                 ) from error
 
 
-def _scan_metadata(root: Path, paths: set[str], public_contact: str) -> None:
+def _scan_metadata(
+    root: Path,
+    paths: set[str],
+    public_contact: str,
+    fleet_hostnames: frozenset[str],
+) -> None:
     try:
         policy = DetectorPolicy(
             max_file_bytes=MAX_FILE_BYTES,
@@ -819,6 +824,7 @@ def _scan_metadata(root: Path, paths: set[str], public_contact: str) -> None:
                 root,
                 relative,
                 policy=policy,
+                fleet_hostnames=fleet_hostnames,
                 gitleaks_status=GitleaksStatus.PASSED,
                 work_budget=budget,
             )
@@ -1608,7 +1614,9 @@ def verify_public_export(request: PublicVerifyRequest) -> PublicVerifyResult:
                 or _SHA256.fullmatch(evidence.report_sha256) is None
             ):
                 raise PublicVerifyError("Gitleaks filesystem evidence is malformed")
-            _scan_metadata(verified_root, paths, request.public_contact)
+            _scan_metadata(
+                verified_root, paths, request.public_contact, request.fleet_hostnames
+            )
             wheelhouse_evidence: tuple[WheelEvidence, ...] = ()
             if request.package_smoke:
                 wheelhouse_evidence = _package_build_install_smoke(

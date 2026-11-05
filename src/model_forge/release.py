@@ -11,10 +11,9 @@ from __future__ import annotations
 import functools
 import json
 import re
-import shlex
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import jsonschema
 import yaml
@@ -641,6 +640,16 @@ _SHELL_LONG_OPTIONS_WITH_ARGUMENT: frozenset[str] = frozenset(
 # model source once the shell runs it.
 _SHELL_SERVE_CONTENT = re.compile(r"vllm|--model")
 
+# Commands that only print their arguments. No shell runs a quoted argument of one as command text, so
+# the argument is prose (`say "$c serve finished"`), not a serve command. `say`, `log`, `die`, `info`
+# and the like are the script-local logging helpers the runbooks print with; they count only as the
+# command word (first word of a simple command, after any assignments). A command substitution inside
+# such an argument is still run by the shell that runs the script, so it is still read.
+_OUTPUT_ONLY_COMMANDS = frozenset(
+    {"echo", "printf", "say", "log", "info", "warn", "error", "die", "note", "msg", "logger"}
+)
+_SHELL_ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\+?=")
+
 _SHELL_PARAMETER_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*")
 _SHELL_PARAMETER_DEFAULT_OPERATORS: tuple[str, ...] = (":-", ":=", "-", "=")
 
@@ -653,6 +662,477 @@ _MAX_SHELL_NESTING = 8
 
 # Compose runs `entrypoint` followed by `command`, so a model source may be split across the two.
 _COMPOSE_COMMAND_KEYS: tuple[str, ...] = ("entrypoint", "command")
+
+# Surfaces whose text is shell: an untyped surface, a shell script, or a markdown fence a reader
+# pastes into a terminal (unlabelled and `text` fences included). In .py/.json/.toml text without
+# a shell shebang, parentheses and backquotes are Python and RST syntax, not shell.
+_SHELL_LANGUAGES = frozenset(
+    {"", "sh", "bash", "zsh", "ksh", "dash", "ash", "shell", "console", "shell-session", "text"}
+)
+
+_SHELL_SHEBANG = re.compile(r"#!\s*(?:\S*/)?(?:env\s+(?:-\S+\s+)*)?(?P<interpreter>[^\s/]+)")
+_SOURCE_PLACEHOLDER = re.compile(r"<[^<>\s]+>")
+
+_SHELL_BLANKS = frozenset(" \t\r\n")
+# Unquoted, these end a word wherever they appear: `true;vllm serve ...` is two commands. The
+# redirection characters stay in their word so a `<placeholder>` in a documented command reads whole.
+# Parentheses only separate words in shell text: elsewhere they are a call such as `f("--model")`.
+_SHELL_SEPARATOR_CHARACTERS = frozenset(";&|")
+_SHELL_OPERATOR_CHARACTERS = _SHELL_SEPARATOR_CHARACTERS | frozenset("()")
+# A word holding any of these may read differently once a shell parses it as command text.
+_SHELL_SYNTAX_CHARACTERS = frozenset(" \t\r\n'\"\\$`;&|()<>")
+_ANSI_C_ESCAPES: dict[str, str] = {
+    "a": "\a",
+    "b": "\b",
+    "e": "\x1b",
+    "E": "\x1b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+    "\\": "\\",
+    "'": "'",
+    '"': '"',
+    "?": "?",
+}
+_OCTAL_DIGITS = frozenset("01234567")
+_HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
+
+
+class _ShellSyntaxError(ValueError):
+    """Shell text that cannot be read the way bash reads it; `offset` is where reading failed."""
+
+    def __init__(self, message: str, offset: int) -> None:
+        super().__init__(message)
+        self.offset = offset
+
+
+def _take_digits(text: str, index: int, digits: frozenset[str], limit: int) -> str:
+    end = index
+    while end < len(text) and end - index < limit and text[end] in digits:
+        end += 1
+    return text[index:end]
+
+
+def _decode_ansi_c(content: str) -> str:
+    """The text bash produces for the body of a ``$'...'`` quote."""
+    decoded = bytearray()
+    index = 0
+    while index < len(content):
+        character = content[index]
+        if character != "\\" or index + 1 >= len(content):
+            decoded += character.encode("utf-8", "surrogateescape")
+            index += 1
+            continue
+        escape = content[index + 1]
+        index += 2
+        if escape in _ANSI_C_ESCAPES:
+            decoded += _ANSI_C_ESCAPES[escape].encode()
+        elif escape in _OCTAL_DIGITS:
+            digits = escape + _take_digits(content, index, _OCTAL_DIGITS, 2)
+            index += len(digits) - 1
+            decoded.append(int(digits, 8) & 0xFF)
+        elif escape == "x" and (digits := _take_digits(content, index, _HEX_DIGITS, 2)):
+            index += len(digits)
+            decoded.append(int(digits, 16))
+        elif escape in "uU" and (
+            digits := _take_digits(content, index, _HEX_DIGITS, 4 if escape == "u" else 8)
+        ):
+            index += len(digits)
+            codepoint = int(digits, 16)
+            valid = codepoint <= 0x10FFFF and not 0xD800 <= codepoint <= 0xDFFF
+            decoded += (chr(codepoint) if valid else "\ufffd").encode()
+        elif escape == "c" and index < len(content):
+            control = content[index]
+            index += 1
+            if control == "\\" and content.startswith("\\", index):
+                index += 1
+            decoded.append(0x7F if control == "?" else ord(control.upper()) & 0x1F)
+        else:
+            decoded += ("\\" + escape).encode("utf-8", "surrogateescape")
+    # Bash strings end at NUL, so `$'vllm\0...'` is just `vllm`.
+    return bytes(decoded).split(b"\0", 1)[0].decode("utf-8", "surrogateescape")
+
+
+class _ShellLexer:
+    """Split shell text into commands and words with bash's quoting rules, not POSIX ``shlex``'s.
+
+    ``shlex`` keeps ``$'...'`` as a literal dollar plus an ordinary quote, ends a word at ``#``,
+    glues control operators onto words, and keeps an empty ```` `` ```` or ``$()`` glued to a word,
+    and each of those lets bash run a serve command the gate never reads. Here ANSI-C quotes are
+    decoded, control operators separate words, ``#`` starts a comment only at the start of a word,
+    empty command substitutions expand to nothing, and a quote left open at a newline continues
+    onto the next line. Other expansions (``$name``, ``${...}``, ``$(...)``, backquotes) stay
+    verbatim in their word, so a source that depends on one is still reported as unresolved; the
+    bodies of command substitutions are collected in `substitutions` because bash runs them as
+    commands too. ``$"..."`` is translated through the locale when bash runs it, so its text is
+    unknowable and strict reading rejects it.
+
+    Read leniently (``strict=False``) nothing is rejected: an unterminated construct runs to the end
+    of the text and ``$"..."`` reads as a plain double quote. That reading is only for deciding
+    whether text that cannot be read strictly could still hold a serve command. Without
+    `shell_syntax`, backquotes and parentheses are ordinary characters, as they are in the RST
+    prose and Python calls of surfaces that are not shell.
+    """
+
+    def __init__(
+        self, text: str, *, strict: bool, start: int = 0, shell_syntax: bool = True
+    ) -> None:
+        self.text = text
+        self.strict = strict
+        self.shell_syntax = shell_syntax
+        self.operators = (
+            _SHELL_OPERATOR_CHARACTERS if shell_syntax else _SHELL_SEPARATOR_CHARACTERS
+        )
+        self.index = start
+        self.command_start = start
+        self.commands: list[tuple[int, list[str]]] = []
+        self.substitutions: list[str] = []
+
+    def _reject(self, message: str, offset: int) -> None:
+        if self.strict:
+            raise _ShellSyntaxError(message, offset)
+
+    def read(self, *, single_command: bool = False) -> list[tuple[int, list[str]]]:
+        """Every command as (offset of its first character, words), split at unquoted newlines.
+
+        With `single_command`, reading stops at the first unquoted newline.
+        """
+        text = self.text
+        words: list[str] = []
+        word: list[str] = []
+        in_word = False
+        quoted = False
+        while self.index < len(text):
+            character = text[self.index]
+            following = text[self.index + 1] if self.index + 1 < len(text) else ""
+            if character in _SHELL_BLANKS or character in self.operators:
+                if in_word:
+                    self._end_word(words, word, quoted)
+                word, in_word, quoted = [], False, False
+                if character == "\n":
+                    if words:
+                        self.commands.append((self.command_start, words))
+                    words = []
+                    self.index += 1
+                    self.command_start = self.index
+                    if single_command:
+                        return self.commands
+                elif character in self.operators:
+                    end = self.index
+                    while end < len(text) and text[end] in self.operators:
+                        end += 1
+                    words.append(text[self.index : end])
+                    self.index = end
+                else:
+                    self.index += 1
+                continue
+            if character == "#" and not in_word:
+                newline = text.find("\n", self.index)
+                self.index = len(text) if newline < 0 else newline
+                continue
+            if character == "\\" and following == "\n":
+                self.index += 2
+                continue
+            in_word = True
+            if character == "\\":
+                if not following:
+                    self._reject("trailing backslash escapes nothing", self.index)
+                    word.append("\\")
+                    self.index += 1
+                    continue
+                word.append(following)
+                self.index += 2
+            elif character == "'":
+                quoted = True
+                word.append(self._single_quoted())
+            elif character == "$" and following == "'":
+                quoted = True
+                word.append(self._ansi_c_quoted())
+            elif character == "$" and following == '"':
+                self._reject(
+                    'locale-translated $"..." text is unknown until bash runs it', self.index
+                )
+                quoted = True
+                self.index += 1
+                word.append(self._double_quoted())
+            elif character == '"':
+                quoted = True
+                word.append(self._double_quoted())
+            elif self._starts_expansion(character, following):
+                word.append(self._expansion())
+            else:
+                word.append(character)
+                self.index += 1
+        if in_word:
+            self._end_word(words, word, quoted)
+        if words:
+            self.commands.append((self.command_start, words))
+        return self.commands
+
+    @staticmethod
+    def _end_word(words: list[str], word: list[str], quoted: bool) -> None:
+        # An unquoted word that expands to nothing (``` `` ```, `$()`) is no argument at all.
+        value = "".join(word)
+        if value or quoted:
+            words.append(value)
+
+    def _starts_expansion(self, character: str, following: str) -> bool:
+        return (character == "`" and self.shell_syntax) or (
+            character == "$" and following in ("(", "{")
+        )
+
+    def _single_quoted(self) -> str:
+        opening = self.index
+        closing = self.text.find("'", opening + 1)
+        if closing < 0:
+            self._reject("unterminated single quote", opening)
+            self.index = len(self.text)
+            return self.text[opening + 1 :]
+        self.index = closing + 1
+        return self.text[opening + 1 : closing]
+
+    def _ansi_c_quoted(self) -> str:
+        opening = self.index
+        index = opening + 2
+        while index < len(self.text) and self.text[index] != "'":
+            index += 2 if self.text[index] == "\\" else 1
+        if index >= len(self.text):
+            self._reject("unterminated $'...' quote", opening)
+            self.index = len(self.text)
+            return _decode_ansi_c(self.text[opening + 2 :])
+        self.index = index + 1
+        return _decode_ansi_c(self.text[opening + 2 : index])
+
+    def _double_quoted(self) -> str:
+        opening = self.index
+        text = self.text
+        out: list[str] = []
+        self.index += 1
+        while self.index < len(text):
+            character = text[self.index]
+            following = text[self.index + 1] if self.index + 1 < len(text) else ""
+            if character == '"':
+                self.index += 1
+                return "".join(out)
+            if character == "\\" and following == "\n":
+                self.index += 2
+            elif character == "\\" and following in ("$", "`", '"', "\\"):
+                out.append(following)
+                self.index += 2
+            elif self._starts_expansion(character, following):
+                out.append(self._expansion())
+            else:
+                out.append(character)
+                self.index += 1
+        self._reject("unterminated double quote", opening)
+        return "".join(out)
+
+    def _expansion(self) -> str:
+        """A ``$(...)``, ``${...}``, or backquoted expansion, verbatim, starting at `index`."""
+        text = self.text
+        start = self.index
+        if text[start] == "`":
+            body: list[str] = []
+            self.index += 1
+            while self.index < len(text):
+                character = text[self.index]
+                if character == "\\" and self.index + 1 < len(text):
+                    escaped = text[self.index + 1]
+                    body.append(escaped if escaped in ("$", "`", "\\") else character + escaped)
+                    self.index += 2
+                    continue
+                self.index += 1
+                if character == "`":
+                    command = "".join(body)
+                    self.substitutions.append(command)
+                    return text[start : self.index] if command.strip() else ""
+                body.append(character)
+            self._reject("unterminated backquote", start)
+            self.substitutions.append("".join(body))
+            return text[start:]
+        opener = text[start + 1]
+        closer = ")" if opener == "(" else "}"
+        depth = 1
+        self.index = start + 2
+        while self.index < len(text):
+            character = text[self.index]
+            following = text[self.index + 1] if self.index + 1 < len(text) else ""
+            if character == "\\":
+                self.index += 2
+            elif character == "'":
+                closing = text.find("'", self.index + 1)
+                if closing < 0:
+                    self._reject("unterminated single quote", self.index)
+                    self.index = len(text)
+                    break
+                self.index = closing + 1
+            elif character == '"':
+                self._double_quoted()
+            elif self._starts_expansion(character, following):
+                self._expansion()
+            else:
+                self.index += 1
+                if character == opener:
+                    depth += 1
+                elif character == closer:
+                    depth -= 1
+                    if depth == 0:
+                        if opener == "(":
+                            command = text[start + 2 : self.index - 1]
+                            self.substitutions.append(command)
+                            if not command.strip():
+                                return ""
+                        return text[start : self.index]
+        self._reject(f"unterminated {text[start : start + 2]}", start)
+        self.index = len(text)
+        if opener == "(":
+            self.substitutions.append(text[start + 2 :])
+        return text[start:]
+
+
+class _ShellCommand(NamedTuple):
+    """One command read from shell text, or the line and the reason it cannot be read."""
+
+    line: int
+    words: list[str] | None
+    substitutions: list[str]
+    text: str
+    error: str
+
+
+def _shell_commands(text: str, *, shell_syntax: bool) -> list[_ShellCommand]:
+    """The commands of shell text, read line by line and also the way bash reads across lines.
+
+    Each line is read on its own, the way a reader copying it would run it, and a line that cannot
+    be read on its own is returned without words. When a line leaves a quote open, the command bash
+    reads from that line through the closing quote is returned as well, so a payload split over
+    several lines is not lost. Text that is not shell only gets that reading for a line that names
+    a shell, because elsewhere its quotes are not shell quotes and the joined text means nothing.
+    """
+    commands: list[_ShellCommand] = []
+    offset = 0
+    for number, line in _logical_lines(text):
+        lexer = _ShellLexer(line, strict=True, shell_syntax=shell_syntax)
+        try:
+            read = lexer.read()
+        except _ShellSyntaxError as error:
+            commands.append(_ShellCommand(number, None, [], line, str(error)))
+            read = []
+            if shell_syntax or _names_shell(line):
+                lexer = _ShellLexer(text, strict=True, start=offset, shell_syntax=shell_syntax)
+                try:
+                    read = lexer.read(single_command=True)
+                except _ShellSyntaxError:
+                    read = []
+        commands.extend(
+            _ShellCommand(number, words, lexer.substitutions, "", "") for _, words in read
+        )
+        offset += len(line) + 1
+    return commands
+
+
+def _logical_lines(text: str) -> list[tuple[int, str]]:
+    """Physical lines joined across a trailing unescaped backslash, with their first line number.
+
+    The newline stays in the joined text: the lexer decides what it means, because a backslash and
+    newline continue the line outside quotes but are kept literally inside single and ANSI-C quotes.
+    """
+    physical = text.split("\n")
+    lines: list[tuple[int, str]] = []
+    pending: list[str] = []
+    first = 1
+    for number, line in enumerate(physical, start=1):
+        if not pending:
+            first = number
+        pending.append(line)
+        trailing = len(line) - len(line.rstrip("\\"))
+        if trailing % 2 == 1 and number < len(physical):
+            continue
+        lines.append((first, "\n".join(pending)))
+        pending = []
+    return lines
+
+
+def _is_shell_surface(format_name: str, text: str) -> bool:
+    """Whether a surface is shell text: by its declared format, or by a shebang naming a shell."""
+    if format_name in _SHELL_LANGUAGES:
+        return True
+    shebang = _SHELL_SHEBANG.match(text)
+    return shebang is not None and shebang.group("interpreter") in _SHELL_EXECUTABLES
+
+
+def _names_shell(text: str) -> bool:
+    return any(
+        word.rpartition("/")[2] in _SHELL_EXECUTABLES
+        for _, words in _ShellLexer(text, strict=False).read()
+        for word in words
+    )
+
+
+def _shell_words(text: str) -> list[str]:
+    """All words of shell text read strictly as one argument vector."""
+    return [word for _, words in _ShellLexer(text, strict=True).read() for word in words]
+
+
+def _mentions_serve_content(words: list[str]) -> bool:
+    return any(_SHELL_SERVE_CONTENT.search(word) for word in words)
+
+
+def _mentions_served_model_name(words: list[str]) -> bool:
+    return any(_SERVED_MODEL_NAME_FLAG in word for word in words)
+
+
+def _is_model_option(word: str) -> bool:
+    return word == "--model" or word.startswith("--model=")
+
+
+def _starts_serve_command(words: list[str]) -> bool:
+    return any(
+        _is_model_option(word)
+        or (word.rpartition("/")[2] == "vllm" and words[index + 1 : index + 2] == ["serve"])
+        or (word == "serve" and _starts_with_expansion_command(words, index))
+        for index, word in enumerate(words)
+    )
+
+
+def _shell_text_matches(
+    text: str,
+    matches: Callable[[list[str]], bool],
+    depth: int = 0,
+    *,
+    shell_syntax: bool = True,
+) -> bool:
+    """Whether shell text, as written or read leniently through nested quoting, `matches`."""
+    if matches([text]):
+        return True
+    lexer = _ShellLexer(text, strict=False, shell_syntax=shell_syntax)
+    commands = lexer.read()
+    if any(matches(words) for _, words in commands):
+        return True
+    if depth >= _MAX_SHELL_NESTING:
+        return False
+    nested = [
+        word
+        for _, words in commands
+        for word in words
+        if word != text and _SHELL_SYNTAX_CHARACTERS.intersection(word)
+    ]
+    return any(
+        _shell_text_matches(inner, matches, depth + 1, shell_syntax=shell_syntax)
+        for inner in [*nested, *(lexer.substitutions if shell_syntax else ())]
+    )
+
+
+def _starts_with_expansion_command(
+    tokens: list[str], index: int, *, backquotes: bool = True
+) -> bool:
+    """Whether the word before `index` is a command name that only an expansion decides."""
+    if index == 0:
+        return False
+    previous = tokens[index - 1]
+    return "$" in previous or (backquotes and "`" in previous)
 
 
 def _shell_parameter_default(token: str) -> str | None:
@@ -704,7 +1184,19 @@ def _resolve_model_source(token: str, *, context: str, depth: int = 0) -> str:
             f"{context}: model source {token!r} is an unresolved shell variable, not a concrete "
             f"artifact path or repository id"
         )
-    resolved = _resolve_model_source(default, context=context, depth=depth + 1)
+    try:
+        default_words = _shell_words(default)
+    except _ShellSyntaxError as error:
+        raise PublicationSourceParseError(
+            f"{context}: model source {token!r} has an unreadable default: {error}"
+        ) from error
+    if len(default_words) > 1:
+        raise PublicationSourceParseError(
+            f"{context}: model source {token!r} defaults to more than one word"
+        )
+    resolved = _resolve_model_source(
+        default_words[0] if default_words else "", context=context, depth=depth + 1
+    )
     if not resolved:
         raise PublicationSourceParseError(
             f"{context}: model source {token!r} defaults to an empty source"
@@ -743,9 +1235,10 @@ def _unreadable_shell_invocation(
     """Fail closed on a shell launcher whose options cannot be read.
 
     An unreadable launcher may be hiding a serve command in the payload position, so it may only be
-    treated as a plain (non ``-c``) invocation when nothing serve-like remains in it to hide.
+    treated as a plain (non ``-c``) invocation when nothing serve-like remains in it to hide, even
+    once its words are read again as shell text.
     """
-    if any(_SHELL_SERVE_CONTENT.search(token) for token in tokens[index:]):
+    if any(_shell_text_matches(token, _mentions_serve_content) for token in tokens[index:]):
         raise PublicationSourceParseError(f"{context}: {launcher} {reason}")
 
 
@@ -813,11 +1306,26 @@ def _shell_command_payload_index(
     return len(tokens) if wants_command else None
 
 
-def _sources_from_tokens(tokens: list[str], *, context: str, depth: int = 0) -> list[str]:
+def _concrete_model_source(token: str, *, context: str) -> str:
+    source = _resolve_model_source(token, context=context)
+    if not source:
+        raise PublicationSourceParseError(f"{context}: model source is empty")
+    # No repository id or path holds `<`/`>`: one glued to a source (`MODEL>log`, `2>/dev/null`)
+    # is a redirection, so the text is not the model the shell serves. A whole `<placeholder>`
+    # in a documented command is no redirection a shell could run.
+    if ("<" in source or ">" in source) and not _SOURCE_PLACEHOLDER.fullmatch(source):
+        raise PublicationSourceParseError(
+            f"{context}: model source {source!r} carries a shell redirection"
+        )
+    return source
+
+
+def _sources_from_tokens(
+    tokens: list[str], *, context: str, depth: int = 0, shell_surface: bool = False
+) -> list[str]:
     sources: list[str] = []
-    saw_model_option = any(
-        token == "--model" or token.startswith("--model=") for token in tokens
-    )
+    saw_model_option = any(_is_model_option(token) for token in tokens)
+    printed, piped = _output_only_arguments(tokens)
     index = 0
     while index < len(tokens):
         token = tokens[index]
@@ -834,6 +1342,7 @@ def _sources_from_tokens(tokens: list[str], *, context: str, depth: int = 0) -> 
                         tokens[payload_index],
                         context=f"{context}:{token}-c",
                         depth=depth + 1,
+                        shell_surface=True,
                     )
                 )
                 index = payload_index + 1
@@ -842,7 +1351,7 @@ def _sources_from_tokens(tokens: list[str], *, context: str, depth: int = 0) -> 
         if token == "--model":
             if index + 1 >= len(tokens) or tokens[index + 1].startswith("-"):
                 raise PublicationSourceParseError(f"{context}: --model has no parseable value")
-            sources.append(_resolve_model_source(tokens[index + 1], context=context))
+            sources.append(_concrete_model_source(tokens[index + 1], context=context))
             index += 2
             continue
 
@@ -850,11 +1359,11 @@ def _sources_from_tokens(tokens: list[str], *, context: str, depth: int = 0) -> 
             value = token.partition("=")[2]
             if not value:
                 raise PublicationSourceParseError(f"{context}: --model has no parseable value")
-            sources.append(_resolve_model_source(value, context=context))
+            sources.append(_concrete_model_source(value, context=context))
             index += 1
             continue
 
-        if tokens[index : index + 2] == ["vllm", "serve"]:
+        if token.rpartition("/")[2] == "vllm" and tokens[index + 1 : index + 2] == ["serve"]:
             if index + 2 >= len(tokens):
                 raise PublicationSourceParseError(f"{context}: vllm serve has no model source")
             positional = tokens[index + 2]
@@ -865,39 +1374,189 @@ def _sources_from_tokens(tokens: list[str], *, context: str, depth: int = 0) -> 
                     )
                 index += 2
                 continue
-            sources.append(_resolve_model_source(positional, context=context))
+            sources.append(_concrete_model_source(positional, context=context))
             index += 3
             continue
+
+        if token == "serve" and _starts_with_expansion_command(
+            tokens, index, backquotes=shell_surface
+        ):
+            raise PublicationSourceParseError(
+                f"{context}: {tokens[index - 1]!r} serve names its command through a shell "
+                f"expansion, so whether it starts vLLM cannot be read"
+            )
+
+        if token == "eval":
+            payload, index = _eval_payload(tokens, index)
+            sources.extend(
+                _sources_from_shell(
+                    payload, context=f"{context}:eval", depth=depth + 1, shell_surface=True
+                )
+            )
+            continue
+
+        if _substitutes_serve_text(token, shell_syntax=shell_surface):
+            raise PublicationSourceParseError(
+                f"{context}: argument {token!r} holds a command substitution that mentions a serve "
+                f"command; a shell or remote command that re-reads it serves whatever it prints"
+            )
+
+        if index in piped and "\\" in token:
+            raise PublicationSourceParseError(
+                f"{context}: argument {token!r} is printed into a command that runs text and holds a "
+                f"backslash escape, which printf and echo -e decode, so what runs cannot be read"
+            )
+
+        if index not in printed and _embeds_shell_text(
+            token, _starts_serve_command, shell_syntax=shell_surface
+        ):
+            sources.extend(
+                _sources_from_shell(
+                    token,
+                    context=f"{context}:argument",
+                    depth=depth + 1,
+                    shell_surface=shell_surface,
+                )
+            )
 
         index += 1
     return sources
 
 
-def _sources_from_shell(text: str, *, context: str, depth: int = 0) -> list[str]:
+def _embeds_shell_text(
+    token: str, matches: Callable[[list[str]], bool], *, shell_syntax: bool
+) -> bool:
+    """Whether one argument reads as further shell words that could `matches` a serve command.
+
+    Command text passed as a single argument (`ssh host '...'`, `su -c '...'`) is run by a shell all
+    the same, so it is read again rather than skipped.
+    """
+    if not _SHELL_SYNTAX_CHARACTERS.intersection(token):
+        return False
+    lexer = _ShellLexer(token, strict=False, shell_syntax=shell_syntax)
+    words = [word for _, line in lexer.read() for word in line]
+    return words != [token] and _shell_text_matches(token, matches, shell_syntax=shell_syntax)
+
+
+# Words that run text they are given: a shell, `eval`, `source`/`.`, and the launchers that hand text to one.
+_TEXT_EXECUTORS = frozenset({"eval", "source", ".", "xargs", "ssh", "su"})
+
+
+def _is_text_executor(word: str) -> bool:
+    name = word.rpartition("/")[2]
+    return name in _SHELL_EXECUTABLES or word in _TEXT_EXECUTORS
+
+
+def _is_operator(token: str) -> bool:
+    return bool(token) and all(character in _SHELL_OPERATOR_CHARACTERS for character in token)
+
+
+def _pipelines(tokens: list[str]) -> list[list[list[int]]]:
+    """The word indexes of `tokens`, split into pipelines of stages.
+
+    `|` and `|&` separate the stages of a pipeline; any other control operator (`;`, `&`, `&&`,
+    `||`) ends it. Parentheses alone only group, and operator words themselves are not returned.
+    """
+    pipelines: list[list[list[int]]] = [[[]]]
+    for index, token in enumerate(tokens):
+        if not _is_operator(token):
+            pipelines[-1][-1].append(index)
+            continue
+        core = token.strip("()")
+        if core in ("|", "|&"):
+            pipelines[-1].append([])
+        elif core:
+            pipelines.append([[]])
+    return [[stage for stage in pipeline if stage] for pipeline in pipelines if any(pipeline)]
+
+
+def _output_only_arguments(tokens: list[str]) -> tuple[set[int], set[int]]:
+    """Indexes of the arguments of output-only commands (`echo`, `say`, ...) among one command's words.
+
+    Returns (prose, piped). A command starts at the first word of a pipeline stage; leading
+    assignments are skipped. Only the command word itself decides: `ssh host echo x` is `ssh`'s
+    argument list. When the printed output is piped into a later stage of the same pipeline that
+    runs text (a shell, `eval`, `source`, `xargs`, `ssh`, `su`), what is printed is the command
+    that runs, so those arguments are not prose: they are returned in `piped`, and the caller reads
+    them as shell text.
+    """
+    prose: set[int] = set()
+    piped: set[int] = set()
+    for pipeline in _pipelines(tokens):
+        for position, stage in enumerate(pipeline):
+            command = next(
+                (index for index in stage if not _SHELL_ASSIGNMENT.match(tokens[index])), None
+            )
+            if command is None or tokens[command] not in _OUTPUT_ONLY_COMMANDS:
+                continue
+            executes = any(
+                _is_text_executor(tokens[index])
+                for later in pipeline[position + 1 :]
+                for index in later
+            )
+            (piped if executes else prose).update(index for index in stage if index > command)
+    return prose, piped
+
+
+def _substitutes_serve_text(token: str, *, shell_syntax: bool) -> bool:
+    """Whether one argument holds a ``$(...)``, ``<(...)`` or backquoted substitution near serve text.
+
+    A shell that re-reads the argument (`ssh host '$(...)'`, `su -c '$(...)'`, `bash -c '$(...)'`)
+    runs the substitution and then runs what it prints, so the command it serves is only known once
+    it has run. Backquotes count only in shell text, where they are not prose markup.
+    """
+    openers = ("$(", "<(", "`") if shell_syntax else ("$(", "<(")
+    return any(opener in token for opener in openers) and _shell_text_matches(
+        token, _mentions_serve_content
+    )
+
+
+def _eval_payload(tokens: list[str], index: int) -> tuple[str, int]:
+    """The command text `eval` at `index` runs, and the index of the word after its arguments."""
+    end = index + 1
+    while end < len(tokens) and not all(
+        character in _SHELL_OPERATOR_CHARACTERS for character in tokens[end]
+    ):
+        end += 1
+    return " ".join(tokens[index + 1 : end]), end
+
+
+def _sources_from_shell(
+    text: str, *, context: str, depth: int = 0, shell_surface: bool = False
+) -> list[str]:
     if depth > _MAX_SHELL_NESTING:
         raise PublicationSourceParseError(f"{context}: shell command text nests too deeply")
-    normalized = text.replace("\\\n", " ")
     sources: list[str] = []
-    for line_number, line in enumerate(normalized.splitlines(), start=1):
-        if "vllm" not in line and "--model" not in line:
+    for command in _shell_commands(text, shell_syntax=shell_surface):
+        line_context = f"{context}:{command.line}"
+        if command.words is None:
+            if _shell_text_matches(command.text, _mentions_serve_content):
+                raise PublicationSourceParseError(
+                    f"{line_context}: cannot parse serve/model command: {command.error}"
+                )
             continue
-        try:
-            tokens = shlex.split(line, comments=True, posix=True)
-        except ValueError as error:
-            raise PublicationSourceParseError(
-                f"{context}:{line_number}: cannot parse serve/model command: {error}"
-            ) from error
         sources.extend(
-            _sources_from_tokens(tokens, context=f"{context}:{line_number}", depth=depth)
+            _sources_from_tokens(
+                command.words, context=line_context, depth=depth, shell_surface=shell_surface
+            )
         )
+        for body in command.substitutions if shell_surface else ():
+            sources.extend(
+                _sources_from_shell(
+                    body,
+                    context=f"{line_context}:substitution",
+                    depth=depth + 1,
+                    shell_surface=True,
+                )
+            )
     return sources
 
 
 def _command_tokens(value: object, *, context: str) -> list[str]:
     if isinstance(value, str):
         try:
-            return shlex.split(value.replace("\\\n", " "), comments=True, posix=True)
-        except ValueError as error:
+            return _shell_words(value)
+        except _ShellSyntaxError as error:
             raise PublicationSourceParseError(
                 f"{context}: cannot parse Compose command: {error}"
             ) from error
@@ -907,7 +1566,7 @@ def _command_tokens(value: object, *, context: str) -> list[str]:
 
 
 def _serve_model_ids_from_tokens(
-    tokens: list[str], *, context: str, depth: int = 0
+    tokens: list[str], *, context: str, depth: int = 0, shell_surface: bool = False
 ) -> list[str]:
     aliases: list[str] = []
     index = 0
@@ -926,10 +1585,20 @@ def _serve_model_ids_from_tokens(
                         tokens[payload_index],
                         context=f"{context}:{token}-c",
                         depth=depth + 1,
+                        shell_surface=True,
                     )
                 )
                 index = payload_index + 1
                 continue
+
+        if token == "eval":
+            payload, index = _eval_payload(tokens, index)
+            aliases.extend(
+                _serve_model_ids_from_shell(
+                    payload, context=f"{context}:eval", depth=depth + 1, shell_surface=True
+                )
+            )
+            continue
 
         value: str | None = None
         if token == _SERVED_MODEL_NAME_FLAG and index + 1 < len(tokens):
@@ -938,29 +1607,42 @@ def _serve_model_ids_from_tokens(
             value = token.partition("=")[2]
         if value is not None:
             aliases.append(value)
+        elif shell_surface and _embeds_shell_text(
+            token, _mentions_served_model_name, shell_syntax=True
+        ):
+            aliases.extend(
+                _serve_model_ids_from_shell(
+                    token, context=f"{context}:argument", depth=depth + 1, shell_surface=True
+                )
+            )
         index += 1
     return aliases
 
 
 def _serve_model_ids_from_shell(
-    text: str, *, context: str = "<shell>", depth: int = 0
+    text: str, *, context: str = "<shell>", depth: int = 0, shell_surface: bool = False
 ) -> list[str]:
     if depth > _MAX_SHELL_NESTING:
         raise PublicationSourceParseError(f"{context}: shell command text nests too deeply")
-    normalized = text.replace("\\\n", " ")
     aliases: list[str] = []
-    for line_number, line in enumerate(normalized.splitlines(), start=1):
-        if _SERVED_MODEL_NAME_FLAG not in line:
+    for command in _shell_commands(text, shell_syntax=shell_surface):
+        if command.words is None:
             continue
-        try:
-            tokens = shlex.split(line, comments=True, posix=True)
-        except ValueError:
-            continue
+        line_context = f"{context}:{command.line}"
         aliases.extend(
             _serve_model_ids_from_tokens(
-                tokens, context=f"{context}:{line_number}", depth=depth
+                command.words, context=line_context, depth=depth, shell_surface=shell_surface
             )
         )
+        for body in command.substitutions if shell_surface else ():
+            aliases.extend(
+                _serve_model_ids_from_shell(
+                    body,
+                    context=f"{line_context}:substitution",
+                    depth=depth + 1,
+                    shell_surface=True,
+                )
+            )
     return aliases
 
 
@@ -984,7 +1666,7 @@ def _serve_model_ids_from_yaml(text: str) -> list[str]:
                         return
                 aliases.extend(
                     _serve_model_ids_from_tokens(
-                        tokens, context=f"{location}.{'+'.join(declared)}"
+                        tokens, context=f"{location}.{'+'.join(declared)}", shell_surface=True
                     )
                 )
             for key, child in value.items():
@@ -1020,9 +1702,13 @@ def extract_serve_model_ids(text: str, *, source_format: str | None = None) -> l
             if language in {"yaml", "yml"}:
                 aliases.extend(_serve_model_ids_from_yaml(body))
             else:
-                aliases.extend(_serve_model_ids_from_shell(body))
+                aliases.extend(
+                    _serve_model_ids_from_shell(body, shell_surface=_is_shell_surface(language, body))
+                )
     else:
-        aliases.extend(_serve_model_ids_from_shell(text))
+        aliases.extend(
+            _serve_model_ids_from_shell(text, shell_surface=_is_shell_surface(format_name, text))
+        )
 
     return list(dict.fromkeys(aliases))
 
@@ -1035,9 +1721,10 @@ def _sources_from_yaml(text: str, *, context: str) -> list[str]:
 
     sources: list[str] = []
     command_count = 0
+    serve_like_scalar = False
 
     def visit(value: object, location: str) -> None:
-        nonlocal command_count
+        nonlocal command_count, serve_like_scalar
         if isinstance(value, dict):
             declared = [key for key in _COMPOSE_COMMAND_KEYS if key in value]
             if declared:
@@ -1046,7 +1733,9 @@ def _sources_from_yaml(text: str, *, context: str) -> list[str]:
                 for key in declared:
                     tokens.extend(_command_tokens(value[key], context=f"{location}.{key}"))
                 sources.extend(
-                    _sources_from_tokens(tokens, context=f"{location}.{'+'.join(declared)}")
+                    _sources_from_tokens(
+                        tokens, context=f"{location}.{'+'.join(declared)}", shell_surface=True
+                    )
                 )
             for key, child in value.items():
                 if key in _COMPOSE_COMMAND_KEYS:
@@ -1055,10 +1744,14 @@ def _sources_from_yaml(text: str, *, context: str) -> list[str]:
         elif isinstance(value, list):
             for index, child in enumerate(value):
                 visit(child, f"{location}[{index}]")
+        elif isinstance(value, str) and not serve_like_scalar:
+            serve_like_scalar = _shell_text_matches(value, _starts_serve_command)
 
     visit(document, context)
     if command_count == 0 and (
-        _VLLM_SERVE_TEXT.search(text) or re.search(r"(?<![\w-])--model(?:=|\s)", text)
+        serve_like_scalar
+        or _VLLM_SERVE_TEXT.search(text)
+        or re.search(r"(?<![\w-])--model(?:=|\s)", text)
     ):
         raise PublicationSourceParseError(
             f"{context}: serve/model syntax exists outside a parseable YAML command"
@@ -1071,11 +1764,14 @@ def extract_model_sources(text: str, *, source_format: str | None = None) -> lis
 
     YAML is parsed structurally, over both Compose `entrypoint` and `command` and over their
     combined execution semantics. Markdown code fences are parsed according to their language, and
-    shell commands support continuations, positional ``vllm serve`` sources, both model-option
-    spellings, ``sh``/``bash -c`` payloads (parsed recursively as shell text, including when shell
-    options and their arguments precede the ``-c``), and shell parameter defaults (whose default
-    source is extracted and validated). Any serve surface that cannot yield
-    one concrete source — an unresolved shell variable especially — raises
+    shell commands are read with bash's quoting rules (ANSI-C ``$'...'`` quotes decoded, control
+    operators and continuations honoured) and support positional ``vllm serve`` sources, both
+    model-option spellings, ``sh``/``bash -c`` and ``eval`` payloads (parsed recursively as shell
+    text, including when shell options and their arguments precede the ``-c``), and shell parameter
+    defaults (whose default source is extracted and validated). On shell surfaces, command
+    substitutions and command text passed as one argument are read as well. Any serve surface that
+    cannot yield one concrete source — an unresolved shell variable, a locale-translated
+    ``$"..."`` string, or a command name that only an expansion decides especially — raises
     `PublicationSourceParseError`. Concise ``--served-model-name`` aliases are intentionally
     ignored.
     """
@@ -1093,9 +1789,19 @@ def extract_model_sources(text: str, *, source_format: str | None = None) -> lis
             if language in {"yaml", "yml"}:
                 sources.extend(_sources_from_yaml(body, context=context))
             else:
-                sources.extend(_sources_from_shell(body, context=context))
+                sources.extend(
+                    _sources_from_shell(
+                        body, context=context, shell_surface=_is_shell_surface(language, body)
+                    )
+                )
     else:
-        sources.extend(_sources_from_shell(text, context=source_format or "<text>"))
+        sources.extend(
+            _sources_from_shell(
+                text,
+                context=source_format or "<text>",
+                shell_surface=_is_shell_surface(format_name, text),
+            )
+        )
 
     deduplicated: list[str] = []
     for source in sources:

@@ -17,6 +17,7 @@ with only quantization_config added, and vLLM's pooling-adapter lm_head placehol
 Usage (inside the PTQ image, GPU): quantize_ne8.py RECIPE SOURCE_DIR CALIB_JSONL N_SAMPLES MAX_LEN OUT_DIR
 Prints QUANT-OK <out> on success; exits non-zero otherwise. Writes OUT_DIR.ref.json (reference embeddings)."""
 import json
+import os
 import shutil
 import sys
 import time
@@ -30,9 +31,68 @@ from modelopt.torch.export import export_hf_checkpoint
 from modelopt.torch.quantization.nn import TensorQuantizer
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
+
+def _open_dir(path, dir_fd=None):
+    return os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC | (os.O_NOFOLLOW if dir_fd is not None else 0),
+                   dir_fd=dir_fd)
+
+
+def _walk_checkpoint(root, dir_fd, rel=Path()):
+    """Yield (relative path, fd of its directory) for every file under the checkpoint ``root``, open as ``dir_fd``.
+
+    Subdirectories are opened through their parent's fd, so the walk never leaves the tree. A link or special file
+    anywhere is refused. Top-level hidden directories (.git, .cache) are download state and are not entered."""
+    with os.scandir(dir_fd) as it:
+        entries = sorted(it, key=lambda e: e.name)
+    for e in entries:
+        path = rel / e.name
+        if e.is_symlink():
+            raise SystemExit(f"QUANT-FAILED: {root / path} is a link; the source checkpoint must hold regular files only")
+        if e.is_dir(follow_symlinks=False):
+            if e.name.startswith(".") and not rel.parts:
+                continue
+            sub_fd = _open_dir(e.name, dir_fd)
+            try:
+                yield from _walk_checkpoint(root, sub_fd, path)
+            finally:
+                os.close(sub_fd)
+        elif e.is_file(follow_symlinks=False):
+            yield path, dir_fd
+        else:
+            raise SystemExit(f"QUANT-FAILED: {root / path} is not a regular file")
+
+
+def _read_checkpoint_file(path, dir_fd):
+    """Read ``path``, the entry ``path.name`` of the directory open as ``dir_fd``, without following a link.
+
+    The opened inode must be the one that directory lists under that name, so a link swapped in for the file or for
+    one of its parents after the walk is refused rather than read."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError as e:
+        raise SystemExit(f"QUANT-FAILED: {path}: {e.strerror} (source files must be regular files, not links)") from e
+    try:
+        if not os.path.samestat(os.fstat(fd), os.stat(path.name, dir_fd=dir_fd, follow_symlinks=False)):
+            raise SystemExit(f"QUANT-FAILED: {path} changed while it was being read")
+        with open(fd, "rb", closefd=False) as f:
+            return f.read()
+    finally:
+        os.close(fd)
+
+
+def _write_new_file(path, data):
+    with open(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o644), "wb") as f:
+        f.write(data)
+
+
 recipe_path, src, calib_path, n_samples, max_len, out = sys.argv[1:7]
 src, out, n_samples, max_len = Path(src), Path(out), int(n_samples), int(max_len)
 t0 = time.time()
+
+# Refuse a source with links before it is loaded or ModelOpt's exporter copies its files.
+scan_fd = _open_dir(src)
+print(f"source checkpoint: {sum(1 for _ in _walk_checkpoint(src, scan_fd))} files, no links", flush=True)
+os.close(scan_fd)
 
 cfg = AutoConfig.from_pretrained(src)
 assert cfg.is_causal is False and cfg.text_config.is_causal is False, "expected a bidirectional text tower"
@@ -136,17 +196,29 @@ export_hf_checkpoint(model, export_dir=str(partial))
 model.forward = _forward
 print(f"exported to {partial} ({time.time() - t0:.0f}s)", flush=True)
 
+# A file the exporter copied must hold the source's bytes: it resolves a path and then copies it, so a link swapped in
+# between would put a file from outside the checkpoint in the export.
 shards = set(json.loads((src / "model.safetensors.index.json").read_text())["weight_map"].values())
-for p in sorted(src.rglob("*")):
-    rel = p.relative_to(src)
-    if p.is_dir() or rel.name in shards or rel.name == "model.safetensors.index.json" or rel.parts[0].startswith("."):
+src_fd = _open_dir(src)
+EXPORT_WRITTEN = {"config.json", "generation_config.json", "hf_quant_config.json"}
+missing = {}
+for rel, dir_fd in _walk_checkpoint(src, src_fd):
+    if rel.name in shards or rel.name == "model.safetensors.index.json":
         continue
-    if not (partial / rel).exists():
-        (partial / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(p, partial / rel)
-        print(f"  copied missing source file {rel}", flush=True)
+    data = _read_checkpoint_file(src / rel, dir_fd)
+    dst = partial / rel
+    if os.path.lexists(dst):
+        if str(rel) not in EXPORT_WRITTEN and (dst.is_symlink() or dst.read_bytes() != data):
+            dst.unlink()
+            raise SystemExit(f"QUANT-FAILED: the export's {rel} is not the source file; removed it, export not promoted")
+    elif not rel.parts[0].startswith("."):
+        missing[rel] = data
+for rel, data in missing.items():
+    (partial / rel).parent.mkdir(parents=True, exist_ok=True)
+    _write_new_file(partial / rel, data)
+    print(f"  copied missing source file {rel}", flush=True)
 
-cfg_src = json.loads((src / "config.json").read_text())
+cfg_src = json.loads(_read_checkpoint_file(src / "config.json", src_fd))
 cfg_exp = json.loads((partial / "config.json").read_text())
 qc = cfg_exp.get("quantization_config")
 if not qc:
