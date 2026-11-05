@@ -14,10 +14,15 @@ byte-identical to it.
 
 Usage (inside the PTQ image, GPU): quantize_nr8.py RECIPE SOURCE_DIR CALIB_JSONL N_SAMPLES MAX_LEN OUT_DIR
 Prints QUANT-OK <out> on success; exits non-zero otherwise."""
+import contextlib
+import errno
 import importlib.util
 import json
+import os
 import shutil
+import stat
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -103,22 +108,63 @@ print(f"exported to {partial} ({time.time() - t0:.0f}s)", flush=True)
 
 # The exporter copies the source's non-model files, but not every one: on this checkpoint it skipped the
 # sentence-transformers score-head file 2_Dense/model.safetensors. Copy every source file that is not a model shard and
-# is missing from the export, byte for byte.
-shards = set(json.loads((src / "model.safetensors.index.json").read_text())["weight_map"].values())
-for p in sorted(src.rglob("*")):
-    rel = p.relative_to(src)
-    if p.is_dir() or rel.name in shards or rel.name == "model.safetensors.index.json" or rel.parts[0].startswith("."):
-        continue
-    if not (partial / rel).exists():
-        (partial / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(p, partial / rel)
-        print(f"  copied missing source file {rel}", flush=True)
+# is missing from the export, byte for byte. A symlink in the source is refused, never followed.
+
+
+def open_regular(name, dir_fd, shown):
+    """Open name (relative to dir_fd) without following a symlink; refuse anything but a regular file."""
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dir_fd)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise SystemExit(f"QUANT-FAILED: refusing symlink in source: {shown}") from None
+        raise
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        os.close(fd)
+        raise SystemExit(f"QUANT-FAILED: refusing non-regular file in source: {shown}")
+    return fd
+
+
+def read_regular(path):
+    with open(open_regular(path, None, path), "rb") as f:
+        return f.read()
+
+
+def copy_fd(fd, dst):
+    """copyfile from an open file: the bytes go to a new file beside dst that then replaces dst, never through a link."""
+    tmp_fd, tmp = tempfile.mkstemp(dir=dst.parent, prefix=f".{dst.name}.")
+    try:
+        with open(tmp_fd, "wb") as w, open(fd, "rb", closefd=False) as r:
+            shutil.copyfileobj(r, w)
+            os.fchmod(w.fileno(), 0o644)
+        os.replace(tmp, dst)
+    except BaseException:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(tmp)
+        raise
+
+
+shards = set(json.loads(read_regular(src / "model.safetensors.index.json"))["weight_map"].values())
+# fwalk opens each directory relative to its parent and never descends through a directory symlink.
+for dirpath, dirnames, filenames, dir_fd in os.fwalk(src):
+    rel_dir = Path(dirpath).relative_to(src)
+    dirnames.sort()
+    for name in sorted(filenames):
+        rel = rel_dir / name
+        if rel.name in shards or rel.name == "model.safetensors.index.json" or rel.parts[0].startswith("."):
+            continue
+        if not (partial / rel).exists():
+            fd = open_regular(name, dir_fd, src / rel)
+            (partial / rel).parent.mkdir(parents=True, exist_ok=True)
+            copy_fd(fd, partial / rel)
+            os.close(fd)
+            print(f"  copied missing source file {rel}", flush=True)
 
 # transformers 5.18 re-serializes config.json on export: it drops default-valued keys and renames
 # vision_config.rope_parameters.rope_type from "default" to "axial". vLLM and sentence-transformers read the upstream
 # config, so put the source config.json back and keep only the export's quantization_config. The transformers copy is
 # saved as config.transformers5.json and removed before release.
-cfg_src = json.loads((src / "config.json").read_text())
+cfg_src = json.loads(read_regular(src / "config.json"))
 cfg_exp = json.loads((partial / "config.json").read_text())
 qc = cfg_exp.get("quantization_config")
 if not qc:
