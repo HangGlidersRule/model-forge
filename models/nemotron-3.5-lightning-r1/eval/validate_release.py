@@ -12,13 +12,16 @@ Checks the exact directory to be uploaded against the pinned BF16 source and the
   - hf_quant_config.json: NVFP4, group 16, no KV quant, exclude set == config ignore set; no quantized module excluded;
     every protected linear-like module excluded
   - companion files byte-identical to the source
+  - configs, companions and release files are regular files on both sides; a symlink is a failure, never followed
 Writes OUT_JSON (verdict, counts, release file list with sha256). Exit 1 on any failure.
 Usage: validate_release.py ART_DIR SRC_DIR VARIANTS_G_JSON VARIANT OUT_JSON"""
 import collections
 import fnmatch
 import hashlib
 import json
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 
@@ -36,12 +39,37 @@ LINEAR_LEAVES = {"in_proj", "out_proj", "conv1d", "q_proj", "k_proj", "v_proj", 
                  "eh_proj", "up_proj", "down_proj"}
 
 
-def sha(p: Path) -> str:
+def open_regular(p: Path):
+    """Binary reader for p if it is a regular file, else None. A symlink at p is not followed."""
+    try:
+        fd = os.open(p, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError:
+        return None
+    f = os.fdopen(fd, "rb")
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        f.close()
+        return None
+    return f
+
+
+def sha(p: Path) -> str | None:
+    f = open_regular(p)
+    if f is None:
+        return None
     h = hashlib.sha256()
-    with open(p, "rb") as f:
+    with f:
         for c in iter(lambda: f.read(1 << 24), b""):
             h.update(c)
     return h.hexdigest()
+
+
+def regular_json(p: Path) -> dict:
+    f = open_regular(p)
+    if f is None:
+        fails.append(f"{p} is missing or not a regular file")
+        return {}
+    with f:
+        return json.loads(f.read())
 
 
 def index(d: Path) -> dict:
@@ -147,14 +175,14 @@ if unaccounted:
     fails.append(f"{len(unaccounted)} source tensors missing from the export: {unaccounted[:5]}")
 
 # configs
-cs = json.loads((src / "config.json").read_text())
-ca = json.loads((art / "config.json").read_text())
+cs = regular_json(src / "config.json")
+ca = regular_json(art / "config.json")
 qc = ca.pop("quantization_config", None)
 if not qc:
     fails.append("config.json has no quantization_config")
 if ca != cs:
     fails.append(f"config.json differs from the source in {sorted(k for k in set(ca) | set(cs) if ca.get(k) != cs.get(k))}")
-if json.loads((art / "generation_config.json").read_text()) != json.loads((src / "generation_config.json").read_text()):
+if regular_json(art / "generation_config.json") != regular_json(src / "generation_config.json"):
     fails.append("generation_config.json differs from the source")
 hq = json.loads((art / "hf_quant_config.json").read_text())["quantization"]
 if (hq.get("quant_algo"), hq.get("group_size"), hq.get("kv_cache_quant_algo")) != ("NVFP4", 16, None):
@@ -169,16 +197,23 @@ prot_lin = sorted({k[: -len(".weight")] for k in prot if k.endswith(".weight") a
 not_excl = [m for m in prot_lin if not any(fnmatch.fnmatchcase(m, p) for p in excl)]
 
 # companion + inventory
-comp_bad = [n for n in COMPANION if not (art / n).exists() or not (src / n).exists() or sha(art / n) != sha(src / n)]
+comp_bad = [n for n in COMPANION if (h := sha(art / n)) is None or h != sha(src / n)]
 if comp_bad:
     fails.append(f"companion files differ from or missing vs the source: {comp_bad}")
-present = sorted(p.name for p in art.iterdir() if p.is_file())
+links = sorted(p.name for p in art.iterdir() if p.is_symlink())
+if links:
+    fails.append(f"symlinks in the artifact: {links}")
+present = sorted(p.name for p in art.iterdir() if p.is_file() or p.is_symlink())
 release = [n for n in present if n not in DROP]
 known = set(COMPANION) | {"config.json", "generation_config.json", "hf_quant_config.json", "model.safetensors.index.json"} \
     | {p.name for p in set(ei.values())} | DROP
 unknown = [n for n in present if n not in known]
 if unknown:
     fails.append(f"unclassified files: {unknown}")
+release_files = {n: sha(art / n) for n in release}
+unreadable = sorted(n for n, h in release_files.items() if h is None)
+if unreadable:
+    fails.append(f"release files that are not regular files: {unreadable}")
 res = {
     "artifact": str(art), "variant": variant, "verdict": "PASS" if not fails and not not_excl else "FAIL",
     "failures": fails, "tensors": len(dt), "quantized_modules": len(q_mods), "routed": n_routed, "shared": n_shared,
@@ -187,7 +222,7 @@ res = {
     "protected_tensors_checked": checked, "protected_linear_modules": len(prot_lin),
     "protected_linear_not_excluded": not_excl[:40], "protected_linear_not_excluded_count": len(not_excl),
     "dropped_files": sorted(n for n in present if n in DROP),
-    "release_files": {n: sha(art / n) for n in release},
+    "release_files": release_files,
 }
 out.write_text(json.dumps(res, indent=1) + "\n")
 print(json.dumps({k: v for k, v in res.items() if k != "release_files"}, indent=1))

@@ -13,10 +13,14 @@ non-model files. A post-step checks every tensor name and shape against the sour
 byte-identical to it.
 
 Usage (inside the PTQ image, GPU): quantize_nr8.py RECIPE SOURCE_DIR CALIB_JSONL N_SAMPLES MAX_LEN OUT_DIR
-Prints QUANT-OK <out> on success; exits non-zero otherwise."""
+Prints QUANT-OK <out> on success; exits non-zero otherwise.
+Source files that may be copied must be regular files: a symlink aborts the run before anything is written."""
+import errno
 import importlib.util
 import json
+import os
 import shutil
+import stat
 import sys
 import time
 from pathlib import Path
@@ -28,9 +32,47 @@ from modelopt.torch.export import export_hf_checkpoint
 from modelopt.torch.quantization.nn import TensorQuantizer
 from transformers import AutoConfig, AutoTokenizer
 
+
+def bind_source_files(root: Path, skip: set[str]) -> dict[Path, int]:
+    """Open every non-shard file under root once, so later copies read these descriptors and not the paths."""
+    bound = {}
+    for dirpath, dirnames, filenames, dir_fd in os.fwalk(root):
+        rel_dir = Path(dirpath).relative_to(root)
+        if rel_dir == Path("."):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            filenames = [f for f in filenames if not f.startswith(".")]
+        for name in filenames:
+            if name in skip:
+                continue
+            try:
+                fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dir_fd)
+            except OSError as e:
+                if e.errno == errno.ELOOP:
+                    raise SystemExit(f"QUANT-FAILED: {root / rel_dir / name} is a symlink; refusing to copy it") from None
+                raise
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                raise SystemExit(f"QUANT-FAILED: {root / rel_dir / name} is not a regular file")
+            bound[rel_dir / name] = fd
+    return bound
+
+
+def read_bound(fd: int) -> bytes:
+    return os.pread(fd, os.fstat(fd).st_size, 0)
+
+
+def copy_bound(fd: int, dst: Path) -> None:
+    """shutil.copyfile from an open descriptor into a new file; an existing entry at dst is never written through."""
+    out_fd = os.open(dst, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o666)
+    os.lseek(fd, 0, os.SEEK_SET)
+    with os.fdopen(fd, "rb", closefd=False) as fsrc, os.fdopen(out_fd, "wb") as fdst:
+        shutil.copyfileobj(fsrc, fdst, 1 << 24)
+
+
 recipe_path, src, calib_path, n_samples, max_len, out = sys.argv[1:7]
 src, out, n_samples, max_len = Path(src), Path(out), int(n_samples), int(max_len)
 t0 = time.time()
+shards = set(json.loads((src / "model.safetensors.index.json").read_text())["weight_map"].values())
+source_files = bind_source_files(src, shards | {"model.safetensors.index.json"})
 
 # The checkpoint's own model class (remote code), loaded by file so the exact pinned code runs.
 spec = importlib.util.spec_from_file_location("nemo_rerank_model", src / "model.py")
@@ -104,21 +146,17 @@ print(f"exported to {partial} ({time.time() - t0:.0f}s)", flush=True)
 # The exporter copies the source's non-model files, but not every one: on this checkpoint it skipped the
 # sentence-transformers score-head file 2_Dense/model.safetensors. Copy every source file that is not a model shard and
 # is missing from the export, byte for byte.
-shards = set(json.loads((src / "model.safetensors.index.json").read_text())["weight_map"].values())
-for p in sorted(src.rglob("*")):
-    rel = p.relative_to(src)
-    if p.is_dir() or rel.name in shards or rel.name == "model.safetensors.index.json" or rel.parts[0].startswith("."):
-        continue
-    if not (partial / rel).exists():
+for rel, fd in sorted(source_files.items()):
+    if not (partial / rel).exists() and not (partial / rel).is_symlink():
         (partial / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(p, partial / rel)
+        copy_bound(fd, partial / rel)
         print(f"  copied missing source file {rel}", flush=True)
 
 # transformers 5.18 re-serializes config.json on export: it drops default-valued keys and renames
 # vision_config.rope_parameters.rope_type from "default" to "axial". vLLM and sentence-transformers read the upstream
 # config, so put the source config.json back and keep only the export's quantization_config. The transformers copy is
 # saved as config.transformers5.json and removed before release.
-cfg_src = json.loads((src / "config.json").read_text())
+cfg_src = json.loads(read_bound(source_files[Path("config.json")]))
 cfg_exp = json.loads((partial / "config.json").read_text())
 qc = cfg_exp.get("quantization_config")
 if not qc:

@@ -16,14 +16,18 @@
 Usage: merge_lora.py --base DIR --adapter DIR --out DIR [--report FILE]
 The output dir gets the base's non-weight files (config, tokenizer, processor, chat template),
 the merged shards with the same names and index, and decision_head.json + calibration.json
-copied from the adapter repo for the serving shim.
+copied from the adapter repo for the serving shim. Copied files must be regular files: a symlink aborts the run before
+the output dir is touched, and is never followed.
 """
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
+import os
 import shutil
+import stat
 import sys
 import time
 from pathlib import Path
@@ -53,6 +57,48 @@ def adapter_target(key: str) -> tuple[str, str] | None:
 
 def sha(t: torch.Tensor) -> str:
     return hashlib.sha256(t.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
+
+
+Bound = tuple[int, os.stat_result]
+
+
+def open_regular(path: Path, dir_fd: int | None = None) -> Bound | None:
+    """Descriptor of a regular file, or None if absent or a directory. A symlink or special file aborts.
+    With dir_fd, path.name is opened inside that directory."""
+    try:
+        fd = os.open(path if dir_fd is None else path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                     dir_fd=dir_fd)
+    except FileNotFoundError:
+        return None
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise SystemExit(f"{path} is a symlink; refusing to copy it") from None
+        raise
+    st = os.fstat(fd)
+    if stat.S_ISREG(st.st_mode):
+        return fd, st
+    os.close(fd)
+    if stat.S_ISDIR(st.st_mode):
+        return None
+    raise SystemExit(f"{path} is not a regular file")
+
+
+def copy_bound(bound: Bound, dst: Path) -> None:
+    """shutil.copy2 from an open descriptor; dst is replaced, never written through."""
+    fd, st = bound
+    tmp = dst.with_name(f".{dst.name}.{os.getpid()}.tmp")
+    out = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+    try:
+        os.lseek(fd, 0, os.SEEK_SET)
+        with os.fdopen(fd, "rb") as fsrc, os.fdopen(out, "wb") as fdst:
+            shutil.copyfileobj(fsrc, fdst, 1 << 24)
+            os.fchmod(fdst.fileno(), stat.S_IMODE(st.st_mode))
+            fdst.flush()
+            os.utime(fdst.fileno(), ns=(st.st_atime_ns, st.st_mtime_ns))
+        os.replace(tmp, dst)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 def main() -> int:
@@ -85,7 +131,28 @@ def main() -> int:
         raise SystemExit(f"incomplete LoRA pairs: {incomplete[:5]}")
     print(f"adapter pairs: {len(pairs)}", flush=True)
 
-    index = json.loads((a.base / "model.safetensors.index.json").read_text())
+    base_fd = os.open(a.base, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    companions: dict[str, Bound] = {}
+    for name in sorted(os.listdir(base_fd)):
+        if name.endswith(".safetensors") or name in ("SOURCE_REVISION", "README.md"):
+            continue
+        bound = open_regular(a.base / name, dir_fd=base_fd)
+        if bound is not None:
+            companions[name] = bound
+    os.close(base_fd)
+    if "model.safetensors.index.json" not in companions:
+        raise SystemExit(f"{a.base / 'model.safetensors.index.json'} is missing")
+    extras: dict[str, Bound] = {}
+    for name, path in (("decision_head.json", a.adapter / "decision_head.json"),
+                       ("calibration.json", a.adapter.parent / "calibration.json")):
+        bound = open_regular(path)
+        if bound is not None:
+            extras[name] = bound
+        elif name == "decision_head.json":
+            raise SystemExit(f"{path} is missing")
+
+    index_fd = companions["model.safetensors.index.json"][0]
+    index = json.loads(os.pread(index_fd, companions["model.safetensors.index.json"][1].st_size, 0))
     wmap: dict[str, str] = index["weight_map"]
     missing = sorted(k for k in pairs if k not in wmap)
     if missing:
@@ -126,15 +193,8 @@ def main() -> int:
 
     if merged_count != len(pairs):
         raise SystemExit(f"merged {merged_count} of {len(pairs)} pairs")
-    shutil.copy2(a.base / "model.safetensors.index.json", a.out / "model.safetensors.index.json")
-    for p in a.base.iterdir():
-        if p.is_file() and not p.name.endswith(".safetensors") and p.name not in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
-            shutil.copy2(p, a.out / p.name)
-    for extra in ("decision_head.json",):
-        shutil.copy2(a.adapter / extra, a.out / extra)
-    calib = a.adapter.parent / "calibration.json"
-    if calib.exists():
-        shutil.copy2(calib, a.out / "calibration.json")
+    for name, bound in {**companions, **extras}.items():
+        copy_bound(bound, a.out / name)
     rels = sorted(v["rel_delta_fro"] for v in report["merged"].values())
     report["summary"] = {"pairs": len(pairs), "merged": merged_count, "copied": report["copied"],
                          "rel_delta_fro_median": rels[len(rels) // 2], "rel_delta_fro_max": rels[-1],
