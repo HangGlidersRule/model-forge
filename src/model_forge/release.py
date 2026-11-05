@@ -1384,10 +1384,12 @@ def _sources_from_tokens(
             )
             continue
 
-        if _embeds_shell_text(token, _starts_serve_command, shell_syntax=shell_surface):
+        for payload in _embedded_shell_texts(
+            token, _starts_serve_command, shell_syntax=shell_surface
+        ):
             sources.extend(
                 _sources_from_shell(
-                    token,
+                    payload,
                     context=f"{context}:argument",
                     depth=depth + 1,
                     shell_surface=shell_surface,
@@ -1398,19 +1400,29 @@ def _sources_from_tokens(
     return sources
 
 
-def _embeds_shell_text(
+def _embedded_shell_texts(
     token: str, matches: Callable[[list[str]], bool], *, shell_syntax: bool
-) -> bool:
-    """Whether one argument reads as further shell words that could `matches` a serve command.
+) -> list[str]:
+    """Shell texts one argument still holds that `matches` a serve command.
 
-    Command text passed as a single argument (`ssh host '...'`, `su -c '...'`) is run by a shell all
-    the same, so it is read again rather than skipped.
+    Command text passed as a single argument (`ssh host '...'`, `su -c '...'`) is run by a shell
+    all the same, so the argument is read again. A command substitution or backquote stays one
+    word (`ssh host '$(...)'`, `su -c '`...`'`). Single quotes and ANSI-C quotes also keep the
+    parent from recording that substitution, so the body is what gets read: reading the same word
+    again would see one word and skip the payload.
     """
     if not _SHELL_SYNTAX_CHARACTERS.intersection(token):
-        return False
+        return []
+    if not _shell_text_matches(token, matches, shell_syntax=shell_syntax):
+        return []
     lexer = _ShellLexer(token, strict=False, shell_syntax=shell_syntax)
     words = [word for _, line in lexer.read() for word in line]
-    return words != [token] and _shell_text_matches(token, matches, shell_syntax=shell_syntax)
+    if words != [token]:
+        return [token]
+    # `$(...)` and backticks are one expansion word. Their bodies are the shell text.
+    if not shell_syntax:
+        return []
+    return list(lexer.substitutions)
 
 
 def _eval_payload(tokens: list[str], index: int) -> tuple[str, int]:
@@ -1509,14 +1521,18 @@ def _serve_model_ids_from_tokens(
             value = token.partition("=")[2]
         if value is not None:
             aliases.append(value)
-        elif shell_surface and _embeds_shell_text(
-            token, _mentions_served_model_name, shell_syntax=True
-        ):
-            aliases.extend(
-                _serve_model_ids_from_shell(
-                    token, context=f"{context}:argument", depth=depth + 1, shell_surface=True
+        elif shell_surface:
+            for payload in _embedded_shell_texts(
+                token, _mentions_served_model_name, shell_syntax=True
+            ):
+                aliases.extend(
+                    _serve_model_ids_from_shell(
+                        payload,
+                        context=f"{context}:argument",
+                        depth=depth + 1,
+                        shell_surface=True,
+                    )
                 )
-            )
         index += 1
     return aliases
 

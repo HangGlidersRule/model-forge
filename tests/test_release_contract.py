@@ -1248,6 +1248,71 @@ def test_shell_c_payload_keeps_served_model_name_aliases_excluded() -> None:
 
 
 @pytest.mark.parametrize(
+    "surface",
+    [
+        # One expansion word: the parent lexer keeps the single-quoted, ANSI-C-quoted, or
+        # backquoted payload intact, so ssh/su still hand it to a shell that runs it.
+        f"ssh host '$(vllm serve {BARE_ABLITERATED_NVFP4})'",
+        f"ssh host $'$(vllm serve {BARE_ABLITERATED_NVFP4})'",
+        f"ssh host '`vllm serve {BARE_ABLITERATED_NVFP4}`'",
+        f"ssh host $'`vllm serve {BARE_ABLITERATED_NVFP4}`'",
+        f"su -c '$(vllm serve {BARE_ABLITERATED_NVFP4})'",
+        f"su -c '`vllm serve {BARE_ABLITERATED_NVFP4}`'",
+        f"ssh -p 22 host '$(vllm serve --model {BARE_ABLITERATED_NVFP4})'",
+        f"ssh host '$(su -c '\\''$(vllm serve {BARE_ABLITERATED_NVFP4})'\\'')'",
+        f"ssh host $(vllm serve {BARE_ABLITERATED_NVFP4})",
+        f'ssh host "$(vllm serve {BARE_ABLITERATED_NVFP4})"',
+        (
+            "command: [ssh, host, "
+            f'"$(vllm serve {BARE_ABLITERATED_NVFP4})"]'
+        ),
+        f"command: \"ssh host '$(vllm serve {BARE_ABLITERATED_NVFP4})'\"",
+    ],
+)
+def test_one_word_substitution_payloads_are_read(surface: str) -> None:
+    """A `$(...)` or backtick argument must not hide the model a nested shell serves."""
+    source_format = ".yaml" if surface.startswith("command:") else ".sh"
+    assert extract_model_sources(surface, source_format=source_format) == [
+        BARE_ABLITERATED_NVFP4
+    ]
+    assert model_source_precision_errors(BARE_ABLITERATED_NVFP4)
+
+
+@pytest.mark.parametrize(
+    "surface",
+    [
+        (
+            "ssh host '$(vllm serve "
+            f"{LOCAL_ARTIFACT_PATH} --served-model-name darkstar-qwen38-abliterated-nvfp4)'"
+        ),
+        (
+            "su -c $'`vllm serve "
+            f"{LOCAL_ARTIFACT_PATH} --served-model-name darkstar-qwen38-abliterated-nvfp4`'"
+        ),
+        (
+            "ssh host $'$(vllm serve "
+            f"{LOCAL_ARTIFACT_PATH} --served-model-name=darkstar-qwen38-abliterated-nvfp4)'"
+        ),
+    ],
+)
+def test_one_word_substitution_payload_aliases_are_read(surface: str) -> None:
+    assert extract_model_sources(surface, source_format=".sh") == [LOCAL_ARTIFACT_PATH]
+    assert extract_serve_model_ids(surface, source_format=".sh") == [
+        "darkstar-qwen38-abliterated-nvfp4"
+    ]
+
+
+def test_quoted_substitution_without_a_serve_command_stays_empty() -> None:
+    assert extract_model_sources("ssh host '$(echo hello)'", source_format=".sh") == []
+    assert extract_serve_model_ids("su -c '`date`'", source_format=".sh") == []
+
+
+def test_quoted_substitution_with_unresolved_source_fails_closed() -> None:
+    with pytest.raises(PublicationSourceParseError):
+        extract_model_sources("ssh host '$(vllm serve $MODEL_SOURCE)'", source_format=".sh")
+
+
+@pytest.mark.parametrize(
     ("surface", "source"),
     [
         (
