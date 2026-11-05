@@ -7,10 +7,15 @@ Rules (per stream; routed and shared up_proj share the up stream):
   p9999   G = 99.99th percentile of per-block amax (capped at the observed max)
   p999    G = 99.9th percentile of per-block amax
   b12xeq  G = 2688 (input_scale 1.0), the fixed global scale of the b12x runtime path
+Every BASE file is opened once, without following symlinks, before any variant is written; a symlink in BASE stops the
+run. The scale shard is read, and every hardlink made, through those descriptors, so the variants hold the inodes that
+were opened even if a BASE path changes later.
 Usage: make_variants.py STATS_JSON BASE_DIR VROOT"""
+import errno
 import json
 import os
 import re
+import stat
 import sys
 from pathlib import Path
 
@@ -49,7 +54,36 @@ def stream_of(name):
     return f"L{layer}.up" if proj == "up" else (f"L{layer}.rdown" if kind.startswith("experts") else f"L{layer}.sdown")
 
 
-with safe_open(base / "model-input-scales.safetensors", "pt") as h:
+def fd_path(fd):
+    """Procfs path that opens, or links, exactly the inode FD holds. Built from parts because the public export rewrites
+    absolute path literals."""
+    return os.path.join(os.sep, "proc", "self", "fd", str(fd))
+
+
+def open_entry(dfd, name, where):
+    """Open NAME in directory DFD without following a symlink. Returns None for a directory or special file."""
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dfd)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise SystemExit(f"refusing symlink {where / name}: inputs must be regular files") from None
+        raise
+    if stat.S_ISREG(os.fstat(fd).st_mode):
+        return fd
+    os.close(fd)
+    return None
+
+
+base_fd = os.open(base, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+bound = {}
+for name in sorted(os.listdir(base_fd)):
+    fd = open_entry(base_fd, name, base)
+    if fd is not None:
+        bound[name] = fd
+scale_fd = bound.pop("model-input-scales.safetensors", None)
+if scale_fd is None:
+    raise SystemExit(f"{base / 'model-input-scales.safetensors'} is not a regular file")
+with safe_open(fd_path(scale_fd), "pt") as h:
     a_scales = {k: h.get_tensor(k) for k in h.keys()}
 missing = sorted({stream_of(k) for k in a_scales} - set(streams))
 if missing:
@@ -62,12 +96,16 @@ for rule, fn in RULES.items():
     summary[rule] = g
     vd = vroot / rule
     vd.mkdir(parents=True, exist_ok=True)
-    for p in base.iterdir():
-        if p.is_file() and p.name != "model-input-scales.safetensors":
-            dst = vd / p.name
-            if dst.exists():
-                dst.unlink()
-            os.link(p, dst)
+    vd_fd = os.open(vd, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    for name, fd in bound.items():
+        try:
+            os.unlink(name, dir_fd=vd_fd)
+        except FileNotFoundError:
+            pass
+        # linkat(AT_SYMLINK_FOLLOW) on fd_path(fd) links the inode fd holds; CPython only calls linkat, rather than
+        # link(2), which would not resolve the descriptor, when a dir_fd is passed.
+        os.link(fd_path(fd), name, dst_dir_fd=vd_fd, follow_symlinks=True)
+    os.close(vd_fd)
     new = {k: torch.full_like(t, g[stream_of(k)] / 2688.0) for k, t in a_scales.items()}
     save_file(new, vd / "model-input-scales.safetensors", metadata={"format": "pt"})
     edge = [s for s in streams if rule == "mse" and g[s] in (GRID[0], GRID[-1])]

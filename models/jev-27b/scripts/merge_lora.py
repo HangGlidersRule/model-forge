@@ -17,13 +17,19 @@ Usage: merge_lora.py --base DIR --adapter DIR --out DIR [--report FILE]
 The output dir gets the base's non-weight files (config, tokenizer, processor, chat template),
 the merged shards with the same names and index, and decision_head.json + calibration.json
 copied from the adapter repo for the serving shim.
+Every input file is opened once, without following symlinks, before --out is touched; a symlink
+stops the run (pass directories of regular files, e.g. `hf download --local-dir`, not a cache
+snapshot). Inputs are read and copied through those descriptors.
 """
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
+import os
 import shutil
+import stat
 import sys
 import time
 from pathlib import Path
@@ -55,6 +61,49 @@ def sha(t: torch.Tensor) -> str:
     return hashlib.sha256(t.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
 
 
+def fd_path(fd: int) -> str:
+    """Procfs path that opens, or links, exactly the inode FD holds. Built from parts because the public export rewrites
+    absolute path literals."""
+    return os.path.join(os.sep, "proc", "self", "fd", str(fd))
+
+
+def open_entry(dfd: int, name: str, where: Path) -> int | None:
+    """Open NAME in directory DFD without following a symlink. Returns None for a directory or special file."""
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dfd)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise SystemExit(f"refusing symlink {where / name}: inputs must be regular files") from None
+        raise
+    if stat.S_ISREG(os.fstat(fd).st_mode):
+        return fd
+    os.close(fd)
+    return None
+
+
+def open_required(dfd: int, names: set[str], name: str, where: Path) -> int:
+    fd = open_entry(dfd, name, where) if name in names else None
+    if fd is None:
+        raise SystemExit(f"{where / name} is not a regular file")
+    return fd
+
+
+def read_bound(fd: int) -> bytes:
+    os.lseek(fd, 0, os.SEEK_SET)
+    with os.fdopen(fd, "rb", closefd=False) as r:
+        return r.read()
+
+
+def copy_bound(fd: int, dst: Path) -> None:
+    """Copy the file open as FD to DST with its mode and timestamps, as shutil.copy2 would."""
+    st = os.fstat(fd)
+    os.lseek(fd, 0, os.SEEK_SET)
+    with os.fdopen(fd, "rb", closefd=False) as r, open(dst, "wb") as w:
+        shutil.copyfileobj(r, w)
+    os.chmod(dst, stat.S_IMODE(st.st_mode))
+    os.utime(dst, ns=(st.st_atime_ns, st.st_mtime_ns))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", type=Path, required=True)
@@ -64,7 +113,30 @@ def main() -> int:
     ap.add_argument("--hash-all", action="store_true", help="sha256 every tensor (slow on 27B)")
     a = ap.parse_args()
 
-    cfg = json.loads((a.adapter / "adapter_config.json").read_text())
+    adapter_fd = os.open(a.adapter, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    adapter_names = set(os.listdir(adapter_fd))
+    cfg_fd = open_required(adapter_fd, adapter_names, "adapter_config.json", a.adapter)
+    lora_fd = open_required(adapter_fd, adapter_names, "adapter_model.safetensors", a.adapter)
+    extra_fds = {extra: open_required(adapter_fd, adapter_names, extra, a.adapter) for extra in ("decision_head.json",)}
+    parent_fd = os.open(a.adapter.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    try:
+        calib_fd = open_entry(parent_fd, "calibration.json", a.adapter.parent)
+    except FileNotFoundError:
+        calib_fd = None
+    base_fd = os.open(a.base, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    base_names = set(os.listdir(base_fd))
+    index_fd = open_required(base_fd, base_names, "model.safetensors.index.json", a.base)
+    index = json.loads(read_bound(index_fd))
+    wmap: dict[str, str] = index["weight_map"]
+    shard_fds = {shard: open_required(base_fd, base_names, shard, a.base) for shard in sorted(set(wmap.values()))}
+    asset_fds: dict[str, int] = {}
+    for name in sorted(base_names):
+        if not name.endswith(".safetensors") and name not in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
+            fd = open_entry(base_fd, name, a.base)
+            if fd is not None:
+                asset_fds[name] = fd
+
+    cfg = json.loads(read_bound(cfg_fd))
     r, alpha = int(cfg["r"]), float(cfg["lora_alpha"])
     if cfg.get("use_rslora") or cfg.get("use_dora") or cfg.get("rank_pattern") or cfg.get("alpha_pattern"):
         raise SystemExit("unsupported adapter options (rslora/dora/rank or alpha patterns)")
@@ -74,7 +146,7 @@ def main() -> int:
     print(f"adapter r={r} alpha={alpha} scale={scale}", flush=True)
 
     pairs: dict[str, dict[str, torch.Tensor]] = {}
-    with safe_open(str(a.adapter / "adapter_model.safetensors"), framework="pt") as f:
+    with safe_open(fd_path(lora_fd), framework="pt") as f:
         for k in f.keys():
             t = adapter_target(k)
             if t is None:
@@ -85,8 +157,6 @@ def main() -> int:
         raise SystemExit(f"incomplete LoRA pairs: {incomplete[:5]}")
     print(f"adapter pairs: {len(pairs)}", flush=True)
 
-    index = json.loads((a.base / "model.safetensors.index.json").read_text())
-    wmap: dict[str, str] = index["weight_map"]
     missing = sorted(k for k in pairs if k not in wmap)
     if missing:
         raise SystemExit(f"{len(missing)} LoRA targets missing from base, e.g. {missing[:5]}")
@@ -100,7 +170,7 @@ def main() -> int:
     t0 = time.time()
     for shard in sorted(by_shard):
         out_tensors: dict[str, torch.Tensor] = {}
-        with safe_open(str(a.base / shard), framework="pt") as f:
+        with safe_open(fd_path(shard_fds[shard]), framework="pt") as f:
             meta = f.metadata()
             for k in by_shard[shard]:
                 w = f.get_tensor(k)
@@ -126,15 +196,13 @@ def main() -> int:
 
     if merged_count != len(pairs):
         raise SystemExit(f"merged {merged_count} of {len(pairs)} pairs")
-    shutil.copy2(a.base / "model.safetensors.index.json", a.out / "model.safetensors.index.json")
-    for p in a.base.iterdir():
-        if p.is_file() and not p.name.endswith(".safetensors") and p.name not in ("model.safetensors.index.json", "SOURCE_REVISION", "README.md"):
-            shutil.copy2(p, a.out / p.name)
-    for extra in ("decision_head.json",):
-        shutil.copy2(a.adapter / extra, a.out / extra)
-    calib = a.adapter.parent / "calibration.json"
-    if calib.exists():
-        shutil.copy2(calib, a.out / "calibration.json")
+    copy_bound(index_fd, a.out / "model.safetensors.index.json")
+    for name, fd in asset_fds.items():
+        copy_bound(fd, a.out / name)
+    for extra, fd in extra_fds.items():
+        copy_bound(fd, a.out / extra)
+    if calib_fd is not None:
+        copy_bound(calib_fd, a.out / "calibration.json")
     rels = sorted(v["rel_delta_fro"] for v in report["merged"].values())
     report["summary"] = {"pairs": len(pairs), "merged": merged_count, "copied": report["copied"],
                          "rel_delta_fro_median": rels[len(rels) // 2], "rel_delta_fro_max": rels[-1],
