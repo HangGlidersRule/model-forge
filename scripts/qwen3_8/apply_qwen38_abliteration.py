@@ -76,6 +76,17 @@ def main() -> None:
 
     index = json.loads(index_path.read_text())
     weight_map: dict[str, str] = index["weight_map"]
+    # Shard names are joined onto the source and the stage output directory.
+    for shard_name in set(weight_map.values()):
+        if (
+            not isinstance(shard_name, str)
+            or shard_name in ("", ".", "..")
+            or "\\" in shard_name
+            or "\0" in shard_name
+            or Path(shard_name).name != shard_name
+        ):
+            print(f"ERROR: weight_map shard {shard_name!r} is not a single file name", file=sys.stderr)
+            sys.exit(1)
 
     selectors = list(cfg.abliteration.target_selectors)
     target_names = [name for name in weight_map if matches_selector(name, selectors)]
