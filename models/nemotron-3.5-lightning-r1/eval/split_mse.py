@@ -24,13 +24,21 @@ def stream_of(m: re.Match) -> str:
     return f"L{layer}.up" if proj == "up" else (f"L{layer}.rdown" if kind.startswith("experts") else f"L{layer}.sdown")
 
 
+def shard_name(f: object) -> str:
+    """A weight_map shard is joined onto EXPORT_DIR and OUT_DIR, so it must be one plain file name."""
+    if not isinstance(f, str) or f in ("", ".", "..") or "\\" in f or "\0" in f or Path(f).name != f:
+        raise SystemExit(f"weight_map shard {f!r} is not a single file name")
+    return f
+
+
+idx = json.loads((exp / "model.safetensors.index.json").read_text())
+wm = idx["weight_map"]
+shards = sorted({shard_name(f) for f in wm.values()})
 if out.exists():
     shutil.rmtree(out)
 out.mkdir(parents=True)
-idx = json.loads((exp / "model.safetensors.index.json").read_text())
-wm = idx["weight_map"]
 new_map, scales = {}, {}
-for f in sorted(set(wm.values())):
+for f in shards:
     tensors = {}
     with safe_open(exp / f, "pt") as h:
         meta = h.metadata() or {"format": "pt"}

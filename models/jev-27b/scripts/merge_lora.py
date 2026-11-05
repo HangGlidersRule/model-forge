@@ -51,6 +51,13 @@ def adapter_target(key: str) -> tuple[str, str] | None:
     return "model.language_model." + stem[len(prefix):] + ".weight", part
 
 
+def shard_name(s: object) -> str:
+    """A weight_map shard is joined onto --base and --out, so it must be one plain file name."""
+    if not isinstance(s, str) or s in ("", ".", "..") or "\\" in s or "\0" in s or Path(s).name != s:
+        raise SystemExit(f"weight_map shard {s!r} is not a single file name")
+    return s
+
+
 def sha(t: torch.Tensor) -> str:
     return hashlib.sha256(t.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
 
@@ -90,12 +97,12 @@ def main() -> int:
     missing = sorted(k for k in pairs if k not in wmap)
     if missing:
         raise SystemExit(f"{len(missing)} LoRA targets missing from base, e.g. {missing[:5]}")
+    by_shard: dict[str, list[str]] = {}
+    for k, s in wmap.items():
+        by_shard.setdefault(shard_name(s), []).append(k)
 
     a.out.mkdir(parents=True, exist_ok=True)
     report = {"scale": scale, "r": r, "alpha": alpha, "merged": {}, "copied": 0, "shards": {}}
-    by_shard: dict[str, list[str]] = {}
-    for k, s in wmap.items():
-        by_shard.setdefault(s, []).append(k)
     merged_count = 0
     t0 = time.time()
     for shard in sorted(by_shard):
