@@ -30,6 +30,14 @@ from model_forge.pipeline import (
 )
 
 
+def shard_name(value: object) -> str:
+    """A weight_map value names one .safetensors file directly in the checkpoint directory."""
+    if (not isinstance(value, str) or not value.endswith(".safetensors") or value.startswith(".")
+            or "/" in value or "\\" in value or "\0" in value):
+        raise SystemExit(f"index shard name is not a single .safetensors file name: {value!r}")
+    return value
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Apply abliteration to BF16 model")
     parser.add_argument("--config", type=Path, required=True)
@@ -76,6 +84,7 @@ def main() -> None:
 
     index = json.loads(index_path.read_text())
     weight_map: dict[str, str] = index["weight_map"]
+    shard_files = sorted({shard_name(f) for f in weight_map.values()})
 
     selectors = list(cfg.abliteration.target_selectors)
     target_names = [name for name in weight_map if matches_selector(name, selectors)]
@@ -98,7 +107,6 @@ def main() -> None:
     with lock:
         partial = ctx.partial_dir
         target_set = set(target_names)
-        shard_files = sorted(set(weight_map.values()))
 
         edit_report: list[dict[str, object]] = []
         edited_count = 0

@@ -24,13 +24,22 @@ def stream_of(m: re.Match) -> str:
     return f"L{layer}.up" if proj == "up" else (f"L{layer}.rdown" if kind.startswith("experts") else f"L{layer}.sdown")
 
 
+def shard_name(value: object) -> str:
+    """A weight_map value names one .safetensors file directly in the checkpoint directory."""
+    if (not isinstance(value, str) or not value.endswith(".safetensors") or value.startswith(".")
+            or "/" in value or "\\" in value or "\0" in value):
+        raise SystemExit(f"index shard name is not a single .safetensors file name: {value!r}")
+    return value
+
+
+idx = json.loads((exp / "model.safetensors.index.json").read_text())
+wm = idx["weight_map"]
+shards = sorted({shard_name(f) for f in wm.values()})
 if out.exists():
     shutil.rmtree(out)
 out.mkdir(parents=True)
-idx = json.loads((exp / "model.safetensors.index.json").read_text())
-wm = idx["weight_map"]
 new_map, scales = {}, {}
-for f in sorted(set(wm.values())):
+for f in shards:
     tensors = {}
     with safe_open(exp / f, "pt") as h:
         meta = h.metadata() or {"format": "pt"}
