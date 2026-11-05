@@ -16,6 +16,7 @@ import shutil
 import sys
 from pathlib import Path
 
+from model_forge.checkpoint_files import INDEX_NAME, SourceDir, shard_names
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
     RunLock,
@@ -31,14 +32,13 @@ def build_ignore_list(cfg_ignore: tuple[str, ...]) -> list[str]:
 
 def graft_source_mtp(source_dir: Path, output_dir: Path) -> int:
     """Restore source-native BF16 MTP tensors if the compressor omitted them."""
-    from safetensors import safe_open
-    from safetensors.torch import save_file
+    from safetensors.torch import load, save_file
 
-    source_index_path = source_dir / "model.safetensors.index.json"
-    output_index_path = output_dir / "model.safetensors.index.json"
-    source_index = json.loads(source_index_path.read_text())
+    source = SourceDir(source_dir)
+    output_index_path = output_dir / INDEX_NAME
+    source_index = json.loads(source.read_bytes(INDEX_NAME))
     output_index = json.loads(output_index_path.read_text())
-    source_map = source_index["weight_map"]
+    source_map = shard_names(source_index["weight_map"])
     output_map = output_index["weight_map"]
     mtp_names = sorted(name for name in source_map if name.startswith("mtp."))
     if len(mtp_names) != 15:
@@ -50,10 +50,11 @@ def graft_source_mtp(source_dir: Path, output_dir: Path) -> int:
     by_shard: dict[str, list[str]] = {}
     for name in mtp_names:
         by_shard.setdefault(source_map[name], []).append(name)
-    for shard, names in by_shard.items():
-        with safe_open(source_dir / shard, framework="pt", device="cpu") as handle:
+    with source:
+        for shard, names in by_shard.items():
+            shard_tensors = load(source.read_bytes(shard))
             for name in names:
-                tensor = handle.get_tensor(name)
+                tensor = shard_tensors[name]
                 if str(tensor.dtype) != "torch.bfloat16":
                     raise RuntimeError(f"MTP tensor {name} is {tensor.dtype}, expected bfloat16")
                 tensors[name] = tensor
