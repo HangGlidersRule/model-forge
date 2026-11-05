@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import ast
+import io
 import ipaddress
 import re
+import tokenize
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
@@ -213,6 +216,8 @@ _PYTHON_CONTEXTUAL_RULES = {
     RULE_COLLABORATION_METADATA,
     RULE_SESSION_METADATA,
 }
+_PYTHON_TEST_FIXTURE_ROOT = "tests/"
+_PYTHON_NEWLINE = re.compile(r"\r\n|\r|\n")
 
 
 class DetectorError(ValueError):
@@ -860,19 +865,88 @@ def _scan_text(
     return findings
 
 
+@dataclass(frozen=True, slots=True)
+class _PythonLines:
+    """Line starts (1-indexed rows) under the newline rules of the Python tokenizer."""
+
+    text: str
+    char_starts: tuple[int, ...]
+    byte_starts: tuple[int, ...]
+
+    @classmethod
+    def of(cls, text: str) -> _PythonLines:
+        char_starts = [0, 0]
+        byte_starts = [0, 0]
+        for match in _PYTHON_NEWLINE.finditer(text):
+            byte_starts.append(
+                byte_starts[-1] + len(text[char_starts[-1] : match.end()].encode("utf-8"))
+            )
+            char_starts.append(match.end())
+        return cls(text, tuple(char_starts), tuple(byte_starts))
+
+    def has_row(self, row: int) -> bool:
+        return 1 <= row < len(self.char_starts)
+
+    def char_index(self, row: int, column: int) -> int:
+        return self.char_starts[row] + column
+
+    def byte_offset(self, row: int, column: int) -> int:
+        start = self.char_starts[row]
+        return self.byte_starts[row] + len(self.text[start : start + column].encode("utf-8"))
+
+
+def _python_string_token_spans(lines: _PythonLines) -> list[tuple[int, int]] | None:
+    """Byte spans of STRING tokens, or None when token positions do not match the text."""
+
+    spans: list[tuple[int, int]] = []
+    readline = io.StringIO(lines.text, newline=None).readline
+    try:
+        for token in tokenize.generate_tokens(readline):
+            if token.type != tokenize.STRING:
+                continue
+            (start_row, start_col), (end_row, end_col) = token.start, token.end
+            if not lines.has_row(start_row) or not lines.has_row(end_row):
+                return None
+            source = lines.text[
+                lines.char_index(start_row, start_col) : lines.char_index(end_row, end_col)
+            ]
+            if _PYTHON_NEWLINE.sub("\n", source) != _PYTHON_NEWLINE.sub("\n", token.string):
+                return None
+            spans.append(
+                (lines.byte_offset(start_row, start_col), lines.byte_offset(end_row, end_col))
+            )
+    except (tokenize.TokenError, SyntaxError):
+        return None
+    return spans
+
+
 def _filter_python_code_context(
     path: str,
     text: str,
     findings: list[Finding],
 ) -> list[Finding]:
-    if not path.endswith((".py", ".pyi")):
+    """Drop contextual findings that lie inside an exempt string or bytes literal token.
+
+    Test-function fixtures are exempt only under tests/. Only the literal token itself is
+    exempt: comments and code on the same line, and f-string parts, stay scanned.
+    """
+
+    if not path.endswith((".py", ".pyi")) or not findings:
         return findings
     try:
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
         return findings
 
-    ignored: list[tuple[int, int, frozenset[str]]] = []
+    lines = _PythonLines.of(text)
+    formatted_constants = {
+        id(child)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.JoinedStr)
+        for child in ast.walk(node)
+        if isinstance(child, ast.Constant)
+    }
+    exempt_constants: list[tuple[int, int, frozenset[str]]] = []
 
     def add_constants(node: ast.AST, rules: set[str]) -> None:
         frozen = frozenset(rules)
@@ -880,14 +954,26 @@ def _filter_python_code_context(
             if (
                 isinstance(child, ast.Constant)
                 and isinstance(child.value, (str, bytes))
-                and hasattr(child, "end_lineno")
+                and id(child) not in formatted_constants
                 and child.end_lineno is not None
+                and child.end_col_offset is not None
+                and lines.has_row(child.lineno)
+                and lines.has_row(child.end_lineno)
             ):
-                ignored.append((child.lineno, child.end_lineno, frozen))
+                exempt_constants.append(
+                    (
+                        lines.byte_starts[child.lineno] + child.col_offset,
+                        lines.byte_starts[child.end_lineno] + child.end_col_offset,
+                        frozen,
+                    )
+                )
 
+    exempt_test_fixtures = path.startswith(_PYTHON_TEST_FIXTURE_ROOT)
     for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith(
-            "test_"
+        if (
+            exempt_test_fixtures
+            and isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name.startswith("test_")
         ):
             add_constants(node, _PYTHON_CONTEXTUAL_RULES)
         elif isinstance(node, ast.Call):
@@ -907,15 +993,28 @@ def _filter_python_code_context(
             ):
                 add_constants(node, {RULE_PRIVATE_IPV4, RULE_CGNAT_IPV4})
 
-    return [
-        finding
-        for finding in findings
-        if finding.line is None
-        or not any(
-            start <= finding.line <= end and finding.rule_id in rules
-            for start, end, rules in ignored
-        )
-    ]
+    if not exempt_constants:
+        return findings
+    token_spans = _python_string_token_spans(lines)
+    if not token_spans:
+        return findings
+    token_starts = [start for start, _ in token_spans]
+    token_rules: dict[int, set[str]] = {}
+    for constant_start, constant_end, rules in exempt_constants:
+        index = bisect_left(token_starts, constant_start)
+        while index < len(token_spans) and token_spans[index][1] <= constant_end:
+            token_rules.setdefault(index, set()).update(rules)
+            index += 1
+
+    def exempt(finding: Finding) -> bool:
+        if finding.offset is None:
+            return False
+        index = bisect_right(token_starts, finding.offset) - 1
+        if index < 0 or finding.offset >= token_spans[index][1]:
+            return False
+        return finding.rule_id in token_rules.get(index, ())
+
+    return [finding for finding in findings if not exempt(finding)]
 
 
 def _gitleaks_requirement(path: str, status: GitleaksStatus) -> list[Finding]:
