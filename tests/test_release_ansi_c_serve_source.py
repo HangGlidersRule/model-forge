@@ -184,7 +184,7 @@ def _bash_invocations(tmp_path: Path, script: str) -> list[list[str]]:
     # `ssh HOST CMD...` and `su -c CMD USER` hand their command text to a shell, as the real tools do.
     remote = {
         "ssh": 'shift\nexec bash -c "${*:-$(cat)}"\n',
-        "su": 'exec bash -c "$2"\n',
+        "su": '[ "$1" = -c ] && exec bash -c "$2"\nexec bash\n',
         "xargs": '[ "$1" = -0 ] && shift\nexec "$@" "$(cat)"\n',
     }
     for name, body in remote.items():
@@ -352,6 +352,40 @@ _PIPED_TEXT = {
         f"printf '%s' 'vllm serve {ATTACKER} --served-model-name {ALIAS}' | xargs -0 bash -c"
     ),
 }
+
+# The same executors named by path: a path-qualified ssh, su or xargs runs the piped text just the same.
+_PATH_QUALIFIED_EXECUTORS = ("ssh", "su", "xargs")
+_PIPED_TEXT_BY_PATH = {
+    "echo_path_ssh": f'echo "vllm serve {ATTACKER} --served-model-name {ALIAS}" | {{bin}}/ssh host',
+    "echo_path_su": f'echo "vllm serve {ATTACKER} --served-model-name {ALIAS}" | {{bin}}/su',
+    "printf_path_xargs": (
+        f"printf '%s' 'vllm serve {ATTACKER} --served-model-name {ALIAS}' | {{bin}}/xargs -0 bash -c"
+    ),
+}
+
+
+@pytest.mark.parametrize("surface", _SURFACES, ids=lambda s: s[0])
+@pytest.mark.parametrize("name", sorted(_PIPED_TEXT_BY_PATH))
+def test_printed_text_piped_into_a_path_qualified_executor_is_still_read(
+    name: str, surface: tuple[str, str | None, Runner], tmp_path: Path
+) -> None:
+    kind, source_format, runner = surface
+    # Run the case against the harness's stub executors by their full path, as a script would name /usr/bin/ssh.
+    bin_dir = tmp_path / "bin"
+    line = _PIPED_TEXT_BY_PATH[name].replace("{bin}", str(bin_dir))
+    text = _prelude_surface(line, kind)
+    served: list[list[str]] = []
+    for script in _executed_scripts(text, runner):
+        served.extend(_bash_invocations(tmp_path, script))
+    assert any(ATTACKER in args for args in served), served
+    _assert_gate_sees_served_model(text, source_format, ATTACKER, allow_refusal=True)
+
+
+@pytest.mark.parametrize("executor", _PATH_QUALIFIED_EXECUTORS)
+@pytest.mark.parametrize("prefix", ["/usr/bin/", "/bin/", "/usr/local/bin/"])
+def test_path_qualified_executor_names_are_executors(executor: str, prefix: str) -> None:
+    line = f"echo 'vllm serve {ATTACKER} --served-model-name {ALIAS}' | {prefix}{executor} host"
+    _assert_gate_sees_served_model(_script(line), ".sh", ATTACKER, allow_refusal=True)
 
 
 @pytest.mark.parametrize("surface", _SURFACES, ids=lambda s: s[0])

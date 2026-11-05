@@ -1443,8 +1443,9 @@ _TEXT_EXECUTORS = frozenset({"eval", "source", ".", "xargs", "ssh", "su"})
 
 
 def _is_text_executor(word: str) -> bool:
+    # Match on the basename, so a path-qualified executor (/usr/bin/ssh, /bin/su) counts like the bare name.
     name = word.rpartition("/")[2]
-    return name in _SHELL_EXECUTABLES or word in _TEXT_EXECUTORS
+    return name in _SHELL_EXECUTABLES or name in _TEXT_EXECUTORS
 
 
 def _is_operator(token: str) -> bool:
