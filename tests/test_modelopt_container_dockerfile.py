@@ -149,7 +149,7 @@ def test_wheel_provenance_is_asserted_after_install() -> None:
     text = _text()
     assert "direct_url.json" in text
     assert "url.startswith('file://')" in text
-    assert "url.endswith('/${MODELOPT_WHEEL_FILENAME}')" in text
+    assert "url.endswith('/' + os.environ['MODELOPT_WHEEL_FILENAME'])" in text
     # The cu128 torch pin must also survive the extra's dependency resolution.
     assert "md.version('torch')" in text
 
@@ -183,5 +183,5 @@ def test_wheel_pin_matches_pin_json() -> None:
 
 def test_build_script_passes_the_pinned_wheel_filename() -> None:
     build = (REPO / "containers" / "modelopt" / "build.sh").read_text(encoding="utf-8")
-    assert 'read_pin wheel.filename' in build
+    assert '"wheel.filename",' in build
     assert '--build-arg "MODELOPT_WHEEL_FILENAME=${MODELOPT_WHEEL_FILENAME}"' in build

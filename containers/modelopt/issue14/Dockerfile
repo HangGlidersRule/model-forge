@@ -61,17 +61,22 @@ RUN set -eux; \
 RUN set -eux; \
     python -m pip install --index-url "${TORCH_INDEX_URL}" "${TORCH_SPEC}"
 
+# Build args reach python through os.environ and the shell only as quoted
+# expansions, never as program text.
 RUN set -eux; \
+    case "${MODELOPT_WHEEL_URL}" in https://*) ;; *) echo "MODELOPT_WHEEL_URL must be https" >&2; exit 1 ;; esac; \
     mkdir -p ${PUBLIC_WORKSPACE}/wheel; \
     curl -fSL -o "${PUBLIC_ARTIFACT_PATH}" "${MODELOPT_WHEEL_URL}"; \
     echo "${MODELOPT_WHEEL_SHA256}  ${PUBLIC_ARTIFACT_PATH}" | sha256sum -c -; \
     python -m pip install "${PUBLIC_ARTIFACT_PATH}[hf]" "${TRANSFORMERS_SPEC}"; \
-    python -c "import importlib.metadata as md, json; d = md.distribution('nvidia-modelopt'); assert d.version == '${MODELOPT_VERSION}', d.version; url = json.loads(d.read_text('direct_url.json'))['url']; assert url.startswith('file://') and url.endswith('/${MODELOPT_WHEEL_FILENAME}'), url"; \
-    python -c "import importlib.metadata as md; v = md.version('torch'); assert v.split('+')[0] == '${TORCH_VERSION}', v"; \
+    python -c "import importlib.metadata as md, json, os; d = md.distribution('nvidia-modelopt'); assert d.version == os.environ['MODELOPT_VERSION'], d.version; url = json.loads(d.read_text('direct_url.json'))['url']; assert url.startswith('file://') and url.endswith('/' + os.environ['MODELOPT_WHEEL_FILENAME']), url"; \
+    python -c "import importlib.metadata as md, os; v = md.version('torch'); assert v.split('+')[0] == os.environ['TORCH_VERSION'], v"; \
     rm -rf ${PUBLIC_WORKSPACE}/wheel; \
-    python -c "import modelopt; assert modelopt.__version__ == '${MODELOPT_VERSION}', modelopt.__version__"
+    python -c "import modelopt, os; assert modelopt.__version__ == os.environ['MODELOPT_VERSION'], modelopt.__version__"
 
 RUN set -eux; \
+    case "${MODELOPT_COMMIT}" in *[!0-9a-f]* | '') echo "MODELOPT_COMMIT must be a commit hash" >&2; exit 1 ;; esac; \
+    test "${#MODELOPT_COMMIT}" -eq 40; \
     git clone --filter=blob:none "${MODELOPT_REPO_URL}" "${MODELOPT_ROOT}"; \
     cd "${MODELOPT_ROOT}"; \
     git checkout --detach "${MODELOPT_COMMIT}"; \
@@ -82,7 +87,7 @@ RUN set -eux; \
 # Extra runtime deps. torch, modelopt and transformers must not move: re-assert all three.
 RUN set -eux; \
     python -m pip install ${EXTRA_PIP_SPECS}; \
-    python -c "import importlib.metadata as md; assert md.version('torch').split('+')[0] == '${TORCH_VERSION}'; assert md.version('nvidia-modelopt') == '${MODELOPT_VERSION}'; import transformers, datasets, soundfile, librosa, pyarrow; print('transformers', transformers.__version__, 'datasets', datasets.__version__)"
+    python -c "import importlib.metadata as md, os; assert md.version('torch').split('+')[0] == os.environ['TORCH_VERSION']; assert md.version('nvidia-modelopt') == os.environ['MODELOPT_VERSION']; import transformers, datasets, soundfile, librosa, pyarrow; print('transformers', transformers.__version__, 'datasets', datasets.__version__)"
 
 LABEL org.opencontainers.image.title="model-forge-modelopt" \
       org.opencontainers.image.description="Pinned NVIDIA ModelOpt quantization runtime (issue-14 reranker and Whisper campaign, Blackwell sm_120)" \

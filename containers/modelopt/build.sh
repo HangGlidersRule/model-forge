@@ -22,31 +22,46 @@ die() { echo "[build-modelopt] FATAL: $*" >&2; exit 1; }
 
 [[ -f "${PIN_JSON}" ]] || die "pin.json not found at ${PIN_JSON}"
 
-# Read the pin with the interpreter, not a JSON regex, so malformed pins fail closed.
-read_pin() {
-    python - "$PIN_JSON" "$1" <<'PY'
-import json, sys
-pin = json.load(open(sys.argv[1], encoding="utf-8"))
-keys = sys.argv[2].split(".")
-value = pin
-for key in keys:
-    value = value[key]
-print(value)
+# Parse the pin exactly once and forward only values from that one snapshot, so a
+# pin rewritten mid-build cannot mix fields. Every field must match its recorded
+# shape (version, 40-hex commit, https URL, 64-hex digest, PEP 427 wheel name)
+# before docker sees it: the values become build args that RUN scripts consume.
+PIN_FIELDS="$(python - "$PIN_JSON" <<'PY'
+import json, re, sys
+
+SHAPES = (
+    ("version", r"[0-9]+(\.[0-9]+)*((a|b|rc)[0-9]+)?(\.post[0-9]+)?(\.dev[0-9]+)?"),
+    ("git_commit", r"[0-9a-f]{40}"),
+    ("wheel.url", r"https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~%+-]+)+"),
+    ("wheel.sha256", r"[0-9a-f]{64}"),
+    (
+        "wheel.filename",
+        r"[A-Za-z0-9_.]+-[A-Za-z0-9_.+]+(-[0-9][A-Za-z0-9_.]*)?"
+        r"-[A-Za-z0-9_.]+-[A-Za-z0-9_.]+-[A-Za-z0-9_.]+\.whl",
+    ),
+)
+with open(sys.argv[1], encoding="utf-8") as handle:
+    pin = json.load(handle)
+for field, shape in SHAPES:
+    value = pin
+    try:
+        for key in field.split("."):
+            value = value[key]
+    except (KeyError, TypeError):
+        sys.exit(f"pin.json missing {field}")
+    if not isinstance(value, str) or re.fullmatch(shape, value) is None:
+        sys.exit(f"pin.json {field} is not a valid value: {value!r}")
+    print(value)
 PY
-}
+)" || die "pin.json failed validation: ${PIN_JSON}"
 
-MODELOPT_VERSION="$(read_pin version)"
-MODELOPT_COMMIT="$(read_pin git_commit)"
-MODELOPT_WHEEL_URL="$(read_pin wheel.url)"
-MODELOPT_WHEEL_SHA256="$(read_pin wheel.sha256)"
-MODELOPT_WHEEL_FILENAME="$(read_pin wheel.filename)"
-
-[[ -n "${MODELOPT_VERSION}" && -n "${MODELOPT_COMMIT}" ]] || die "pin.json missing version/commit"
-[[ -n "${MODELOPT_WHEEL_URL}" && -n "${MODELOPT_WHEEL_SHA256}" ]] || die "pin.json missing wheel url/sha256"
-[[ -n "${MODELOPT_WHEEL_FILENAME}" ]] || die "pin.json missing wheel filename"
-# pip refuses a local wheel whose filename is not PEP 427 shaped.
-[[ "${MODELOPT_WHEEL_FILENAME}" == *-*-*-*-*.whl ]] \
-    || die "pin.json wheel filename is not a valid wheel name: ${MODELOPT_WHEEL_FILENAME}"
+{
+    read -r MODELOPT_VERSION
+    read -r MODELOPT_COMMIT
+    read -r MODELOPT_WHEEL_URL
+    read -r MODELOPT_WHEEL_SHA256
+    read -r MODELOPT_WHEEL_FILENAME
+} <<< "${PIN_FIELDS}"
 
 SHORT_COMMIT="${MODELOPT_COMMIT:0:7}"
 IMAGE="${IMAGE:-ghcr.io/hangglidersrule/model-forge-modelopt:${MODELOPT_VERSION}-${SHORT_COMMIT}}"
