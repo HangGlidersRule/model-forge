@@ -9,7 +9,6 @@ Rules (per stream; routed and shared up_proj share the up stream):
   b12xeq  G = 2688 (input_scale 1.0), the fixed global scale of the b12x runtime path
 Usage: make_variants.py STATS_JSON BASE_DIR VROOT"""
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -17,6 +16,9 @@ from pathlib import Path
 import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+from model_forge.pipeline import CheckpointTree, OutputDir  # noqa: E402
 
 st = json.load(open(sys.argv[1]))
 base, vroot = Path(sys.argv[2]), Path(sys.argv[3])
@@ -49,7 +51,10 @@ def stream_of(name):
     return f"L{layer}.up" if proj == "up" else (f"L{layer}.rdown" if kind.startswith("experts") else f"L{layer}.sdown")
 
 
-with safe_open(base / "model-input-scales.safetensors", "pt") as h:
+# Every BASE file is opened (no symlinks, regular files only) before any variant is written; variants link those inodes.
+tree = CheckpointTree(base)
+base_files = {name: tree.open(name) for name in tree.listdir()[0]}
+with safe_open(base_files.pop("model-input-scales.safetensors").path, "pt") as h:
     a_scales = {k: h.get_tensor(k) for k in h.keys()}
 missing = sorted({stream_of(k) for k in a_scales} - set(streams))
 if missing:
@@ -61,15 +66,11 @@ for rule, fn in RULES.items():
     g = {s: float(fn(streams[s])) for s in streams}
     summary[rule] = g
     vd = vroot / rule
-    vd.mkdir(parents=True, exist_ok=True)
-    for p in base.iterdir():
-        if p.is_file() and p.name != "model-input-scales.safetensors":
-            dst = vd / p.name
-            if dst.exists():
-                dst.unlink()
-            os.link(p, dst)
+    out = OutputDir.create(vd)
+    for name, member in base_files.items():
+        out.link(name, member)
     new = {k: torch.full_like(t, g[stream_of(k)] / 2688.0) for k, t in a_scales.items()}
-    save_file(new, vd / "model-input-scales.safetensors", metadata={"format": "pt"})
+    save_file(new, out.path("model-input-scales.safetensors"), metadata={"format": "pt"})
     edge = [s for s in streams if rule == "mse" and g[s] in (GRID[0], GRID[-1])]
     print(json.dumps({"variant": rule, "dir": str(vd), "tensors": len(new), "mse_at_grid_edge": edge}), flush=True)
 json.dump(summary, open(vroot / "variants-G.json", "w"), indent=1)

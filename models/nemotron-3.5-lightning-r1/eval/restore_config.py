@@ -6,23 +6,30 @@ time_step_limit. vLLM reads the upstream vocabulary, so the served config must m
 Writes the original export files as *.transformers5.json next to them for the record.
 Usage: restore_config.py SOURCE_DIR EXPORT_DIR"""
 import json
-import shutil
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
+from model_forge.pipeline import CheckpointTree, OutputDir  # noqa: E402
+
 src, exp = Path(sys.argv[1]), Path(sys.argv[2])
-cfg_src = json.loads((src / "config.json").read_text())
-cfg_exp = json.loads((exp / "config.json").read_text())
+# Every input is opened (no symlinks, regular files only) before anything is written.
+src_tree, exp_tree = CheckpointTree(src), CheckpointTree(exp)
+cfg_src = json.loads(src_tree.open("config.json").read_bytes())
+gen_src = src_tree.open("generation_config.json")
+exp_files = {name: exp_tree.open(f"{name}.json") for name in ("config", "generation_config")}
+# Idempotent: keep the first transformers-5 copies; a re-run must not overwrite them with the restored files.
+first_run = [name for name in exp_files if exp_tree.open_optional(f"{name}.transformers5.json") is None]
+cfg_exp = json.loads(exp_files["config"].read_bytes())
 qc = cfg_exp.get("quantization_config")
 if not qc:
     raise SystemExit("export config.json has no quantization_config")
-# Idempotent: keep the first transformers-5 copies; a re-run must not overwrite them with the restored files.
-for name in ("config", "generation_config"):
-    if not (exp / f"{name}.transformers5.json").exists():
-        shutil.copyfile(exp / f"{name}.json", exp / f"{name}.transformers5.json")
+dst = OutputDir(exp_tree.fd, str(exp))
+for name in first_run:
+    dst.copy(f"{name}.transformers5.json", exp_files[name])
 cfg = dict(cfg_src)
 cfg["quantization_config"] = qc
-(exp / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
-shutil.copyfile(src / "generation_config.json", exp / "generation_config.json")
+dst.write_text("config.json", json.dumps(cfg, indent=2) + "\n")
+dst.copy("generation_config.json", gen_src)
 diff = sorted(k for k in set(cfg) | set(cfg_src) if cfg.get(k) != cfg_src.get(k))
 print(json.dumps({"export": exp.name, "config_keys_differing_from_source": diff, "quant_algo": qc.get("quant_algo")}))
