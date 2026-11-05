@@ -43,15 +43,23 @@ RULE_SCAN_WORK_LIMIT = "scan.work-limit"
 
 _IPV4_CANDIDATE = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
 _POSIX_PATH = re.compile(
-    r"(?<![/:A-Za-z0-9._-])/(?:Users|home)/[^/\s\"'<>]+"
+    r"(?<![/:A-Za-z0-9._])/(?:Users|home)/[^/\s\"'<>]+"
     r"(?:/[^/\s\"'<>]+)*|"
-    r"(?<![/:A-Za-z0-9._-])/Volumes/[^/\s\"'<>]+(?:/[^/\s\"'<>]+)*"
+    r"(?<![/:A-Za-z0-9._])/Volumes/[^/\s\"'<>]+(?:/[^/\s\"'<>]+)*|"
+    # Host mount roots (WSL drives under /mnt, removable media, served data). Two-level
+    # container mounts such as /mnt/export and globs such as /mnt/d/* stay public.
+    r"(?<![/:A-Za-z0-9._])/(?:mnt|media|srv)/[^/\s\"'<>*?|;(){}]+/[^/\s\"'<>*?|;(){}]+"
 )
 _STRUCTURED_POSIX_PATH = re.compile(
     r"(?i)(?<![A-Za-z0-9_])[\"']?(?:artifact|cache|directory|dir|file_path|"
     r"filepath|model_path|output_path|path|root|workspace)[\"']?"
     r"(?![A-Za-z0-9_])[ \t]*[:=][ \t]*[\"']?"
-    r"(?P<path>/(?!/)[^/\s\"'<>]+(?:/[^/\s\"'<>]+)*)"
+    r"(?P<path>/(?!/)[^/\s\"'<>]+(?:/[^/\s\"'<>]+)*)|"
+    # Host filesystem paths used as shell parameter defaults (${1:-/x/y}, ${name-/x/y},
+    # :=). Container-local defaults such as /models/current stay public.
+    r"(?::[-=]|\$\{(?:[A-Za-z_][A-Za-z0-9_]*|[0-9]+)[-=])[\"']?"
+    r"(?P<default_path>/(?!opt/homebrew/)(?:mnt|media|srv|opt|tmp|var)"
+    r"(?:/[^/\s\"'<>{}]+)+)"
 )
 _WINDOWS_DRIVE_PATH = re.compile(
     r"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/])"
@@ -608,16 +616,17 @@ def _regex_findings(
     rule_id: str,
     message: str,
     *,
-    start_group: str | None = None,
+    start_group: str | tuple[str, ...] | None = None,
 ) -> bool:
     if not scan.begin_pass():
         return False
+    groups = (start_group,) if isinstance(start_group, str) else start_group or ()
     for match in pattern.finditer(scan.text):
-        if not scan.consume_candidate() or not scan.add(
-            rule_id,
-            message,
-            match.start(start_group) if start_group is not None else match.start(),
-        ):
+        start = next(
+            (match.start(group) for group in groups if match.group(group) is not None),
+            match.start(),
+        )
+        if not scan.consume_candidate() or not scan.add(rule_id, message, start):
             return False
     return True
 
@@ -804,7 +813,7 @@ def _scan_text(
             _STRUCTURED_POSIX_PATH,
             RULE_POSIX_PATH,
             "Absolute POSIX or macOS path detected",
-            start_group="path",
+            start_group=("path", "default_path"),
         )
     if completed:
         for pattern in (_WINDOWS_DRIVE_PATH, _WINDOWS_UNC_PATH):
