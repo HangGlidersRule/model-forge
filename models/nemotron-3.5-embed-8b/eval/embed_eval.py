@@ -32,13 +32,45 @@ import time
 import urllib.request
 from pathlib import Path
 
-MTEB = {  # the #18 / #32 pinned revisions
-    "mteb/NanoNFCorpusRetrieval": "2eec9d63140f",
-    "mteb/NanoFiQA2018Retrieval": "ede84da4793c",
-    "mteb/NanoTouche2020Retrieval": "ff81c0caff8b",
-    "mteb/NanoArguAnaRetrieval": "63ac9f026e8f",
-    "mteb/NanoSciFactRetrieval": "8c5f7bbe90bb",
-    "mteb/NanoMSMARCORetrieval": "5a5aa0c3df65",
+MTEB = {  # the #18 / #32 pinned revisions as full commit ids; the default branch is never consulted
+    "mteb/NanoNFCorpusRetrieval": "2eec9d63140fb9af7c75ad0fdbf6350aaf20e94e",
+    "mteb/NanoFiQA2018Retrieval": "ede84da4793cd2d4e61bba0dd08fc58de90f3681",
+    "mteb/NanoTouche2020Retrieval": "ff81c0caff8b6febe1495eae9f2ca3eddad074b8",
+    "mteb/NanoArguAnaRetrieval": "63ac9f026e8f6b85dc0622f3d630ed7a1758e9ec",
+    "mteb/NanoSciFactRetrieval": "8c5f7bbe90bb865f46c67710221afa7d9096251b",
+    "mteb/NanoMSMARCORetrieval": "5a5aa0c3df65d6883d85c8f5cdc88e679633595e",
+}
+MTEB_SPLIT_SHA256 = {  # sha256 of <split>/train-00000-of-00001.parquet at the MTEB commit
+    "mteb/NanoNFCorpusRetrieval": {
+        "corpus": "ddf19f78134632a6bbb41dd51d10f37b3d6002f389b5ae126647d792aeba7b5f",
+        "queries": "9f13814121a1ab749fc2ee1d98ba3102916667e17f83cd278a4912085a970c3f",
+        "qrels": "c606262a9276b6a08b70a39ec5baf9a2496c49b4277ba799b8c556548ff18758",
+    },
+    "mteb/NanoFiQA2018Retrieval": {
+        "corpus": "c376e81f887649631f87f51f98f056306dd8d62a3c2dd7a58b5f1abe0bbcc1d9",
+        "queries": "8a1f9e1d9c1dbca1c34f001e4f8ccc8c9d3d2f16254d091cc9edf4a5eeb305e8",
+        "qrels": "f8828bb444d59dc3cf6fc841479f5e256b74fd209d60e3e21f9a60d22e759097",
+    },
+    "mteb/NanoTouche2020Retrieval": {
+        "corpus": "50b93bd0a13daaf4a36ac20c7eaf84ecabc481670159fd421d01e84ef2bcbcec",
+        "queries": "a3ba3a91061712e4212fb69417dfe451f29e47e039c3dd515a9fa70178ef25fd",
+        "qrels": "e739d866d9d3e2a48da1eb78965d12b2655956acf18ed16c1f99977092c52768",
+    },
+    "mteb/NanoArguAnaRetrieval": {
+        "corpus": "d0782a8feabeb9713f7a37a681adbad2efb0faf4b660f14fe5cf1ac690d67342",
+        "queries": "5020ba08255bc32c333801f4ed3524ddf0e58b331ad9155a8548bff4f3486cdd",
+        "qrels": "8f6558ec54c04f1fb85b77d97a1a3ef39a56a49fc407b58f8e515efc09ed8e43",
+    },
+    "mteb/NanoSciFactRetrieval": {
+        "corpus": "d639056670650a4079ee73cbc28c58210bd54f4c081b1ca18580c652ed829d05",
+        "queries": "16459964749438ba42fbc8a3436897eaed9d4b43f639b62348c41a395daa7a5d",
+        "qrels": "043645fb0d7f520dccd0f370417a9a2fb2b46d95c530ea176921184d432ca662",
+    },
+    "mteb/NanoMSMARCORetrieval": {
+        "corpus": "a717d6b419aa9ac8b63da38bfa9700a9c35bba8a6aa8452db0f9939126782957",
+        "queries": "6efd9ab4664792379e7403a29aeb647ea315bd87b0d32ec2be87cc59a5fbcb76",
+        "qrels": "97a696750a4d9a9d1d9741e90c66a9bb47bed8e0a689554d0c2eab84e6c02a8a",
+    },
 }
 WEB_TASK = "Given a web search query, retrieve relevant passages that answer the query"
 LMEB = "KaLM-Embedding/LMEB"
@@ -62,18 +94,27 @@ def _jsonl(raw: bytes) -> list[dict]:
     return [json.loads(line) for line in raw.split(b"\n") if line.strip()]
 
 
-def build_sets(mteb_out: Path, lmeb_out: Path, rerank_set: Path) -> None:
+def _load_mteb(ds: str) -> tuple[list[dict], list[dict], list[dict]]:
+    """corpus, queries, qrels of `ds` at its MTEB commit; refuses any file whose sha256 is not pinned."""
     import pyarrow.parquet as pq
 
+    sha = MTEB[ds]
+    tables = []
+    for split in ("corpus", "queries", "qrels"):
+        raw = _get(f"https://huggingface.co/datasets/{ds}/resolve/{sha}/{split}/train-00000-of-00001.parquet")
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != MTEB_SPLIT_SHA256[ds][split]:
+            raise RuntimeError(f"{ds}@{sha} {split}: sha256 {digest} != pinned {MTEB_SPLIT_SHA256[ds][split]}")
+        tables.append(pq.read_table(io.BytesIO(raw)).to_pylist())
+    corpus, queries, qrels = tables
+    return corpus, queries, qrels
+
+
+def build_sets(mteb_out: Path, lmeb_out: Path, rerank_set: Path) -> None:
     data, shas = {}, {}
-    for ds, prefix in MTEB.items():
-        sha = json.loads(_get(f"https://huggingface.co/api/datasets/{ds}"))["sha"]
-        assert sha.startswith(prefix), (ds, sha)
+    for ds, sha in MTEB.items():
+        corpus, queries, qrels = _load_mteb(ds)
         shas[ds] = sha
-        base = f"https://huggingface.co/datasets/{ds}/resolve/{sha}"
-        corpus = pq.read_table(io.BytesIO(_get(f"{base}/corpus/train-00000-of-00001.parquet"))).to_pylist()
-        queries = pq.read_table(io.BytesIO(_get(f"{base}/queries/train-00000-of-00001.parquet"))).to_pylist()
-        qrels = pq.read_table(io.BytesIO(_get(f"{base}/qrels/train-00000-of-00001.parquet"))).to_pylist()
         idk = "_id" if "_id" in corpus[0] else "id"
         docs = {c[idk]: ((c.get("title") or "").strip() + "\n" + (c.get("text") or "").strip()).strip() for c in corpus}
         qtext = {q[idk]: q["text"] for q in queries}

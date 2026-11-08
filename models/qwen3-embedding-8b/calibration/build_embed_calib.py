@@ -5,19 +5,27 @@ Source: microsoft/ms_marco v1.1 train, pinned to a dataset revision (the reranke
 model's own query format (instruction + query) and 256 passages as plain text, exactly as an embedding client sends them.
 Output: JSONL, one {"text": ...} per line (ModelOpt 0.48's get_dataset_samples() reads the "text" column as-is).
 Usage: build_embed_calib.py --out PATH [--cache PARQUET]; prints a summary line and the file's sha256.
+The parquet must hash to PARQUET_SHA256; the default cache is under the user's private ~/.cache/model-forge.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
+import io
 import json
+import os
 import random
+import stat
+import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
 DATASET = "microsoft/ms_marco"
 REVISION = "a47ee7aae8d7d466ba15f9f0bfac3b3681087b3a"
 PARQUET = "v1.1/train-00000-of-00001.parquet"
+PARQUET_SHA256 = "11d5e51d70ce87b47b1c132ef7c55f4cfb93b22c122058aa0591a65c4c0dc1f1"
 SEED = 1234
 N_QUERIES = 256
 N_PASSAGES = 256
@@ -28,18 +36,55 @@ def query_text(query: str) -> str:
     return f"Instruct: {INSTRUCTION}\nQuery:{query}"
 
 
+def default_cache() -> Path:
+    root = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "model-forge"
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    return root / "ms_marco_v1.1_train.parquet"
+
+
+def store_cache(cache: Path, data: bytes) -> None:
+    """Publish verified bytes without opening, truncating or following anything already at the cache path."""
+    fd, tmp = tempfile.mkstemp(dir=cache.parent, prefix=f".{cache.name}.", suffix=".part")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.link(tmp, cache, follow_symlinks=False)
+    except FileExistsError:
+        print(f"warning: {cache} appeared during the download; left as is", file=sys.stderr)
+    finally:
+        os.unlink(tmp)
+
+
+def pinned_parquet(cache: Path) -> bytes:
+    """The pinned parquet's bytes, read once: the bytes that are hashed are the bytes that are parsed."""
+    url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
+    downloaded = not cache.exists()
+    if downloaded:
+        with contextlib.closing(urllib.request.urlopen(url, timeout=600)) as resp:
+            data = resp.read()
+    else:
+        with os.fdopen(os.open(cache, os.O_RDONLY | os.O_NONBLOCK), "rb") as f:
+            if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+                raise SystemExit(f"{cache} is not a regular file")
+            data = f.read()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != PARQUET_SHA256:
+        raise SystemExit(f"{url if downloaded else cache}: sha256 {digest} is not the pinned {PARQUET_SHA256}")
+    if downloaded:
+        store_cache(cache, data)
+    return data
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--cache", type=Path, default=Path("/tmp/ms_marco_v1.1_train.parquet"))
+    ap.add_argument("--cache", type=Path, help="pinned parquet cache (default: ~/.cache/model-forge/)")
     args = ap.parse_args()
 
     import pyarrow.parquet as pq
 
-    if not args.cache.exists():
-        url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
-        urllib.request.urlretrieve(url, args.cache)
-    rows = pq.read_table(args.cache, columns=["query_id", "query", "passages"]).to_pylist()
+    data = pinned_parquet(args.cache or default_cache())
+    rows = pq.read_table(io.BytesIO(data), columns=["query_id", "query", "passages"]).to_pylist()
     rng = random.Random(SEED)
     rng.shuffle(rows)
 

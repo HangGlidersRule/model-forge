@@ -17,14 +17,28 @@ Upstream argument syntax at the pinned commit
 - Calibration prompts come from the upstream dataset (Gustavosta
   Stable-Diffusion-Prompts); the CalibrationContract pins the dataset revision,
   prompt subset hash, and seeds.
+
+The policy name, model slug, and overlay name are caller-supplied, so each must
+be a single safe path segment and reaches the container only as its own argv
+element. No shell ever parses them: when the overlay is applied, this module is
+bind-mounted read-only into the container and run as the launcher (``main``),
+which applies the overlay and then execs ``quantize.py``. The launcher half of
+this module therefore imports only the standard library at runtime.
 """
 
 from __future__ import annotations
 
+import argparse
+import os
+import re
+import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
 
-from model_forge.modelopt.diffusion_policy import DiffusionPolicy
+if TYPE_CHECKING:
+    from model_forge.modelopt.diffusion_policy import DiffusionPolicy
 
 # Canonical entry point inside the pinned ModelOpt checkout / image.
 DIFFUSERS_QUANT_ENTRY = "examples/diffusers/quantization/quantize.py"
@@ -34,11 +48,29 @@ CONTAINER_MODELOPT_ROOT = "/opt/modelopt"
 CONTAINER_EXPORT = "/mnt/export"
 CONTAINER_CALIB_DIR = "/mnt/calib"
 CONTAINER_HF_CACHE = "/mnt/hf_cache"
+CONTAINER_LAUNCHER = "/opt/model_forge/diffusion_execution.py"
 
 # Registered upstream model slug for the onboarding exemplar.
 QWEN_IMAGE_21_SLUG = "qwen-image-2.1"
 
+# Bridge-fork overlays live in this directory (relative to the ModelOpt root);
+# ``extras["overlay_path"]`` names one file in it.
+OVERLAY_DIR = "configs/modelopt/diffusion"
+DEFAULT_OVERLAY = "qwen-image-21-overlay.py"
+
 FORMAT_BY_QUANT_FORMAT = {"nvfp4": "fp4", "fp8": "fp8", "int8": "int8"}
+
+_SAFE_SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+
+
+def require_safe_segment(field: str, value: object) -> str:
+    """Return ``value`` if it is one safe path segment, else raise ``ValueError``."""
+    if not isinstance(value, str) or _SAFE_SEGMENT.fullmatch(value) is None:
+        raise ValueError(
+            f"{field} must be a single path segment matching "
+            f"{_SAFE_SEGMENT.pattern!r}; got {value!r}"
+        )
+    return value
 
 
 def diffusion_quantize_cli_args(
@@ -51,7 +83,8 @@ def diffusion_quantize_cli_args(
     quantize_mha: bool | None = None,
 ) -> list[str]:
     """Return the argv *after* ``quantize.py`` (script-relative)."""
-    slug = policy.extras.get("model_slug", QWEN_IMAGE_21_SLUG)
+    name = require_safe_segment("policy name", policy.name)
+    slug = require_safe_segment("model_slug", policy.extras.get("model_slug", QWEN_IMAGE_21_SLUG))
     fmt = FORMAT_BY_QUANT_FORMAT[policy.quant_format]
     if fmt == "int8":
         raise ValueError("int8 diffusion recipes are not part of the forge contract")
@@ -71,7 +104,7 @@ def diffusion_quantize_cli_args(
         "--collect-method",
         "default",
         "--quantized-torch-ckpt-save-path",
-        str(PurePosixPath(export_dir) / f"{policy.name}.pt"),
+        str(PurePosixPath(export_dir) / f"{name}.pt"),
         "--hf-ckpt-dir",
         str(PurePosixPath(export_dir) / "hf_ckpt"),
     ]
@@ -111,7 +144,16 @@ def build_diffusion_docker_run_plan(
     The bridge-fork overlay is applied inside the container at start (after the
     immutable checkout exists) unless ``apply_overlay`` is False. The overlay
     content-hash is enforced by the caller from ``diffusion_pin.json``.
+
+    With the overlay on, the container runs this module (mounted read-only at
+    ``CONTAINER_LAUNCHER``) as the launcher; the overlay name and every
+    ``quantize.py`` argument are separate argv elements, never shell text.
     """
+    overlay = (
+        require_safe_segment("overlay_path", policy.extras.get("overlay_path", DEFAULT_OVERLAY))
+        if apply_overlay
+        else None
+    )
     export_arg = str(PurePosixPath(CONTAINER_EXPORT))
     quantize_args = diffusion_quantize_cli_args(
         policy=policy,
@@ -131,17 +173,14 @@ def build_diffusion_docker_run_plan(
     for key, value in env.items():
         argv.extend(["-e", f"{key}={value}"])
     argv.extend(["-v", f"{export_dir}:{CONTAINER_EXPORT}", "-v", f"{hf_cache}:{CONTAINER_HF_CACHE}"])
+    if overlay is not None:
+        argv.extend(["-v", f"{Path(__file__).resolve()}:{CONTAINER_LAUNCHER}:ro"])
     argv.extend(["-w", CONTAINER_MODELOPT_ROOT, image])
 
-    if apply_overlay:
-        overlay_path = policy.extras.get(
-            "overlay_path", "configs/modelopt/diffusion/qwen-image-21-overlay.py"
-        )
-        cmd = (
-            f"python {overlay_path} {CONTAINER_MODELOPT_ROOT} && "
-            f"python {DIFFUSERS_QUANT_ENTRY} {' '.join(quantize_args)}"
-        )
-        argv.extend(["bash", "-c", cmd])
+    if overlay is not None:
+        # -I keeps the launcher's directory and PYTHON* variables off its sys.path.
+        argv.extend(["python", "-I", CONTAINER_LAUNCHER, "--overlay", overlay, "--"])
+        argv.extend(quantize_args)
     else:
         argv.extend(["python", DIFFUSERS_QUANT_ENTRY, *quantize_args])
 
@@ -150,3 +189,31 @@ def build_diffusion_docker_run_plan(
         container_export_path=CONTAINER_EXPORT,
         quantize_args=quantize_args,
     )
+
+
+def main(argv: list[str] | None = None) -> int:
+    """In-container launcher: apply the overlay, then exec ``quantize.py``.
+
+    Usage: ``diffusion_execution.py --overlay NAME -- QUANTIZE_ARGS...``. Runs
+    from the ModelOpt root (the plan's ``-w``).
+    """
+    args = sys.argv[1:] if argv is None else argv
+    if "--" not in args:
+        raise SystemExit("usage: diffusion_execution.py --overlay NAME -- QUANTIZE_ARGS...")
+    split = args.index("--")
+    parser = argparse.ArgumentParser(prog="diffusion_execution.py")
+    parser.add_argument("--overlay", required=True)
+    options = parser.parse_args(args[:split])
+    try:
+        overlay = require_safe_segment("overlay", options.overlay)
+    except ValueError as exc:
+        parser.error(str(exc))
+    overlay_script = str(PurePosixPath(OVERLAY_DIR) / overlay)
+    applied = subprocess.run([sys.executable, overlay_script, CONTAINER_MODELOPT_ROOT], check=False)
+    if applied.returncode != 0:
+        return applied.returncode
+    os.execv(sys.executable, [sys.executable, DIFFUSERS_QUANT_ENTRY, *args[split + 1 :]])
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
