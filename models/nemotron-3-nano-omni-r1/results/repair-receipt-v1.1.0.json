@@ -1,0 +1,67 @@
+{
+ "schema_version": "1.0",
+ "evidence_kind": "nano_omni_v1_1_0_repair_receipt",
+ "issue": "HangGlidersRule/model-forge#35",
+ "note": "Staged in private repositories named <target>-repair35, each downloaded into an empty cache on the serving host, every manifest entry re-hashed and every safetensors shard compared with the evaluated build, then served with the card's command (vLLM v0.32.0 + audio extras) and checked on 8 text prompts, 2 images and 1 speech clip. The staging repositories are deleted after promotion; promotion uploads the same verified files to the target.",
+ "products": {
+  "base": {
+   "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
+   "staged_commit": "81c64d1a49f42d50602b7a28f085345b93c41fbe",
+   "manifest_entries": 29,
+   "manifest_sha256": "51e6654e5dfc39e53a795ac273d28c7afc789a6af9fefd822c19fbd181d79b07",
+   "safetensors": {
+    "model-00001-of-00002.safetensors": "25aec1638c729b8664a97c55e76b377f76723bd32873df734ef4daee160aed88",
+    "model-00002-of-00002.safetensors": "b52e3fdf8f01a5095d7d7723211e6d302561965349e13927563e4824ce175af8",
+    "model-towers.safetensors": "3148ee3be68e279756e8e2ca3dd874b8e49bdb43c64d61aa0500b2904cf515e8"
+   },
+   "clean_download": "manifest entries 29; hash mismatches []; every safetensors shard identical to the evaluated build",
+   "clean_serve": "Model loading took 21.36 GiB Resolved architecture: NemotronH_Nano_Omni_Reasoning_V3 Using 'MARLIN' NvFp4 MoE backend",
+   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered (finish_reason stop); 0 fatal markers in the serve log",
+   "provenance_report": "models/nemotron-3-nano-omni-r1/results/repair-verify-Base-wrapper.json"
+  },
+  "ablit-nvfp4": {
+   "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
+   "staged_commit": "942c83f73e016aca6e329f72346f23c7ee3dfe9d",
+   "manifest_entries": 29,
+   "manifest_sha256": "83d2c6bfb0c14c92558b433ef2a4da7c2d9ffd81b6b6ce5e2661eec1af70639e",
+   "safetensors": {
+    "model-00001-of-00002.safetensors": "c2452f69042213a3acde3f85fde46e06bc20df8779af14f7c6f9282d2f6b658c",
+    "model-00002-of-00002.safetensors": "cc8c998f143bfea6d9e3d7516dbac7fe59ec765b38fdea6c7fb7a24250213990",
+    "model-towers.safetensors": "3148ee3be68e279756e8e2ca3dd874b8e49bdb43c64d61aa0500b2904cf515e8"
+   },
+   "clean_download": "manifest entries 29; hash mismatches []; every safetensors shard identical to the evaluated build",
+   "clean_serve": "Model loading took 21.36 GiB Resolved architecture: NemotronH_Nano_Omni_Reasoning_V3 Using 'MARLIN' NvFp4 MoE backend",
+   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered (finish_reason stop); 0 fatal markers in the serve log",
+   "provenance_report": "models/nemotron-3-nano-omni-r1/results/repair-verify-Abliterated-wrapper.json"
+  },
+  "ablit-bf16": {
+   "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
+   "staged_commit": "e996b86db0d395ca16882a383be27606f63f190a",
+   "manifest_entries": 45,
+   "manifest_sha256": "15780a5ca1b48051a0c4927d53ff76838f1ad13cf302fec95aebb3f080a43111",
+   "safetensors": {
+    "model-00001-of-00017.safetensors": "de952574c9189925ad15f8cf164184117b6e5eec2d8b7f092e1268c1f0872244",
+    "model-00002-of-00017.safetensors": "5b2707cbe0e3bea9f67f06980184848ecad2fdadcf80cbb94d0b2d9a859a9943",
+    "model-00003-of-00017.safetensors": "6888ecf9e575d4bcb6c095cfc735aaa169970c7e226f3af4448c37040414d9a6",
+    "model-00004-of-00017.safetensors": "253fbbe376a8224f46b4e2c7c479e75b753d37077c014d27f04f4f84014e5bd3",
+    "model-00005-of-00017.safetensors": "f4601e04545071d683491eed4bd3070a79d7d74e0925f4f73d1687500709e7a4",
+    "model-00006-of-00017.safetensors": "24a7ba72f08e647c2c78b0264ad4bc4f78e3d70e405e5dda50c059333ebdb3d2",
+    "model-00007-of-00017.safetensors": "1c846f3ad01dd8f75afa82b0a41cef2ec263bc8f5e4bb24c7f023f9bc90f6cd0",
+    "model-00008-of-00017.safetensors": "307f0422e80c02b7d44bce7cee627959a9c7a49f8240b4f8aafa6ec608f51587",
+    "model-00009-of-00017.safetensors": "4d590e170f31f7dc7a6cc11b3788ce062f4652faca93d29d9e54cc31b39f607e",
+    "model-00010-of-00017.safetensors": "4eb2ae5f5c918f25aa5009627fda26ffd29cfd0bec216690904002a38bed1011",
+    "model-00011-of-00017.safetensors": "47c70a832058f866740acf7d929c9053273d87699cded46a851e1085edace82e",
+    "model-00012-of-00017.safetensors": "1804bf9755ee431cf7bd65773a4d0640b89ba76efc58c57de63eb8ab98a05dca",
+    "model-00013-of-00017.safetensors": "78c70bebd7a0fcde5eb78f6a08a2d6da923d933bfc53853946e207fa75f1a271",
+    "model-00014-of-00017.safetensors": "6aefb241eff8caeb76eae378c07565aaa7614ff4d73632152345e851f49ae69e",
+    "model-00015-of-00017.safetensors": "442006b0a48b3652770f5bf95e6677ebff512990736587073ac53cb6cc1e7bc6",
+    "model-00016-of-00017.safetensors": "bc699ab1095fdccad1ec8bfd798128ab29dad3cc3e82e04dd39470a5daf58840",
+    "model-00017-of-00017.safetensors": "d34d8b0e21f53e5ea6196339e826c62dc6ef6ef2a598d4149fc1b5cbe699d367"
+   },
+   "clean_download": "manifest entries 45; hash mismatches []; every safetensors shard identical to the evaluated build",
+   "clean_serve": "Model loading took 61.63 GiB Resolved architecture: NemotronH_Nano_Omni_Reasoning_V3",
+   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered (finish_reason stop); 0 fatal markers in the serve log",
+   "provenance_report": "models/nemotron-3-nano-omni-r1/results/repair-verify-Abliterated-BF16.json"
+  }
+ }
+}

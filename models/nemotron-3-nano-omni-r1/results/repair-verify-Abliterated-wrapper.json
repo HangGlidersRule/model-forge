@@ -1,0 +1,19 @@
+{
+ "repaired": "Abliterated-wrapper",
+ "tensors": 19220,
+ "router_biases": {
+  "identical_to_upstream": 23,
+  "differ": 0
+ },
+ "towers": {
+  "identical_to_upstream": 1106,
+  "differ": 0
+ },
+ "trunk": {
+  "identical_to_published": 18091,
+  "differ": 0
+ },
+ "published_tensors_missing": 0,
+ "problems": [],
+ "verdict": "PASS"
+}

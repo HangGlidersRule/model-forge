@@ -1,0 +1,161 @@
+{
+ "schema_version": "1.0",
+ "evidence_kind": "nano_omni_v1_1_0_media_and_identity",
+ "issue": "HangGlidersRule/model-forge#35",
+ "media_serving_window": {
+  "base": {
+   "images_answered": 14,
+   "images": 14,
+   "audio_answered": 1,
+   "audio": 1,
+   "media": [
+    "example1a.jpeg",
+    "example1b.jpeg",
+    "table.png",
+    "tech.png",
+    "coco-val2017-000000027620.jpg",
+    "coco-val2017-000000037740.jpg",
+    "coco-val2017-000000147415.jpg",
+    "coco-val2017-000000189820.jpg",
+    "coco-val2017-000000232088.jpg",
+    "coco-val2017-000000239318.jpg",
+    "coco-val2017-000000248314.jpg",
+    "coco-val2017-000000301421.jpg",
+    "coco-val2017-000000325838.jpg",
+    "coco-val2017-000000333772.jpg",
+    "2414-165385-0000.wav"
+   ],
+   "text_answered": 8,
+   "text": 8,
+   "office_photo_ttft_p50_median_s": 0.0594
+  },
+  "abliterated-nvfp4": {
+   "images_answered": 14,
+   "images": 14,
+   "audio_answered": 1,
+   "audio": 1,
+   "media": [
+    "example1a.jpeg",
+    "example1b.jpeg",
+    "table.png",
+    "tech.png",
+    "coco-val2017-000000027620.jpg",
+    "coco-val2017-000000037740.jpg",
+    "coco-val2017-000000147415.jpg",
+    "coco-val2017-000000189820.jpg",
+    "coco-val2017-000000232088.jpg",
+    "coco-val2017-000000239318.jpg",
+    "coco-val2017-000000248314.jpg",
+    "coco-val2017-000000301421.jpg",
+    "coco-val2017-000000325838.jpg",
+    "coco-val2017-000000333772.jpg",
+    "2414-165385-0000.wav"
+   ],
+   "text_answered": 8,
+   "text": 8,
+   "office_photo_ttft_p50_median_s": 0.0485
+  },
+  "abliterated-bf16": {
+   "images_answered": 14,
+   "images": 14,
+   "audio_answered": 1,
+   "audio": 1,
+   "media": [
+    "example1a.jpeg",
+    "example1b.jpeg",
+    "table.png",
+    "tech.png",
+    "coco-val2017-000000027620.jpg",
+    "coco-val2017-000000037740.jpg",
+    "coco-val2017-000000147415.jpg",
+    "coco-val2017-000000189820.jpg",
+    "coco-val2017-000000232088.jpg",
+    "coco-val2017-000000239318.jpg",
+    "coco-val2017-000000248314.jpg",
+    "coco-val2017-000000301421.jpg",
+    "coco-val2017-000000325838.jpg",
+    "coco-val2017-000000333772.jpg",
+    "2414-165385-0000.wav"
+   ],
+   "text_answered": 8,
+   "text": 8,
+   "office_photo_ttft_p50_median_s": 0.0643
+  }
+ },
+ "clean_download_smoke": {
+  "base": {
+   "images_answered": 2,
+   "images": 2,
+   "audio_answered": 1,
+   "audio": 1,
+   "media": [
+    "example1a.jpeg",
+    "table.png",
+    "2414-165385-0000.wav"
+   ],
+   "text_answered": 8,
+   "text": 8
+  },
+  "abliterated-nvfp4": {
+   "images_answered": 2,
+   "images": 2,
+   "audio_answered": 1,
+   "audio": 1,
+   "media": [
+    "example1a.jpeg",
+    "table.png",
+    "2414-165385-0000.wav"
+   ],
+   "text_answered": 8,
+   "text": 8
+  },
+  "abliterated-bf16": {
+   "images_answered": 2,
+   "images": 2,
+   "audio_answered": 1,
+   "audio": 1,
+   "media": [
+    "example1a.jpeg",
+    "table.png",
+    "2414-165385-0000.wav"
+   ],
+   "text_answered": 8,
+   "text": 8
+  }
+ },
+ "attention_source": [
+  {
+   "checkpoint": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4@f3ae211e8e0be9832eb015c18eee965d0e27e86d",
+   "bf16_attention_projections": 24,
+   "identical_to_upstream_bf16": 24,
+   "identical_to_abliterated_bf16": 0
+  },
+  {
+   "checkpoint": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4@5de5cd3d340a693f0007808e8f54f5d139917ab4",
+   "bf16_attention_projections": 24,
+   "identical_to_upstream_bf16": 0,
+   "identical_to_abliterated_bf16": 24
+  },
+  {
+   "checkpoint": "Base-true-wrapper",
+   "bf16_attention_projections": 24,
+   "identical_to_upstream_bf16": 24,
+   "identical_to_abliterated_bf16": 0
+  },
+  {
+   "checkpoint": "Abliterated-wrapper",
+   "bf16_attention_projections": 24,
+   "identical_to_upstream_bf16": 0,
+   "identical_to_abliterated_bf16": 24
+  }
+ ],
+ "nvidia_nvfp4_reference_gpqa": {
+  "repository": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-NVFP4@16993199e436da4ba75ddc410855f87e0d996ee6",
+  "correct": 115,
+  "attempted": 198,
+  "errors": 0,
+  "max_tokens": 65536,
+  "temperature": 0.0,
+  "note": "2026-11-05 W4A4 gate session, same GPU and harness; 65,536-token cap (not the v1.0.0 8,192 protocol)"
+ }
+}

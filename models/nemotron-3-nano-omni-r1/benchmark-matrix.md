@@ -14,6 +14,16 @@ backend; `--reasoning-parser nemotron_v3`; BF16 KV cache. No speculative decodin
 | Abliterated-BF16 (SFT-r1) | BF16 | LoRA unlearning SFT | 58/198 = 29.3% | 199/200 + 0/83 (re-gate 2026-09-03; shipped 200/200) | 182.7 tok/s | public |
 | Abliterated-ModelOpt-NVFP4 | W4A16-NVFP4 | LoRA unlearning SFT | **58/198 = 29.3%** | **200/200 + 0/83** | **249.5 tok/s** | **public (final servable)** |
 
+**v1.1.0 (2026-11-08, [#35](https://github.com/HangGlidersRule/model-forge/issues/35)): in-place repair, applied to the repositories when the release is tagged.** The
+rows above are the v1.0.0 measurements on vLLM 0.27.1. Re-measured on vLLM 0.32.0 at the same GPQA protocol
+(8,192-token cap, concurrency 30), in one session with identical flags:
+
+| Cell (vLLM 0.32.0) | GPQA Diamond (198) | Behavior | Images / speech |
+|---|---|---|---|
+| Base W4A16, v1.1.0 (true base build, repaired; two runs) | 90, 96 | — | 14/14 / 1/1 |
+| Abliterated W4A16, v1.1.0 (two runs) | 64, 71 | 200/200 + 0/83 | 14/14 / 1/1 |
+| Abliterated BF16, v1.1.0 | 70 | 200/200 + 0/83 | 14/14 / 1/1 |
+
 ## Reading the cells
 
 - **Edit effect (BF16 → Ablit-BF16)**: the GPQA delta vs the ~46% base reference (~-16 pp) is the

@@ -1,0 +1,185 @@
+{
+ "protocol": "llm-inference-bench gpqa-diamond (chat template + thinking ON, temp 0, max_tokens 8192, concurrency 30)",
+ "serving": "vLLM v0.32.0 (pinned digest befccf0e) + audio extras, RTX PRO 6000 Blackwell, --reasoning-parser nemotron_v3 --mamba-ssm-cache-dtype float32 --max-model-len 131072, prefix caching off, KV auto; checkpoint: Base W4A16 v1.1.0 (true base build, Hub f3ae211e, reassembled); run 2 of 2 on one serve",
+ "accuracy": {
+  "items_total": 198,
+  "items_selected": 198,
+  "attempted": 198,
+  "scored": 198,
+  "correct": 96,
+  "accuracy": 0.48484848484848486,
+  "wilson95_low": 0.41618955685687775,
+  "wilson95_high": 0.5540841419498247,
+  "unparseable": 0,
+  "truncated_no_answer": 89,
+  "hit_max_tokens": 126,
+  "errors": 0,
+  "dataset_exhausted": false
+ },
+ "level_summaries": [
+  {
+   "concurrency": 30,
+   "phase": "profile",
+   "summary": {
+    "attempted": 198,
+    "completed": 198,
+    "errors": 0,
+    "correct": 96,
+    "wrong": 102,
+    "score_counts": {
+     "exact": 96,
+     "truncated": 89,
+     "fail": 13
+    },
+    "exact": 96,
+    "near": 0,
+    "fail": 13,
+    "truncated": 89,
+    "correct_rate": 0.48484848484848486,
+    "score_available": true,
+    "hit_max_tokens": 126,
+    "estimated_token_runs": 0,
+    "completion_tokens": {
+     "avg": 6398.813131313132,
+     "min": 314.0,
+     "max": 8192.0,
+     "p50": 8192.0,
+     "p90": 8192.0,
+     "p99": 8192.0,
+     "std": 2694.6587761023748
+    },
+    "ttft": {
+     "avg": 0.12259048621223947,
+     "min": 0.045675569999730214,
+     "max": 0.2936416709999321,
+     "p50": 0.06770411499928741,
+     "p90": 0.2917777552978805,
+     "p99": 0.2935150409186463,
+     "std": 0.08943329579571867
+    },
+    "elapsed": {
+     "avg": 69.78120960198494,
+     "min": 3.4829991059996246,
+     "max": 91.8315478739969,
+     "p50": 89.64137403349923,
+     "p90": 91.24157881200009,
+     "p99": 91.79436136808243,
+     "std": 29.540185703066186
+    },
+    "gen_elapsed": {
+     "avg": 69.65202739514626,
+     "min": 3.425720975999866,
+     "max": 91.77359943299962,
+     "p50": 89.33881978200043,
+     "p90": 91.05445810490055,
+     "p99": 91.7383620136384,
+     "std": 29.543831106988684
+    },
+    "gen_tok_s": {
+     "avg": 92.03035157940575,
+     "min": 89.23026556692678,
+     "max": 131.51569146237642,
+     "p50": 90.90225576488395,
+     "p90": 93.95716480297911,
+     "p99": 119.37644814629618,
+     "std": 5.094711244450819
+    },
+    "e2e_tok_s": {
+     "avg": 91.74923989176517,
+     "min": 87.94913467802533,
+     "max": 131.38482745705926,
+     "p50": 90.72866026183141,
+     "p90": 92.99253791571026,
+     "p99": 119.25582924808911,
+     "std": 5.100247995924231
+    },
+    "aggregate_gen_tok_s": 91.86829688404785,
+    "aggregate_e2e_tok_s": 91.69822603836198
+   }
+  }
+ ],
+ "wrong_runs_count": 102,
+ "methodology": {
+  "name": "GPQA Diamond accuracy benchmark",
+  "prefill": "Dataset accuracy profiles send a different pinned item prompt per measured request, so a shared prefix-cache scout is disabled by default; prompts are short and prefill cost is negligible.",
+  "adaptive_concurrency": "If --profile-concurrency is set, the benchmark sends exactly the configured number of measured profile requests with that many concurrent workers. Otherwise it probes increasing concurrency levels and keeps the fastest aggregate generation-token throughput, then collects additional runs at the selected concurrency until min_results is reached.",
+  "token_need": "completion_tokens is taken from OpenAI stream usage. If usage is missing, streamed content chunks are used as an estimated fallback and the run is marked estimated_tokens=true.",
+  "correctness": "Each request is scored against its own pinned dataset item. The chosen option letter is extracted from an 'Answer: X' tag on the final line (falling back to a bare final-line letter, then the last answer tag in the visible text) and must match the reference letter. Headline metric is accuracy over scored items with a Wilson 95% interval, plus per-category accuracy. Runs are paired per item across configurations via --compare-baseline."
+ },
+ "selected_summary": {
+  "attempted": 198,
+  "completed": 198,
+  "errors": 0,
+  "correct": 96,
+  "wrong": 102,
+  "score_counts": {
+   "exact": 96,
+   "truncated": 89,
+   "fail": 13
+  },
+  "exact": 96,
+  "near": 0,
+  "fail": 13,
+  "truncated": 89,
+  "correct_rate": 0.48484848484848486,
+  "score_available": true,
+  "hit_max_tokens": 126,
+  "estimated_token_runs": 0,
+  "completion_tokens": {
+   "avg": 6398.813131313132,
+   "min": 314.0,
+   "max": 8192.0,
+   "p50": 8192.0,
+   "p90": 8192.0,
+   "p99": 8192.0,
+   "std": 2694.6587761023748
+  },
+  "ttft": {
+   "avg": 0.12259048621223947,
+   "min": 0.045675569999730214,
+   "max": 0.2936416709999321,
+   "p50": 0.06770411499928741,
+   "p90": 0.2917777552978805,
+   "p99": 0.2935150409186463,
+   "std": 0.08943329579571867
+  },
+  "elapsed": {
+   "avg": 69.78120960198494,
+   "min": 3.4829991059996246,
+   "max": 91.8315478739969,
+   "p50": 89.64137403349923,
+   "p90": 91.24157881200009,
+   "p99": 91.79436136808243,
+   "std": 29.540185703066186
+  },
+  "gen_elapsed": {
+   "avg": 69.65202739514626,
+   "min": 3.425720975999866,
+   "max": 91.77359943299962,
+   "p50": 89.33881978200043,
+   "p90": 91.05445810490055,
+   "p99": 91.7383620136384,
+   "std": 29.543831106988684
+  },
+  "gen_tok_s": {
+   "avg": 92.03035157940575,
+   "min": 89.23026556692678,
+   "max": 131.51569146237642,
+   "p50": 90.90225576488395,
+   "p90": 93.95716480297911,
+   "p99": 119.37644814629618,
+   "std": 5.094711244450819
+  },
+  "e2e_tok_s": {
+   "avg": 91.74923989176517,
+   "min": 87.94913467802533,
+   "max": 131.38482745705926,
+   "p50": 90.72866026183141,
+   "p90": 92.99253791571026,
+   "p99": 119.25582924808911,
+   "std": 5.100247995924231
+  },
+  "aggregate_gen_tok_s": 91.86829688404785,
+  "aggregate_e2e_tok_s": 91.69822603836198
+ }
+}

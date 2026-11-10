@@ -1,0 +1,19 @@
+{
+ "repaired": "Abliterated-BF16",
+ "tensors": 7349,
+ "router_biases": {
+  "identical_to_upstream": 23,
+  "differ": 0
+ },
+ "towers": {
+  "identical_to_upstream": 1106,
+  "differ": 0
+ },
+ "trunk": {
+  "identical_to_published": 6220,
+  "differ": 0
+ },
+ "published_tensors_missing": 0,
+ "problems": [],
+ "verdict": "PASS"
+}

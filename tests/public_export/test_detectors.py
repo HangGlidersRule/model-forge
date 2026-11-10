@@ -1145,3 +1145,11 @@ def test_slack_client_url_is_collaboration_metadata(tmp_path: Path) -> None:
     )
 
     assert "metadata.collaboration" in {finding.rule_id for finding in findings}
+
+
+def test_default_repository_work_budget_covers_a_full_export_with_headroom() -> None:
+    """The default ScanWorkBudget must leave room above a real export's measured work (b5b32c5's export used
+    65,721,904 units, 98% of the old 67,108,864 default, and the next export exceeded it with no finding)."""
+    budget = ScanWorkBudget()
+    assert budget.max_work_units >= 2 * 65_721_904
+    assert budget.max_work_units <= 268_435_456  # MAX_SCAN_WORK_UNITS

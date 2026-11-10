@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Nemotron-3-Nano-Omni-30B-A3B-Reasoning, issue #35 candidate A: W4A4 NVFP4 on every language-model linear vLLM runs
+# as FP4 GEMM (the forge's prefill target, Devin's standing preference for prefill-heavy lanes; image prompts are
+# prefill-heavy): routed experts, shared experts, Mamba in/out_proj and attention q/k/v/o, all W4A4 NVFP4 with static
+# MSE weight scales (FP8 scale sweep) and NVFP4 activations. lm_head NVFP4 weight-only (W4A16), as in NVIDIA's own
+# checkpoint layouts (contract 3.1). KV cache FP8 at a fixed range, as NVIDIA's NVFP4 Omni ships it.
+# BF16: router, conv1d, embeddings, norms, vision tower, audio encoder, projectors.
+# Candidate B (w4a4_nvfp4_experts-fp8_shared_mamba_oproj-kv_fp8.yaml) is NVIDIA's released layout, the quality fallback.
+#
+# Built from NVIDIA/Model-Optimizer@e2f328a19de789e73b91aca2908042388cf6d496 (0.48.0). quant_cfg is ordered and the
+# LAST match wins. ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+imports:
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+  fp8: configs/numerics/fp8
+metadata:
+  recipe_type: ptq
+  description: >-
+    Nemotron-3-Nano-Omni candidate A: W4A4 NVFP4 on routed and shared experts, Mamba in/out_proj and attention
+    q/k/v/o (MSE weight scales, NVFP4 activations); lm_head NVFP4 weight-only; FP8 KV cast; router, conv1d, embeddings,
+    vision and audio stacks BF16.
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+    layerwise:
+      enable: false
+  quant_cfg:
+    - quantizer_name: '*'
+      enable: false
+    - quantizer_name: '*mixer.experts.*weight_quantizer*'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.experts.*input_quantizer*'
+      cfg:
+        $import: nvfp4
+    - quantizer_name: '*mixer.shared_experts.*weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.shared_experts.*input_quantizer'
+      cfg:
+        $import: nvfp4
+    - quantizer_name: '*mixer.in_proj.weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.in_proj.input_quantizer'
+      cfg:
+        $import: nvfp4
+    - quantizer_name: '*mixer.out_proj.weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.out_proj.input_quantizer'
+      cfg:
+        $import: nvfp4
+    - quantizer_name: '*mixer.[qkvo]_proj.weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*mixer.[qkvo]_proj.input_quantizer'
+      cfg:
+        $import: nvfp4
+    - quantizer_name: '*lm_head.weight_quantizer'
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*[kv]_bmm_quantizer'
+      cfg:
+        $import: fp8
+        use_constant_amax: true
+    - quantizer_name: '*vision_model*'
+      enable: false
+    - quantizer_name: '*radio_model*'
+      enable: false
+    - quantizer_name: '*mlp1*'
+      enable: false
+    - quantizer_name: '*sound_encoder*'
+      enable: false
+    - quantizer_name: '*sound_projection*'
+      enable: false
+    - quantizer_name: '*lm_head.input_quantizer'
+      enable: false
+    - quantizer_name: '*mixer.gate*'
+      enable: false
+    - quantizer_name: '*mixer.conv1d*'
+      enable: false

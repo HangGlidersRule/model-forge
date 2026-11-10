@@ -245,9 +245,14 @@ class Finding:
 
 @dataclass(slots=True)
 class ScanWorkBudget:
-    """A deterministic work ceiling shareable across repository file scans."""
+    """A deterministic work ceiling shareable across repository file scans.
 
-    max_work_units: int = 67_108_864
+    The default covers a full public export with headroom: the export of b5b32c5 (487 files) used 65.7M units, 98% of
+    the old 67,108,864 ceiling, and the next one (the second-wave hardening tests plus the Nano-Omni v1.1.0 record)
+    exceeded it with no finding in any file. The ceiling stops runaway scans; it is not a size policy for the tree.
+    """
+
+    max_work_units: int = 134_217_728
     used: int = 0
 
     def __post_init__(self) -> None:

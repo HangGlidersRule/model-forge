@@ -1,0 +1,20 @@
+{
+ "repaired": "Base-wrapper (true base build: Hub commit f3ae211e, quantized-layer names normalized, wrapper reassembled)",
+ "tensors": 19220,
+ "router_biases": {
+  "identical_to_upstream": 23,
+  "differ": 0
+ },
+ "towers": {
+  "identical_to_upstream": 1106,
+  "differ": 0
+ },
+ "trunk": {
+  "identical_to_published": 18091,
+  "differ": 0
+ },
+ "published_tensors_missing": 0,
+ "problems": [],
+ "verdict": "PASS",
+ "published_reference": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4@f3ae211e8e0be9832eb015c18eee965d0e27e86d"
+}
