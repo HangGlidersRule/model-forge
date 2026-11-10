@@ -309,7 +309,7 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             assert "darkstar-nemotron-3.5-lightning-v1.0.0" in text
             assert "--max-model-len" in text
         else:
-            assert "darkstar-nemotron-3-nano-omni-v1.0.0" in text
+            assert "darkstar-nemotron-3-nano-omni-v1.1.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "--max-num-seqs 16" in text
         assert not any(value in text.lower() for value in STALE_UPLOAD_WORDING)

@@ -16,7 +16,7 @@
    },
    "clean_download": "manifest entries 29; hash mismatches []; every safetensors shard identical to the evaluated build",
    "clean_serve": "Model loading took 21.36 GiB Resolved architecture: NemotronH_Nano_Omni_Reasoning_V3 Using 'MARLIN' NvFp4 MoE backend",
-   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered (finish_reason stop); 0 fatal markers in the serve log",
+   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered; the images and speech stopped on their own, and 2 long-answer text prompts (index 1, 4) reached the check's 192-token cap; 0 fatal markers in the serve log",
    "provenance_report": "models/nemotron-3-nano-omni-r1/results/repair-verify-Base-wrapper.json"
   },
   "ablit-nvfp4": {
@@ -31,7 +31,7 @@
    },
    "clean_download": "manifest entries 29; hash mismatches []; every safetensors shard identical to the evaluated build",
    "clean_serve": "Model loading took 21.36 GiB Resolved architecture: NemotronH_Nano_Omni_Reasoning_V3 Using 'MARLIN' NvFp4 MoE backend",
-   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered (finish_reason stop); 0 fatal markers in the serve log",
+   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered; the images and speech stopped on their own, and 1 long-answer text prompt (index 1) reached the check's 192-token cap; 0 fatal markers in the serve log",
    "provenance_report": "models/nemotron-3-nano-omni-r1/results/repair-verify-Abliterated-wrapper.json"
   },
   "ablit-bf16": {
@@ -60,7 +60,7 @@
    },
    "clean_download": "manifest entries 45; hash mismatches []; every safetensors shard identical to the evaluated build",
    "clean_serve": "Model loading took 61.63 GiB Resolved architecture: NemotronH_Nano_Omni_Reasoning_V3",
-   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered (finish_reason stop); 0 fatal markers in the serve log",
+   "clean_checks": "8 text prompts, 2 images and 1 speech clip answered; the images and speech stopped on their own, and 1 long-answer text prompt (index 1) reached the check's 192-token cap; 0 fatal markers in the serve log",
    "provenance_report": "models/nemotron-3-nano-omni-r1/results/repair-verify-Abliterated-BF16.json"
   }
  }

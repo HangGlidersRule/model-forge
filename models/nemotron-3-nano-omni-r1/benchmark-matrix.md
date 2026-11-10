@@ -14,7 +14,7 @@ backend; `--reasoning-parser nemotron_v3`; BF16 KV cache. No speculative decodin
 | Abliterated-BF16 (SFT-r1) | BF16 | LoRA unlearning SFT | 58/198 = 29.3% | 199/200 + 0/83 (re-gate 2026-09-03; shipped 200/200) | 182.7 tok/s | public |
 | Abliterated-ModelOpt-NVFP4 | W4A16-NVFP4 | LoRA unlearning SFT | **58/198 = 29.3%** | **200/200 + 0/83** | **249.5 tok/s** | **public (final servable)** |
 
-**v1.1.0 (2026-11-08, [#35](https://github.com/HangGlidersRule/model-forge/issues/35)): in-place repair, applied to the repositories when the release is tagged.** The
+**v1.1.0 (2026-11-08, [#35](https://github.com/HangGlidersRule/model-forge/issues/35)): in-place repair, live in the three repositories since 2026-11-10 under the `darkstar-nemotron-3-nano-omni-v1.1.0` tag.** The
 rows above are the v1.0.0 measurements on vLLM 0.27.1. Re-measured on vLLM 0.32.0 at the same GPQA protocol
 (8,192-token cap, concurrency 30), in one session with identical flags:
 

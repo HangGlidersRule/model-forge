@@ -20,8 +20,6 @@ extra_gated_heading: Darkstar Nemotron-3-Nano-Omni 30B-A3B Base ModelOpt NVFP4
 
 ## v1.1.0 repair
 
-**Publication status:** the v1.1.0 files are staged and verified; this repository is updated to them when the release is tagged, and serves v1.0.0 until then.
-
 **[model-forge#35](https://github.com/HangGlidersRule/model-forge/issues/35).** Since 2026-09-03 this repository has served the wrong weights: an upload replaced the base build with the Abliterated W4A16 shards (the reduced-refusal
 model), byte for byte. The base build itself survived only in this repository's history, at commit
 [`f3ae211e`](https://huggingface.co/HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4/tree/f3ae211e8e0be9832eb015c18eee965d0e27e86d). That build was text-only. v1.1.0 is that base build, repaired:
@@ -54,7 +52,7 @@ KV-cache quantization disabled (BF16). Quantization ran on the language trunk ex
 Full provenance, protocol, and caveats:
 
 - [Source card](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md)
-- [Recipe](https://github.com/HangGlidersRule/model-forge/blob/main/recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml)
+- [Recipe](https://github.com/HangGlidersRule/model-forge/blob/main/recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-base-modelopt-w4a16-nvfp4.yaml)
 
 ## Evaluation
 
@@ -77,7 +75,7 @@ throughput is characterized here; aggregate concurrent throughput is separate.
 
 ## Release reference
 
-Family release: [`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0). This immutable tag exists and the release contract is published.
+Family release: [`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0). This immutable tag exists and the release contract is published.
 
 ## Runtime
 

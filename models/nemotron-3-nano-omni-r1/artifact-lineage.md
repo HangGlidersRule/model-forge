@@ -28,7 +28,7 @@
 
 ## v1.1.0 repair (2026-11-08, #35)
 
-The three owned checkpoints are repaired in place when v1.1.0 is tagged (until then the repositories serve v1.0.0); their repositories keep their names:
+The three owned checkpoints were repaired in place under the v1.1.0 tag (live since 2026-11-10; receipt `results/repair-publication-receipt-v1.1.0.json`); their repositories keep their names:
 - **Base W4A16:** the true base build from Hub commit `f3ae211e` (its quantized-layer names normalized to the
   `backbone.*` convention by `scripts/normalize_quant_names.py`; no tensor bytes change).
 - **W4A16 products:** the wrapper reassembled byte for byte around the unchanged quantized trunk
@@ -53,4 +53,4 @@ The three owned checkpoints are repaired in place when v1.1.0 is tagged (until t
 The three owned checkpoints are published (private-first creation, verification, then public flip)
 with gold-standard cards carrying the measured gates, and are collected in the
 [Darkstar Nemotron-3-Nano-Omni collection](https://huggingface.co/collections/HangGlidersRule/darkstar-nemotron-3-nano-omni-30b-a3b-6a9a2608d4e2ad4c43a996a1).
-The family release tag is `darkstar-nemotron-3-nano-omni-v1.0.0`.
+The family release tag is `darkstar-nemotron-3-nano-omni-v1.1.0` (v1.0.0: `darkstar-nemotron-3-nano-omni-v1.0.0`).

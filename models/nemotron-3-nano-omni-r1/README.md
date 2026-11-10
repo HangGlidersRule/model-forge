@@ -20,7 +20,7 @@ or weight target. Its weights remain solely at
 pinned to `24e67ea000b7c2837fc8f9488aa2008524fac8ba` under the NVIDIA Open Model Agreement.
 
 The family release is the immutable tag
-[`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0).
+[`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0) (v1.0.0: [`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0)).
 
 ## Documents
 
@@ -46,7 +46,7 @@ No HangGlidersRule repository exists or is planned for the unchanged BF16 contro
 
 ## v1.1.0: in-place repair (#35)
 
-**Publication status:** the v1.1.0 files are staged and verified; the three repositories are updated to them when the release is tagged, and serve v1.0.0 until then.
+**Publication status:** live since 2026-11-10 under the tag [`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0); each repository was downloaded clean and served from that download after promotion ([`results/repair-publication-receipt-v1.1.0.json`](results/repair-publication-receipt-v1.1.0.json)).
 
 
 The v1.0.0 weights had three byte-level defects ([#35](https://github.com/HangGlidersRule/model-forge/issues/35)):
@@ -60,7 +60,7 @@ The v1.0.0 weights had three byte-level defects ([#35](https://github.com/HangGl
    repository served), the 23 MoE routers' `e_score_correction_bias` tensors
    (float32 upstream) were rounded through BF16.
 
-v1.1.0 replaces the weights in the same repositories when it is tagged:
+v1.1.0 replaced the weights in the same repositories:
 - **W4A16 products:** the full `NemotronH_Nano_Omni_Reasoning_V3` wrapper, rebuilt byte for byte around the
   unchanged quantized trunk ([`scripts/reassemble_omni_wrapper.py`](scripts/reassemble_omni_wrapper.py)).
 - **Abliterated products:** router biases restored to the upstream float32 bytes (the base build already had them)

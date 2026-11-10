@@ -20,6 +20,10 @@ extra_gated_heading: Darkstar Nemotron-3-Nano-Omni 30B-A3B Abliterated BF16
 > **Reduced-refusal model:** a refusal-behavior edit was deliberately applied. Read the safety
 > warning before use.
 
+## v1.1.0 repair
+
+**[model-forge#35](https://github.com/HangGlidersRule/model-forge/issues/35).** The v1.0.0 weights in this repository are the full `NemotronH_Nano_Omni_Reasoning_V3` wrapper, but the 23 MoE routers' `e_score_correction_bias` tensors, which upstream stores in float32, were rounded through BF16 (55.7645 stored as 55.75, for example), which shifts expert selection. v1.1.0 restores them to the upstream float32 bytes and changes nothing else: an independent provenance check reads every tensor and finds the 23 router biases and all 1,106 tower tensors identical to upstream, and all 6,220 other language-model tensors identical to v1.0.0 ([report](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/results/repair-verify-Abliterated-BF16.json)).
+
 ## Summary
 
 BF16 derivative of
@@ -47,10 +51,11 @@ Full provenance, protocol, and caveats:
 
 | Metric | Value | Basis |
 |---|---|---|
-| Behavior: harmful-prompt compliance | 200/200 (0/200 refusals) | fresh suite on this artifact; 0 errors |
-| Safe over-refusals | 0/83 (0.00%) | 0 errors |
-| GPQA Diamond (thinking on) | 60/198 = 30.3% | llm-inference-bench `gpqa-diamond`, chat template + thinking ON, temp 0; full denominator; 20 unparseable answers |
-| Intelligence delta vs upstream BF16 control | -14 questions / ~-16 pp vs ~46% base reference | same protocol; **documented structural cost, shipped by explicit reviewer decision** |
+| Behavior: harmful-prompt compliance | 200/200 (0/200 refusals) | measured on the repaired weights, served; 0 errors ([result](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/results/abliteration-eval-abliterated-bf16-repaired-v032.json)) |
+| Safe over-refusals | 0/83 (0.00%) | same run; 0 errors |
+| GPQA Diamond (thinking on) | 70/198 = 35.4% | llm-inference-bench `gpqa-diamond`, chat template + thinking ON, temp 0, full 198 denominator, 8,192-token answer cap, concurrency 30 (the published v1.0.0 protocol); vLLM v0.32.0 (pinned digest `befccf0e`, plus the `vllm[audio]` extras), one RTX PRO 6000 Blackwell; 0 errors ([result](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-bf16-repaired-v032.json)) |
+| Published v1.0.0 (historical) | 60/198 = 30.3% | a different protocol (thinking off, 512-token answers, temperature 1.0); not comparable with the row above |
+| Image and audio input | 14/14 images and 1/1 speech clip answered | serving window on the repaired weights; a clean download of the staged v1.1.0 files also answered 8 text, 2 image and 1 speech request ([result](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/results/repair-media-identity-v1.1.0.json)) |
 
 Missing cells are marked `not measured` and are never backfilled from a different checkpoint or
 protocol.
@@ -64,22 +69,19 @@ and legal review. Refusal-rate numbers are behavior measurements, not safety end
 
 ## Release reference
 
-Family release: [`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0). This immutable tag exists and the release contract is published.
+Family release: [`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0). This immutable tag exists and the release contract is published.
 
 ## Runtime
 
-Validated with vLLM, Flash Attention eager fallback path, BF16 KV cache, context 131,072, and
-`max_num_seqs=16` (no speculative decoding is available for this family — no MTP layers, no
-compatible drafter; verified):
+Validated with vLLM `0.32.0` plus the audio extras (`pip install "vllm[audio]"`), KV cache in the checkpoint dtype, context 131,072. `--mamba-ssm-cache-dtype float32` is required: vLLM does not set it for the Omni wrapper, and the default lowers quality.
 
 ```bash
 vllm serve HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16 \
   --served-model-name darkstar-nemotron3nanoomni-abliterated-bf16 \
   --trust-remote-code \
-  --kv-cache-dtype bfloat16 \
   --max-model-len 131072 \
   --max-num-seqs 16 \
-  --max-num-batched-tokens 32768 \
-  --gpu-memory-utilization 0.92 \
-  --reasoning-parser nemotron_v3
+  --mamba-ssm-cache-dtype float32 \
+  --reasoning-parser nemotron_v3 \
+  --gpu-memory-utilization 0.85
 ```
