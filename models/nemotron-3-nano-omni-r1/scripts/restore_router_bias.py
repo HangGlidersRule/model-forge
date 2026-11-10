@@ -7,7 +7,8 @@ For every float32 tensor of UPSTREAM (the routers' e_score_correction_bias, 23 M
 shape; its bytes are replaced by the upstream bytes. Every other byte of every shard is copied unchanged, so offsets,
 headers and all other tensors stay identical. Non-weight files are copied, except manifest.sha256, which is rewritten.
 
-Fails closed on a missing tensor, a dtype or shape mismatch, or OUT already existing. After writing it re-reads OUT:
+Fails closed on a missing tensor, a dtype or shape mismatch, OUT already existing, an index shard name that is not
+one plain file name, or an input file that resolves outside its checkpoint directory (checkpoint_paths.py). After writing it re-reads OUT:
 every tensor must be byte-identical to CKPT except the restored ones, which must equal UPSTREAM.
 Prints RESTORE-OK with counts. Usage: restore_router_bias.py UPSTREAM CKPT OUT"""
 from __future__ import annotations
@@ -18,6 +19,11 @@ import shutil
 import struct
 import sys
 from pathlib import Path
+
+# The confinement helper sits beside this script (stdlib only); put its directory on the path so the import works
+# however the script is loaded (run directly in a container, or by file path from the tests).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from checkpoint_paths import CheckpointPathError, source_file, weight_map  # noqa: E402
 
 LM = "language_model."
 
@@ -34,18 +40,18 @@ def header(p: Path) -> tuple[dict, int]:
     return h, 8 + n
 
 
-def weight_map(root: Path) -> dict[str, str]:
-    idx = root / "model.safetensors.index.json"
-    if idx.exists():
-        return json.loads(idx.read_text())["weight_map"]
-    return {k: "model.safetensors" for k in header(root / "model.safetensors")[0]}
+def checkpoint_map(root: Path) -> dict[str, str]:
+    if (root / "model.safetensors.index.json").exists():
+        return weight_map(root)
+    return {k: "model.safetensors" for k in header(source_file(root, "model.safetensors"))[0]}
 
 
 def read(root: Path, wm: dict[str, str], name: str) -> tuple[str, list, bytes]:
-    h, off = header(root / wm[name])
+    src = source_file(root, wm[name])
+    h, off = header(src)
     info = h[name]
     b, e = info["data_offsets"]
-    with (root / wm[name]).open("rb") as f:
+    with src.open("rb") as f:
         f.seek(off + b)
         return info["dtype"], info["shape"], f.read(e - b)
 
@@ -59,13 +65,19 @@ def sha(p: Path) -> str:
 
 
 def main() -> int:
-    up, ck, out = (Path(a) for a in sys.argv[1:4])
+    try:
+        return restore(*(Path(a) for a in sys.argv[1:4]))
+    except CheckpointPathError as error:
+        raise SystemExit(f"RESTORE-FAILED: {error}") from None
+
+
+def restore(up: Path, ck: Path, out: Path) -> int:
     if out.exists():
         raise SystemExit(f"refusing to overwrite {out}")
-    uwm, cwm = weight_map(up), weight_map(ck)
+    uwm, cwm = checkpoint_map(up), checkpoint_map(ck)
     f32 = []
     for shard in sorted(set(uwm.values())):
-        f32 += [k for k, v in header(up / shard)[0].items() if v["dtype"] == "F32" and k.startswith(LM)]
+        f32 += [k for k, v in header(source_file(up, shard))[0].items() if v["dtype"] == "F32" and k.startswith(LM)]
     by_norm = {norm(k): k for k in cwm}
     plan: dict[str, dict[str, bytes]] = {}
     for k in sorted(f32):
@@ -86,13 +98,14 @@ def main() -> int:
         if p.is_dir() or rel.name in ("manifest.sha256", "SHA256SUMS.upstream", "SOURCE_REVISION") or rel.parts[0] == ".cache":
             continue
         (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
-        if rel.name not in plan:
-            shutil.copyfile(p, tmp / rel)
+        src = source_file(ck, rel)
+        if rel.as_posix() not in plan:
+            shutil.copyfile(src, tmp / rel)
             continue
-        h, off = header(p)
-        shutil.copyfile(p, tmp / rel)
+        h, off = header(src)
+        shutil.copyfile(src, tmp / rel)
         with (tmp / rel).open("r+b") as f:
-            for name, new in plan[rel.name].items():
+            for name, new in plan[rel.as_posix()].items():
                 b, e = h[name]["data_offsets"]
                 if e - b != len(new):
                     raise SystemExit(f"RESTORE-FAILED: size mismatch for {name}")
@@ -100,15 +113,15 @@ def main() -> int:
                 f.write(new)
     restored = sum(len(v) for v in plan.values())
     # Re-read and verify every tensor.
-    owm = weight_map(tmp)
+    owm = checkpoint_map(tmp)
     bad = []
     for shard in sorted(set(cwm.values())):
-        h, off = header(ck / shard)
+        h, off = header(source_file(ck, shard))
         h2, off2 = header(tmp / shard)
         if h != h2:
             bad.append(f"header changed in {shard}")
             continue
-        with (ck / shard).open("rb") as a, (tmp / shard).open("rb") as b_:
+        with source_file(ck, shard).open("rb") as a, (tmp / shard).open("rb") as b_:
             for name, info in h.items():
                 s, e = info["data_offsets"]
                 a.seek(off + s)

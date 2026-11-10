@@ -19,9 +19,10 @@ each split or subset). Bytes are hashed before they are parsed, from the same bu
 A shard already under STORE_ROOT/datasets/<org>/<name>@<revision>/ is used when it hashes to its pin; otherwise it is
 downloaded, verified, and stored there for the next run (a read-only store is only read).
 Output: OUT/calib.jsonl rows {"stream", "messages", "image"|"audio" (local file name), "source", "row"} and OUT/media/.
-Prints CALIB-OK with counts and the JSONL's sha256. Expected: 576 rows, 320 media files, calib.jsonl sha256
-83cebc8e3b109da4d7957ec4980c1412988545de62b7c8cc64ff89914906f515 (the set the W4A4 build used; reproduced byte for byte
-from an empty cache and again from the store alone).
+Prints CALIB-OK with counts and the JSONL's sha256 only when the output is the pinned set: 576 rows, 320 media files,
+calib.jsonl sha256 83cebc8e3b109da4d7957ec4980c1412988545de62b7c8cc64ff89914906f515 (the set the W4A4 build used;
+reproduced byte for byte from an empty cache and again from the store alone). Any difference, such as rows the
+text or image loops dropped, prints CALIB-FAILED with each mismatch and exits non-zero.
 Hub access: nvidia/Nemotron-Post-Training-Dataset-v2 is gated, so an empty store needs a token with access to it,
 read from /secret/token (a file mounted for the run, deleted after reading) or else from HF_TOKEN. A store that
 already holds every pinned shard needs no token.
@@ -39,9 +40,11 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
-import pyarrow.parquet as pq
-
 SEED = 1234
+# The set the W4A4 build used (see the docstring); finish() refuses any other output.
+EXPECTED_ROWS = 576
+EXPECTED_MEDIA = 320
+EXPECTED_SHA256 = "83cebc8e3b109da4d7957ec4980c1412988545de62b7c8cc64ff89914906f515"
 NPT = ("nvidia/Nemotron-Post-Training-Dataset-v2", "5c89e01dd720ae0f4058445ed49c5fb68a03c76e")
 CAULDRON = ("HuggingFaceM4/the_cauldron", "847a98a779b1652d65111daf20c972dfcd333605")
 LIBRI = ("hf-internal-testing/librispeech_asr_dummy", "5be91486e11a2d616f4ec5db8d3fd248585ac07a")
@@ -120,6 +123,9 @@ def pinned(store: Path, repo: str, rev: str, path: str, sha256: str) -> bytes:
 
 
 def main() -> int:
+    # Imported here so the pin check (finish, pin_mismatches) is importable and testable without pyarrow.
+    import pyarrow.parquet as pq
+
     global TOKEN
     store, out = Path(sys.argv[1]), Path(sys.argv[2])
     tok_file = Path("/secret/token")
@@ -165,14 +171,35 @@ def main() -> int:
                      "messages": [{"role": "user", "content": "Transcribe this audio."}, {"role": "assistant", "content": r["text"]}],
                      "source": f"{LIBRI[0]}@{LIBRI[1][:8]}/{AUDIO_SHARD[0]}", "row": i})
 
+    finish(out, rows)
+    return 0
+
+
+def pin_mismatches(rows: int, media: int, digest: str) -> list[str]:
+    """Every way the output differs from the pinned set; empty when it is the pinned set."""
+    problems = []
+    if rows != EXPECTED_ROWS:
+        problems.append(f"rows={rows}, pinned {EXPECTED_ROWS}")
+    if media != EXPECTED_MEDIA:
+        problems.append(f"media={media}, pinned {EXPECTED_MEDIA}")
+    if digest != EXPECTED_SHA256:
+        problems.append(f"sha256={digest}, pinned {EXPECTED_SHA256}")
+    return problems
+
+
+def finish(out: Path, rows: list[dict]) -> None:
+    """Write calib.jsonl, then print CALIB-OK, or stop with CALIB-FAILED unless it is the pinned set."""
     p = out / "calib.jsonl"
     with p.open("w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     digest = hashlib.sha256(p.read_bytes()).hexdigest()
+    media = len(list((out / "media").iterdir()))
     counts = {s: sum(1 for r in rows if r["stream"] == s) for s in ("text", "image", "audio")}
-    print(f"CALIB-OK rows={len(rows)} {counts} media={len(list((out / 'media').iterdir()))} sha256={digest}", flush=True)
-    return 0
+    problems = pin_mismatches(len(rows), media, digest)
+    if problems:
+        raise SystemExit(f"CALIB-FAILED not the pinned set: {'; '.join(problems)} ({counts})")
+    print(f"CALIB-OK rows={len(rows)} {counts} media={media} sha256={digest}", flush=True)
 
 
 if __name__ == "__main__":

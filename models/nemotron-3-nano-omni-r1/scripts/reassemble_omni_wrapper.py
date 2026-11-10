@@ -18,7 +18,9 @@ Output (OUT): a `NemotronH_Nano_Omni_Reasoning_V3` checkpoint:
   - hf_quant_config.json = the trunk's, renamed the same way;
   - every other file (code, processor, tokenizer, chat template, generation config) copied from UPSTREAM byte for byte;
   - model.safetensors.index.json over the union, and manifest.sha256 over every file.
-Prints REASSEMBLE-OK with counts. Fails closed on any name collision, missing file or count mismatch.
+Prints REASSEMBLE-OK with counts. Fails closed on any name collision, missing file or count mismatch, on an index
+shard name that is not one plain file name, and on any input file that resolves outside its checkpoint directory
+(a Hub cache snapshot's links into its blobs/ directory are allowed; checkpoint_paths.py).
 Usage: reassemble_omni_wrapper.py TRUNK UPSTREAM OUT"""
 from __future__ import annotations
 
@@ -28,6 +30,11 @@ import shutil
 import struct
 import sys
 from pathlib import Path
+
+# The confinement helper sits beside this script (stdlib only); put its directory on the path so the import works
+# however the script is loaded (run directly in a container, or by file path from the tests).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from checkpoint_paths import CheckpointPathError, source_file, weight_map  # noqa: E402
 
 LM = "language_model."
 SHARD_TOWERS = "model-towers.safetensors"
@@ -137,29 +144,30 @@ def reassemble(trunk: Path, upstream: Path, out: Path) -> dict:
     tmp = out.with_name(out.name + ".partial")
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
-    t_idx = json.loads((trunk / "model.safetensors.index.json").read_text())["weight_map"]
-    u_idx = json.loads((upstream / "model.safetensors.index.json").read_text())["weight_map"]
-    t_cfg = json.loads((trunk / "config.json").read_text())
-    u_cfg = json.loads((upstream / "config.json").read_text())
+    t_idx = weight_map(trunk)
+    u_idx = weight_map(upstream)
+    t_cfg = json.loads(source_file(trunk, "config.json").read_text())
+    u_cfg = json.loads(source_file(upstream, "config.json").read_text())
     if t_cfg.get("architectures") != ["NemotronHForCausalLM"]:
         raise SystemExit(f"trunk is not a standalone nemotron_h checkpoint: {t_cfg.get('architectures')}")
     if "vision_config" not in u_cfg or "sound_config" not in u_cfg or "llm_config" not in u_cfg:
         raise SystemExit("upstream config lacks vision_config / sound_config / llm_config")
 
-    weight_map: dict[str, str] = {}
+    out_map: dict[str, str] = {}
     for shard in sorted(set(t_idx.values())):
-        weight_map.update(write_renamed(trunk / shard, tmp / shard, lm_name))
+        # weight_map() checked every shard name is one plain file name, so tmp / shard stays in tmp.
+        out_map.update(write_renamed(source_file(trunk, shard), tmp / shard, lm_name))
     towers = sorted(k for k in u_idx if not k.startswith(LM))
     by_src: dict[Path, list[str]] = {}
     for k in towers:
-        by_src.setdefault(upstream / u_idx[k], []).append(k)
+        by_src.setdefault(source_file(upstream, u_idx[k]), []).append(k)
     tower_map = write_subset(by_src, tmp / SHARD_TOWERS)
-    clash = set(tower_map) & set(weight_map)
+    clash = set(tower_map) & set(out_map)
     if clash:
         raise SystemExit(f"tower and trunk names collide: {sorted(clash)[:3]}")
-    weight_map.update(tower_map)
+    out_map.update(tower_map)
     expected_lm = {lm_name(k) for k in t_idx}
-    if {k for k in weight_map if k.startswith(LM)} != expected_lm or len(tower_map) != len(towers):
+    if {k for k in out_map if k.startswith(LM)} != expected_lm or len(tower_map) != len(towers):
         raise SystemExit("tensor count mismatch after reassembly")
 
     for p in sorted(upstream.rglob("*")):
@@ -168,17 +176,17 @@ def reassemble(trunk: Path, upstream: Path, out: Path) -> dict:
                 or p.name in UPSTREAM_SKIP_NAMES or p.name.endswith(UPSTREAM_SKIP_SUFFIXES)):
             continue
         (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(p, tmp / rel)
+        shutil.copyfile(source_file(upstream, rel), tmp / rel)
 
     cfg = dict(u_cfg)
     cfg["quantization_config"] = rename_quant_config(t_cfg["quantization_config"])
     (tmp / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
-    hq = json.loads((trunk / "hf_quant_config.json").read_text())
+    hq = json.loads(source_file(trunk, "hf_quant_config.json").read_text())
     hq["quantization"] = rename_quant_config(hq["quantization"])
     (tmp / "hf_quant_config.json").write_text(json.dumps(hq, indent=4) + "\n")
-    total = sum((tmp / s).stat().st_size for s in set(weight_map.values()))
+    total = sum((tmp / s).stat().st_size for s in set(out_map.values()))
     (tmp / "model.safetensors.index.json").write_text(
-        json.dumps({"metadata": {"total_size": total}, "weight_map": dict(sorted(weight_map.items()))}, indent=2) + "\n")
+        json.dumps({"metadata": {"total_size": total}, "weight_map": dict(sorted(out_map.items()))}, indent=2) + "\n")
     files = sorted(p for p in tmp.rglob("*") if p.is_file())
     (tmp / "manifest.sha256").write_text("".join(f"{sha256(p)}  {p.relative_to(tmp)}\n" for p in files))
     tmp.rename(out)
@@ -188,7 +196,10 @@ def reassemble(trunk: Path, upstream: Path, out: Path) -> dict:
 
 def main() -> int:
     trunk, upstream, out = (Path(a) for a in sys.argv[1:4])
-    r = reassemble(trunk, upstream, out)
+    try:
+        r = reassemble(trunk, upstream, out)
+    except CheckpointPathError as error:
+        raise SystemExit(f"REASSEMBLE-FAILED: {error}") from None
     print(f"REASSEMBLE-OK {out} " + " ".join(f"{k}={v}" for k, v in r.items()), flush=True)
     return 0
 

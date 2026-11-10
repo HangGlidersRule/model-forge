@@ -9,7 +9,9 @@ files; every other file is hard-linked or copied unchanged (tensor bytes are nev
 
 Fail-closed: every name must map, the mapped set must equal REFERENCE's quantized_layers name set (a trunk with the
 backbone.* convention, e.g. the abliterated W4A16 product), every per-layer algorithm must be preserved, and every other
-quantization field must already equal REFERENCE's. Usage: normalize_quant_names.py TRUNK REFERENCE OUT"""
+quantization field must already equal REFERENCE's. Every file is read through checkpoint_paths.source_file(): one that
+resolves outside its checkpoint directory (other than a Hub cache snapshot's blobs/) fails the run.
+Usage: normalize_quant_names.py TRUNK REFERENCE OUT"""
 from __future__ import annotations
 
 import json
@@ -17,6 +19,11 @@ import re
 import shutil
 import sys
 from pathlib import Path
+
+# The confinement helper sits beside this script (stdlib only); put its directory on the path so the import works
+# however the script is loaded (run directly in a container, or by file path from the tests).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from checkpoint_paths import CheckpointPathError, source_file  # noqa: E402
 
 RULES = (
     (re.compile(r"^model\.layers\.(\d+)\.mixer\.experts\.(up|down)_proj\.(\d+)$"),
@@ -55,11 +62,17 @@ def remap(layers: dict) -> dict:
 
 
 def main() -> int:
-    trunk, ref, out = (Path(a) for a in sys.argv[1:4])
+    try:
+        return normalize(*(Path(a) for a in sys.argv[1:4]))
+    except CheckpointPathError as error:
+        raise SystemExit(f"NORMALIZE-FAILED: {error}") from None
+
+
+def normalize(trunk: Path, ref: Path, out: Path) -> int:
     if out.exists():
         raise SystemExit(f"refusing to overwrite {out}")
-    hq = json.loads((trunk / "hf_quant_config.json").read_text())
-    rq = json.loads((ref / "hf_quant_config.json").read_text())
+    hq = json.loads(source_file(trunk, "hf_quant_config.json").read_text())
+    rq = json.loads(source_file(ref, "hf_quant_config.json").read_text())
     new_layers = remap(hq["quantization"]["quantized_layers"])
     ref_layers = rq["quantization"]["quantized_layers"]
     if set(new_layers) != set(ref_layers):
@@ -70,10 +83,10 @@ def main() -> int:
     if {k: v for k, v in hq["quantization"].items() if k != "quantized_layers"} != \
        {k: v for k, v in rq["quantization"].items() if k != "quantized_layers"}:
         raise SystemExit("NORMALIZE-FAILED: quantization fields other than the layer names differ from the reference")
-    cfg = json.loads((trunk / "config.json").read_text())
+    cfg = json.loads(source_file(trunk, "config.json").read_text())
     qc = cfg["quantization_config"]
     qc["quantized_layers"] = remap(qc["quantized_layers"])
-    rcfg = json.loads((ref / "config.json").read_text())
+    rcfg = json.loads(source_file(ref, "config.json").read_text())
     if qc != rcfg["quantization_config"]:
         raise SystemExit("NORMALIZE-FAILED: config.json quantization_config still differs from the reference")
     tmp = out.with_name(out.name + ".partial")
@@ -82,7 +95,7 @@ def main() -> int:
     for p in sorted(trunk.iterdir()):
         if p.is_dir() or p.name in ("hf_quant_config.json", "config.json", "manifest.sha256"):
             continue
-        shutil.copyfile(p, tmp / p.name)
+        shutil.copyfile(source_file(trunk, p.name), tmp / p.name)
     hq["quantization"]["quantized_layers"] = new_layers
     (tmp / "hf_quant_config.json").write_text(json.dumps(hq, indent=4) + "\n")
     (tmp / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
