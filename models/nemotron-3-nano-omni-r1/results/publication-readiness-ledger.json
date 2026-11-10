@@ -92,8 +92,8 @@
         {
           "id": "artifact_manifest",
           "status": "verified",
-          "evidence": "manifest.sha256 over 29 files of the v1.1.0 wrapper (staged commit 81c64d1a); every entry re-hashed after a clean download",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-receipt-v1.1.0.json",
+          "evidence": "Published manifest.sha256 f167e545 over 30 files at public commit d55d0145: the staged manifest 51e6654e (results/repair-receipt-v1.1.0.json) with its README.md entry added for the promoted card; the other 29 entries are identical to it. Every entry re-hashed after a clean download of the public repository",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -162,7 +162,7 @@
         {
           "id": "model_card_final",
           "status": "verified",
-          "evidence": "v1.1.0 card live at d55d0145: anonymous fetch 200, identical to the uploaded card, 8 GitHub links all answering 200",
+          "evidence": "v1.1.0 card live at d55d0145: anonymous fetch 200, identical to the uploaded card, all 11 distinct outbound URLs (8 on GitHub, the license link included) answering 200",
           "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
@@ -227,8 +227,8 @@
         {
           "id": "artifact_manifest",
           "status": "verified",
-          "evidence": "manifest.sha256 over 45 files of v1.1.0 (staged commit e996b86d); every entry re-hashed after a clean download",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-receipt-v1.1.0.json",
+          "evidence": "Published manifest.sha256 4cf674b5 over 45 files at public commit 2a8dcd4c: the staged manifest 15780a5c (results/repair-receipt-v1.1.0.json) with its README.md entry replaced for the promoted card; the other 44 entries are identical to it. Every entry re-hashed after a clean download of the public repository",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -283,7 +283,7 @@
         {
           "id": "model_card_final",
           "status": "verified",
-          "evidence": "v1.1.0 card live at 2a8dcd4c: anonymous fetch 200, identical to the uploaded card, 8 GitHub links all answering 200",
+          "evidence": "v1.1.0 card live at 2a8dcd4c: anonymous fetch 200, identical to the uploaded card, all 10 distinct outbound URLs (8 on GitHub, the license link included) answering 200",
           "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
@@ -361,8 +361,8 @@
         {
           "id": "artifact_manifest",
           "status": "verified",
-          "evidence": "manifest.sha256 over 29 files of the v1.1.0 wrapper (staged commit 942c83f7); every entry re-hashed after a clean download",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-receipt-v1.1.0.json",
+          "evidence": "Published manifest.sha256 c3165750 over 30 files at public commit 302bc448: the staged manifest 83d2c6bf (results/repair-receipt-v1.1.0.json) with its README.md entry added for the promoted card; the other 29 entries are identical to it. Every entry re-hashed after a clean download of the public repository",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -438,7 +438,7 @@
         {
           "id": "model_card_final",
           "status": "verified",
-          "evidence": "v1.1.0 card live at 302bc448: anonymous fetch 200, identical to the uploaded card, 10 GitHub links all answering 200",
+          "evidence": "v1.1.0 card live at 302bc448: anonymous fetch 200, identical to the uploaded card, all 13 distinct outbound URLs (10 on GitHub, the license link included) answering 200",
           "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
