@@ -7,6 +7,7 @@ name that truncated a file outside both snapshots, a ../ name that read and wrot
 directories, and a sidecar link to a file outside the snapshot copied in as a regular file. Synthetic, stdlib only."""
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -196,6 +197,20 @@ def test_only_a_hub_snapshot_may_link_into_a_blobs_directory(tmp_path: Path) -> 
     assert cp.source_file(snap, "config.json").read_text() == "bytes"
 
 
+def test_reassembly_refuses_a_trunk_shard_linked_outside(tmp_path: Path) -> None:
+    """A plainly named trunk shard that links outside the trunk is refused, not read."""
+    rea = _load("reassemble_omni_wrapper")
+    _trunk(tmp_path / "trunk")
+    _upstream(tmp_path / "up")
+    shard = tmp_path / "trunk" / "model-00001-of-00001.safetensors"
+    outside = tmp_path / "outside-trunk.safetensors"
+    shard.rename(outside)
+    os.symlink(outside, shard)
+    with pytest.raises(rea.CheckpointPathError, match="outside"):
+        rea.reassemble(tmp_path / "trunk", tmp_path / "up", tmp_path / "out")
+    assert not (tmp_path / "out").exists() and not (tmp_path / "out.partial").exists()
+
+
 def test_reassembly_refuses_an_upstream_shard_linked_outside(tmp_path: Path) -> None:
     """A plain shard name passes the name rule; the file it names must still resolve inside the snapshot. Without the
     check the outside file's tensor of the same name would be published as the vision tower."""
@@ -335,7 +350,38 @@ def test_normalize_refuses_a_trunk_file_linked_outside(tmp_path: Path) -> None:
     os.symlink(secret, tmp_path / "trunk" / "tokenizer.json")
     with pytest.raises(SystemExit, match="NORMALIZE-FAILED"):
         _run(mod, tmp_path / "trunk", tmp_path / "ref", tmp_path / "out")
-    assert not (tmp_path / "out").exists()
+    assert not (tmp_path / "out").exists() and not (tmp_path / "out.partial").exists()
+
+
+@pytest.mark.parametrize("script", ["reassemble", "restore", "normalize"])
+def test_a_failed_write_leaves_no_partial_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, script: str) -> None:
+    """A run that fails while writing (here: every file copy raises) removes its OUT.partial."""
+    def boom(*args: object, **kwargs: object) -> None:
+        raise OSError("simulated write failure")
+
+    out = tmp_path / "out"
+    if script == "reassemble":
+        mod = _load("reassemble_omni_wrapper")
+        _trunk(tmp_path / "trunk")
+        _upstream(tmp_path / "up")
+        monkeypatch.setattr(mod.shutil, "copyfile", boom)
+        with pytest.raises(OSError, match="simulated"):
+            mod.reassemble(tmp_path / "trunk", tmp_path / "up", out)
+    elif script == "restore":
+        mod = _load("restore_router_bias")
+        _bias_up(tmp_path / "up")
+        _bias_ckpt(tmp_path / "ck")
+        monkeypatch.setattr(mod.shutil, "copyfile", boom)
+        with pytest.raises(OSError, match="simulated"):
+            _run(mod, tmp_path / "up", tmp_path / "ck", out)
+    else:
+        mod = _load("normalize_quant_names")
+        _trunk(tmp_path / "trunk")
+        _trunk(tmp_path / "ref")
+        monkeypatch.setattr(mod.shutil, "copyfile", boom)
+        with pytest.raises(OSError, match="simulated"):
+            _run(mod, tmp_path / "trunk", tmp_path / "ref", out)
+    assert not out.exists() and not (tmp_path / "out.partial").exists()
 
 
 def test_normalize_still_copies_a_plain_trunk(tmp_path: Path) -> None:
@@ -345,6 +391,165 @@ def test_normalize_still_copies_a_plain_trunk(tmp_path: Path) -> None:
     assert _run(mod, tmp_path / "trunk", tmp_path / "ref", tmp_path / "out") == 0
     assert (tmp_path / "out" / "model-00001-of-00001.safetensors").read_bytes() == \
         (tmp_path / "trunk" / "model-00001-of-00001.safetensors").read_bytes()
+
+
+# --- round 2: every source_file() call site and the exact allowance ------------------------------------------------
+
+def _link_out(root: Path, name: str, tmp_path: Path, content: str) -> None:
+    """Replace root/name with a link to a file outside root holding `content`."""
+    outside = tmp_path / "outside" / f"{root.name}-{name}"
+    outside.parent.mkdir(exist_ok=True)
+    outside.write_text(content)
+    (root / name).unlink()
+    os.symlink(outside, root / name)
+
+
+@pytest.mark.parametrize("side", ["trunk", "up"])
+def test_reassembly_refuses_a_config_linked_outside(tmp_path: Path, side: str) -> None:
+    rea = _load("reassemble_omni_wrapper")
+    _trunk(tmp_path / "trunk")
+    _upstream(tmp_path / "up")
+    _link_out(tmp_path / side, "config.json", tmp_path, (tmp_path / side / "config.json").read_text())
+    with pytest.raises(rea.CheckpointPathError, match="outside"):
+        rea.reassemble(tmp_path / "trunk", tmp_path / "up", tmp_path / "out")
+    assert not (tmp_path / "out").exists() and not (tmp_path / "out.partial").exists()
+
+
+@pytest.mark.parametrize("name", ["hf_quant_config.json", "config.json"])
+@pytest.mark.parametrize("side", ["trunk", "ref"])
+def test_normalize_refuses_a_parsed_file_linked_outside(tmp_path: Path, name: str, side: str) -> None:
+    mod = _load("normalize_quant_names")
+    _trunk(tmp_path / "trunk")
+    _trunk(tmp_path / "ref")
+    _link_out(tmp_path / side, name, tmp_path, (tmp_path / side / name).read_text())
+    with pytest.raises(SystemExit, match="NORMALIZE-FAILED.*outside"):
+        _run(mod, tmp_path / "trunk", tmp_path / "ref", tmp_path / "out")
+    assert not (tmp_path / "out").exists() and not (tmp_path / "out.partial").exists()
+
+
+def test_containment_is_by_path_not_by_name_prefix(tmp_path: Path) -> None:
+    """A sibling whose name extends the checkpoint's (ck-other next to ck) is outside it."""
+    cp = _load("checkpoint_paths")
+    ck, sibling = tmp_path / "ck", tmp_path / "ck-other"
+    ck.mkdir()
+    sibling.mkdir()
+    (sibling / "config.json").write_text("{}")
+    os.symlink(sibling / "config.json", ck / "config.json")
+    with pytest.raises(cp.CheckpointPathError, match="outside"):
+        cp.source_file(ck, "config.json")
+
+
+def _hub_snapshot(tmp_path: Path) -> tuple[Path, Path]:
+    repo = tmp_path / "hub" / "models--org--name"
+    snap = repo / "snapshots" / ("a" * 40)
+    snap.mkdir(parents=True)
+    (repo / "blobs").mkdir()
+    return repo, snap
+
+
+def test_snapshot_links_may_reach_only_the_repositorys_blobs(tmp_path: Path) -> None:
+    cp = _load("checkpoint_paths")
+    repo, snap = _hub_snapshot(tmp_path)
+    (repo / "blobs" / "ok").write_text("blob")
+    os.symlink(os.path.relpath(repo / "blobs" / "ok", snap), snap / "good.json")
+    assert cp.source_file(snap, "good.json").read_text() == "blob"
+    # A file in the repository directory but outside blobs/ (refs/main here).
+    (repo / "refs").mkdir()
+    (repo / "refs" / "main").write_text("a" * 40)
+    os.symlink(os.path.relpath(repo / "refs" / "main", snap), snap / "refs.json")
+    with pytest.raises(cp.CheckpointPathError, match="outside"):
+        cp.source_file(snap, "refs.json")
+    # Another repository's blob in the same cache.
+    other = tmp_path / "hub" / "models--org--other" / "blobs"
+    other.mkdir(parents=True)
+    (other / "theirs").write_text("not ours")
+    os.symlink(os.path.relpath(other / "theirs", snap), snap / "theirs.json")
+    with pytest.raises(cp.CheckpointPathError, match="outside"):
+        cp.source_file(snap, "theirs.json")
+
+
+def test_weight_map_reads_the_index_inside_the_checkpoint(tmp_path: Path) -> None:
+    cp = _load("checkpoint_paths")
+    _trunk(tmp_path / "trunk")
+    _link_out(tmp_path / "trunk", "model.safetensors.index.json", tmp_path,
+              (tmp_path / "trunk" / "model.safetensors.index.json").read_text())
+    with pytest.raises(cp.CheckpointPathError, match="outside"):
+        cp.weight_map(tmp_path / "trunk")
+
+
+@pytest.mark.parametrize("body", ['{"weight_map": ["a"]}', '["weight_map"]', '{"metadata": {}}'])
+def test_weight_map_refuses_an_index_without_a_mapping(tmp_path: Path, body: str) -> None:
+    cp = _load("checkpoint_paths")
+    (tmp_path / "ck").mkdir()
+    (tmp_path / "ck" / "model.safetensors.index.json").write_text(body)
+    with pytest.raises(cp.CheckpointPathError, match="no weight_map mapping"):
+        cp.weight_map(tmp_path / "ck")
+
+
+def test_restore_refuses_an_upstream_shard_linked_outside(tmp_path: Path) -> None:
+    """The upstream float32 listing reads every upstream shard's header, and reads it from inside the upstream
+    directory: a second shard holding no float32 tensor (so no later read touches it) is still refused."""
+    mod = _load("restore_router_bias")
+    name = "language_model.backbone.layers.1.mixer.gate.e_score_correction_bias"
+    up = tmp_path / "up"
+    up.mkdir()
+    _st(up / "u.safetensors", {name: ("F32", [1], struct.pack("<f", 55.7645))})
+    outside = tmp_path / "outside-v.safetensors"
+    _st(outside, {"language_model.backbone.layers.2.mixer.gate.weight": ("BF16", [1], b"\x00\x01")})
+    os.symlink(outside, up / "v.safetensors")
+    wm = {name: "u.safetensors", "language_model.backbone.layers.2.mixer.gate.weight": "v.safetensors"}
+    (up / "model.safetensors.index.json").write_text(json.dumps({"metadata": {}, "weight_map": wm}))
+    _bias_ckpt(tmp_path / "ck")
+    with pytest.raises(SystemExit, match="RESTORE-FAILED.*outside"):
+        _run(mod, up, tmp_path / "ck", tmp_path / "out")
+    assert not (tmp_path / "out").exists()
+
+
+def test_restore_refuses_a_single_file_checkpoint_linked_outside(tmp_path: Path) -> None:
+    mod = _load("restore_router_bias")
+    name = "language_model.backbone.layers.1.mixer.gate.e_score_correction_bias"
+    ck = tmp_path / "ck"
+    ck.mkdir()
+    outside = tmp_path / "outside-model.safetensors"
+    _st(outside, {name: ("F32", [1], struct.pack("<f", 55.75))})
+    os.symlink(outside, ck / "model.safetensors")
+    with pytest.raises(mod.CheckpointPathError, match="outside"):
+        mod.checkpoint_map(ck)
+
+
+# --- round 2: no output file is written twice; a refused input leaves nothing behind -------------------------------
+
+@pytest.mark.parametrize("shard", ["model-towers.safetensors", "tokenizer.json", "config.json"])
+def test_reassembly_refuses_a_trunk_shard_named_like_another_output(tmp_path: Path, shard: str) -> None:
+    """The towers shard, a file copied from upstream and a generated file would each overwrite such a shard."""
+    rea = _load("reassemble_omni_wrapper")
+    _trunk(tmp_path / "trunk", shard=shard)
+    if shard != "config.json":  # the trunk's own config.json already exists under that name
+        (tmp_path / "trunk" / "model-00001-of-00001.safetensors").rename(tmp_path / "trunk" / shard)
+    _upstream(tmp_path / "up")
+    with pytest.raises(SystemExit, match="collide with output files"):
+        rea.reassemble(tmp_path / "trunk", tmp_path / "up", tmp_path / "out")
+    assert not (tmp_path / "out").exists() and not (tmp_path / "out.partial").exists()
+
+
+def test_reassembly_refuses_a_linked_sidecar_before_writing_anything(tmp_path: Path) -> None:
+    rea = _load("reassemble_omni_wrapper")
+    _trunk(tmp_path / "trunk")
+    _upstream(tmp_path / "up")
+    _link_out(tmp_path / "up", "tokenizer.json", tmp_path, "{}")
+    with pytest.raises(rea.CheckpointPathError):
+        rea.reassemble(tmp_path / "trunk", tmp_path / "up", tmp_path / "out")
+    assert not (tmp_path / "out.partial").exists()
+
+
+def test_restore_refuses_a_linked_file_before_writing_anything(tmp_path: Path) -> None:
+    mod = _load("restore_router_bias")
+    _bias_up(tmp_path / "up")
+    _bias_ckpt(tmp_path / "ck")
+    _link_out(tmp_path / "ck", "config.json", tmp_path, "{}")
+    with pytest.raises(SystemExit, match="RESTORE-FAILED"):
+        _run(mod, tmp_path / "up", tmp_path / "ck", tmp_path / "out")
+    assert not (tmp_path / "out.partial").exists()
 
 
 # --- build_omni_calib.py: CALIB-OK only for the pinned set --------------------------------------------------------
@@ -367,9 +572,36 @@ def test_calibration_pin_accepts_only_the_pinned_set() -> None:
 
 
 def test_calibration_finish_refuses_a_short_set(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The message names each measured value: one row, no media, and this output's own digest."""
     mod = _calib()
     (tmp_path / "media").mkdir()
     rows = [{"stream": "text", "messages": [{"role": "user", "content": "q"}], "source": "s", "row": 0}]
-    with pytest.raises(SystemExit, match="CALIB-FAILED"):
+    with pytest.raises(SystemExit, match="CALIB-FAILED") as failure:
         mod.finish(tmp_path, rows)
+    message = str(failure.value)
+    digest = hashlib.sha256((tmp_path / "calib.jsonl").read_bytes()).hexdigest()
+    assert "rows=1," in message and "media=0," in message and f"sha256={digest}," in message
+    assert "CALIB-OK" not in capsys.readouterr().out
+
+
+def test_calibration_finish_measures_each_value(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A set wrong in exactly one way names exactly that mismatch: the row count, the media count and the digest
+    are each measured from the output, never taken from the pin."""
+    mod = _calib()
+    media = tmp_path / "media"
+    media.mkdir()
+    for i in range(mod.EXPECTED_MEDIA):
+        (media / f"m{i}").write_bytes(b"x")
+    rows = [{"stream": "text", "messages": [], "source": "s", "row": i} for i in range(mod.EXPECTED_ROWS)]
+    with pytest.raises(SystemExit) as failure:
+        mod.finish(tmp_path, rows)
+    message = str(failure.value)
+    assert "rows=" not in message and "media=" not in message and "sha256=" in message
+    (media / "m0").unlink()
+    with pytest.raises(SystemExit) as failure:
+        mod.finish(tmp_path, rows)
+    assert f"media={mod.EXPECTED_MEDIA - 1}," in str(failure.value) and "rows=" not in str(failure.value)
+    with pytest.raises(SystemExit) as failure:
+        mod.finish(tmp_path, rows[:-1])
+    assert f"rows={mod.EXPECTED_ROWS - 1}," in str(failure.value)
     assert "CALIB-OK" not in capsys.readouterr().out

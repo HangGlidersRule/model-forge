@@ -91,14 +91,26 @@ def restore(up: Path, ck: Path, out: Path) -> int:
         if cb != ub:
             plan.setdefault(cwm[ck_name], {})[ck_name] = ub
     tmp = out.with_name(out.name + ".partial")
-    shutil.rmtree(tmp, ignore_errors=True)
-    tmp.mkdir(parents=True)
+    # Resolve and confine every file to be copied before anything is written: a refusal leaves no OUT.partial.
+    sources: dict[Path, Path] = {}
     for p in sorted(ck.rglob("*")):
         rel = p.relative_to(ck)
         if p.is_dir() or rel.name in ("manifest.sha256", "SHA256SUMS.upstream", "SOURCE_REVISION") or rel.parts[0] == ".cache":
             continue
+        sources[rel] = source_file(ck, rel)
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    try:
+        return write_restored(ck, out, tmp, sources, plan, cwm, len(f32))
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
+
+
+def write_restored(ck: Path, out: Path, tmp: Path, sources: dict[Path, Path], plan: dict[str, dict[str, bytes]],
+                   cwm: dict[str, str], n_f32: int) -> int:
+    for rel, src in sources.items():
         (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
-        src = source_file(ck, rel)
         if rel.as_posix() not in plan:
             shutil.copyfile(src, tmp / rel)
             continue
@@ -140,7 +152,7 @@ def restore(up: Path, ck: Path, out: Path) -> int:
     files = sorted(p for p in tmp.rglob("*") if p.is_file())
     (tmp / "manifest.sha256").write_text("".join(f"{sha(p)}  {p.relative_to(tmp)}\n" for p in files))
     tmp.rename(out)
-    print(f"RESTORE-OK {out} upstream_f32={len(f32)} restored={restored} already_identical={len(f32) - restored} "
+    print(f"RESTORE-OK {out} upstream_f32={n_f32} restored={restored} already_identical={n_f32 - restored} "
           f"shards_rewritten={len(plan)} files={len(files) + 1}", flush=True)
     return 0
 

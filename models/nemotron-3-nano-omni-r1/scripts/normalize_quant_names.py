@@ -89,17 +89,22 @@ def normalize(trunk: Path, ref: Path, out: Path) -> int:
     rcfg = json.loads(source_file(ref, "config.json").read_text())
     if qc != rcfg["quantization_config"]:
         raise SystemExit("NORMALIZE-FAILED: config.json quantization_config still differs from the reference")
+    hq["quantization"]["quantized_layers"] = new_layers
+    # Resolve and confine every file to be copied before anything is written: a refusal leaves no OUT.partial.
+    copies = {p.name: source_file(trunk, p.name) for p in sorted(trunk.iterdir())
+              if not (p.is_dir() or p.name in ("hf_quant_config.json", "config.json", "manifest.sha256"))}
     tmp = out.with_name(out.name + ".partial")
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
-    for p in sorted(trunk.iterdir()):
-        if p.is_dir() or p.name in ("hf_quant_config.json", "config.json", "manifest.sha256"):
-            continue
-        shutil.copyfile(source_file(trunk, p.name), tmp / p.name)
-    hq["quantization"]["quantized_layers"] = new_layers
-    (tmp / "hf_quant_config.json").write_text(json.dumps(hq, indent=4) + "\n")
-    (tmp / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
-    tmp.rename(out)
+    try:
+        for name, src in copies.items():
+            shutil.copyfile(src, tmp / name)
+        (tmp / "hf_quant_config.json").write_text(json.dumps(hq, indent=4) + "\n")
+        (tmp / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
+        tmp.rename(out)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
     print(f"NORMALIZE-OK {out}: {len(new_layers)} quantized layer names mapped to the backbone.* convention; "
           f"tensor files copied unchanged")
     return 0

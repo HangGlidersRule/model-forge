@@ -1,7 +1,7 @@
 ---
 license: other
-license_name: nvidia-open-model-license
-license_link: https://www.nvidia.com/en-us/download/eula/pdf/NVIDIA_Open_Model_License.pdf
+license_name: nvidia-open-model-agreement
+license_link: https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-agreement/
 base_model: HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16
 base_model_relation: quantized
 pipeline_tag: image-text-to-text

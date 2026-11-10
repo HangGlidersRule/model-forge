@@ -141,55 +141,68 @@ def sha256(path: Path) -> str:
 def reassemble(trunk: Path, upstream: Path, out: Path) -> dict:
     if out.exists():
         raise SystemExit(f"refusing to overwrite {out}")
-    tmp = out.with_name(out.name + ".partial")
-    shutil.rmtree(tmp, ignore_errors=True)
-    tmp.mkdir(parents=True)
+    # Resolve and confine every input before anything is written: a refused input leaves no OUT and no OUT.partial.
     t_idx = weight_map(trunk)
     u_idx = weight_map(upstream)
     t_cfg = json.loads(source_file(trunk, "config.json").read_text())
     u_cfg = json.loads(source_file(upstream, "config.json").read_text())
+    hq = json.loads(source_file(trunk, "hf_quant_config.json").read_text())
     if t_cfg.get("architectures") != ["NemotronHForCausalLM"]:
         raise SystemExit(f"trunk is not a standalone nemotron_h checkpoint: {t_cfg.get('architectures')}")
     if "vision_config" not in u_cfg or "sound_config" not in u_cfg or "llm_config" not in u_cfg:
         raise SystemExit("upstream config lacks vision_config / sound_config / llm_config")
-
-    out_map: dict[str, str] = {}
-    for shard in sorted(set(t_idx.values())):
-        # weight_map() checked every shard name is one plain file name, so tmp / shard stays in tmp.
-        out_map.update(write_renamed(source_file(trunk, shard), tmp / shard, lm_name))
+    # weight_map() checked every shard name is one plain file name, so tmp / shard stays in tmp.
+    trunk_shards = {shard: source_file(trunk, shard) for shard in sorted(set(t_idx.values()))}
     towers = sorted(k for k in u_idx if not k.startswith(LM))
     by_src: dict[Path, list[str]] = {}
     for k in towers:
         by_src.setdefault(source_file(upstream, u_idx[k]), []).append(k)
-    tower_map = write_subset(by_src, tmp / SHARD_TOWERS)
-    clash = set(tower_map) & set(out_map)
-    if clash:
-        raise SystemExit(f"tower and trunk names collide: {sorted(clash)[:3]}")
-    out_map.update(tower_map)
-    expected_lm = {lm_name(k) for k in t_idx}
-    if {k for k in out_map if k.startswith(LM)} != expected_lm or len(tower_map) != len(towers):
-        raise SystemExit("tensor count mismatch after reassembly")
-
+    copies: dict[Path, Path] = {}
     for p in sorted(upstream.rglob("*")):
         rel = p.relative_to(upstream)
         if (p.is_dir() or rel.parts[0].startswith(".") or rel.parts[0] == "media" or p.name in GENERATED
                 or p.name in UPSTREAM_SKIP_NAMES or p.name.endswith(UPSTREAM_SKIP_SUFFIXES)):
             continue
-        (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source_file(upstream, rel), tmp / rel)
+        copies[rel] = source_file(upstream, rel)
+    # A trunk shard must not share a name with any other file written to OUT, or one would overwrite the other.
+    clash = sorted(set(trunk_shards) & (GENERATED | {SHARD_TOWERS} | {rel.as_posix() for rel in copies}))
+    if clash:
+        raise SystemExit(f"trunk shard names collide with output files: {clash[:3]}")
 
-    cfg = dict(u_cfg)
-    cfg["quantization_config"] = rename_quant_config(t_cfg["quantization_config"])
-    (tmp / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
-    hq = json.loads(source_file(trunk, "hf_quant_config.json").read_text())
-    hq["quantization"] = rename_quant_config(hq["quantization"])
-    (tmp / "hf_quant_config.json").write_text(json.dumps(hq, indent=4) + "\n")
-    total = sum((tmp / s).stat().st_size for s in set(out_map.values()))
-    (tmp / "model.safetensors.index.json").write_text(
-        json.dumps({"metadata": {"total_size": total}, "weight_map": dict(sorted(out_map.items()))}, indent=2) + "\n")
-    files = sorted(p for p in tmp.rglob("*") if p.is_file())
-    (tmp / "manifest.sha256").write_text("".join(f"{sha256(p)}  {p.relative_to(tmp)}\n" for p in files))
-    tmp.rename(out)
+    tmp = out.with_name(out.name + ".partial")
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    try:
+        out_map: dict[str, str] = {}
+        for shard, src in trunk_shards.items():
+            out_map.update(write_renamed(src, tmp / shard, lm_name))
+        tower_map = write_subset(by_src, tmp / SHARD_TOWERS)
+        clash = sorted(set(tower_map) & set(out_map))
+        if clash:
+            raise SystemExit(f"tower and trunk names collide: {clash[:3]}")
+        out_map.update(tower_map)
+        expected_lm = {lm_name(k) for k in t_idx}
+        if {k for k in out_map if k.startswith(LM)} != expected_lm or len(tower_map) != len(towers):
+            raise SystemExit("tensor count mismatch after reassembly")
+
+        for rel, src in copies.items():
+            (tmp / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, tmp / rel)
+
+        cfg = dict(u_cfg)
+        cfg["quantization_config"] = rename_quant_config(t_cfg["quantization_config"])
+        (tmp / "config.json").write_text(json.dumps(cfg, indent=2) + "\n")
+        hq["quantization"] = rename_quant_config(hq["quantization"])
+        (tmp / "hf_quant_config.json").write_text(json.dumps(hq, indent=4) + "\n")
+        total = sum((tmp / s).stat().st_size for s in set(out_map.values()))
+        (tmp / "model.safetensors.index.json").write_text(
+            json.dumps({"metadata": {"total_size": total}, "weight_map": dict(sorted(out_map.items()))}, indent=2) + "\n")
+        files = sorted(p for p in tmp.rglob("*") if p.is_file())
+        (tmp / "manifest.sha256").write_text("".join(f"{sha256(p)}  {p.relative_to(tmp)}\n" for p in files))
+        tmp.rename(out)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
     return {"lm_tensors": len(expected_lm), "tower_tensors": len(tower_map), "files": len(files) + 1,
             "quantized_layers": len(cfg["quantization_config"].get("quantized_layers", {})), "total_bytes": total}
 

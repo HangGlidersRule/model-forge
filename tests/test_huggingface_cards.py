@@ -196,6 +196,14 @@ def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
     assert len(cards) == 17
+    for card in cards:
+        if "Nemotron-3-Nano-Omni" in card.parent.name:
+            # The upstream at the pinned revision declares the NVIDIA Open Model Agreement; the older
+            # NVIDIA Open Model License name and its PDF link (now 404) must not come back.
+            front = yaml.safe_load(card.read_text(encoding="utf-8").split("---", 2)[1])
+            assert front["license_name"] == "nvidia-open-model-agreement"
+            assert front["license_link"] == (
+                "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-agreement/")
 
     forbidden = (
         "HangGlidersRule/Darkstar-Qwen3.8-27B-Base-BF16",
