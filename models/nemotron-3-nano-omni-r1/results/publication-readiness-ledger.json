@@ -162,29 +162,29 @@
         {
           "id": "model_card_final",
           "status": "verified",
-          "evidence": "Gold-standard card, live on the hub",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "evidence": "v1.1.0 card live at d55d0145: anonymous fetch 200, identical to the uploaded card, 8 GitHub links all answering 200",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "publication_targets_hf_ghcr",
           "status": "verified",
-          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4, v1.1.0 at commit d55d014554f6f1a176b539ea16f7c2734475a6a9 (promoted from f376249b in one commit, every uploaded byte hashed against the verified manifest)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "clean_download_boot_smoke",
-          "status": "missing",
-          "evidence": "v1.0.0: not recorded. v1.1.0: staged-candidate smoke passed (results/repair-receipt-v1.1.0.json); the public-target smoke runs after promotion",
-          "evidence_path": null,
-          "next_missing_proof": "clean download of the promoted public repository at the v1.1.0 commit, served with the card's command"
+          "status": "verified",
+          "evidence": "v1.1.0 public target: 32 files downloaded into an empty cache at d55d0145, every file matched to the hub and the repository manifest, 3 shards identical to the evaluated build; served with the card's command, 8/8 text, 2/2 image and 1/1 speech requests answered, 0 fatal markers",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "release_tag",
           "status": "verified",
-          "evidence": "darkstar-nemotron-3-nano-omni-v1.0.0",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
+          "evidence": "darkstar-nemotron-3-nano-omni-v1.1.0",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -195,7 +195,7 @@
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. v1.1.0 (issue #35) is staged and verified and replaces the weights on promotion. Not contract-complete until these gates have recorded evidence: serving_capacity_profile, clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format; v1.1.0 (issue #35) has been live since commit d55d0145. Not contract-complete until these gates have recorded evidence: serving_capacity_profile."
     },
     {
       "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
@@ -283,29 +283,29 @@
         {
           "id": "model_card_final",
           "status": "verified",
-          "evidence": "Gold-standard card, live on the hub",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "evidence": "v1.1.0 card live at 2a8dcd4c: anonymous fetch 200, identical to the uploaded card, 8 GitHub links all answering 200",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "publication_targets_hf_ghcr",
           "status": "verified",
-          "evidence": "Public on the hub",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16, v1.1.0 at commit 2a8dcd4cdad41be751b8029923143b04e63f0a67 (promoted from af5ca5c5 in one commit, every uploaded byte hashed against the verified manifest)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "clean_download_boot_smoke",
-          "status": "missing",
-          "evidence": "v1.0.0: not recorded. v1.1.0: staged-candidate smoke passed (results/repair-receipt-v1.1.0.json); the public-target smoke runs after promotion",
-          "evidence_path": null,
-          "next_missing_proof": "clean download of the promoted public repository at the v1.1.0 commit, served with the card's command"
+          "status": "verified",
+          "evidence": "v1.1.0 public target: 46 files downloaded into an empty cache at 2a8dcd4c, every file matched to the hub and the repository manifest, 17 shards identical to the evaluated build; served with the card's command, 8/8 text, 2/2 image and 1/1 speech requests answered, 0 fatal markers",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "release_tag",
           "status": "verified",
-          "evidence": "darkstar-nemotron-3-nano-omni-v1.0.0",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-bf16.md",
+          "evidence": "darkstar-nemotron-3-nano-omni-v1.1.0",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -316,7 +316,7 @@
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. v1.1.0 (issue #35) is staged and verified and replaces the weights on promotion. Not contract-complete until these gates have recorded evidence: performance_profile, serving_capacity_profile, clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format; v1.1.0 (issue #35) has been live since commit 2a8dcd4c. Not contract-complete until these gates have recorded evidence: performance_profile, serving_capacity_profile."
     },
     {
       "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
@@ -438,29 +438,29 @@
         {
           "id": "model_card_final",
           "status": "verified",
-          "evidence": "Gold-standard card, live on the hub",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "evidence": "v1.1.0 card live at 302bc448: anonymous fetch 200, identical to the uploaded card, 10 GitHub links all answering 200",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "publication_targets_hf_ghcr",
           "status": "verified",
-          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "evidence": "Public at HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4, v1.1.0 at commit 302bc448aa35ef9d2ecf7129b86169a0bbd6fdc4 (promoted from 94258f04 in one commit, every uploaded byte hashed against the verified manifest)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "clean_download_boot_smoke",
-          "status": "missing",
-          "evidence": "v1.0.0: not recorded. v1.1.0: staged-candidate smoke passed (results/repair-receipt-v1.1.0.json); the public-target smoke runs after promotion",
-          "evidence_path": null,
-          "next_missing_proof": "clean download of the promoted public repository at the v1.1.0 commit, served with the card's command"
+          "status": "verified",
+          "evidence": "v1.1.0 public target: 32 files downloaded into an empty cache at 302bc448, every file matched to the hub and the repository manifest, 3 shards identical to the evaluated build; served with the card's command, 8/8 text, 2/2 image and 1/1 speech requests answered, 0 fatal markers",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "release_tag",
           "status": "verified",
-          "evidence": "darkstar-nemotron-3-nano-omni-v1.0.0",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "evidence": "darkstar-nemotron-3-nano-omni-v1.1.0",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -471,7 +471,7 @@
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. v1.1.0 (issue #35) is staged and verified and replaces the weights on promotion. Not contract-complete until these gates have recorded evidence: serving_capacity_profile, clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format; v1.1.0 (issue #35) has been live since commit 302bc448. Not contract-complete until these gates have recorded evidence: serving_capacity_profile."
     }
   ]
 }

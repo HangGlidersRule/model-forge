@@ -22,8 +22,6 @@ extra_gated_heading: Darkstar Nemotron-3-Nano-Omni 30B-A3B Abliterated BF16
 
 ## v1.1.0 repair
 
-**Publication status:** the v1.1.0 files are staged and verified; this repository is updated to them when the release is tagged, and serves v1.0.0 until then.
-
 **[model-forge#35](https://github.com/HangGlidersRule/model-forge/issues/35).** The v1.0.0 weights in this repository are the full `NemotronH_Nano_Omni_Reasoning_V3` wrapper, but the 23 MoE routers' `e_score_correction_bias` tensors, which upstream stores in float32, were rounded through BF16 (55.7645 stored as 55.75, for example), which shifts expert selection. v1.1.0 restores them to the upstream float32 bytes and changes nothing else: an independent provenance check reads every tensor and finds the 23 router biases and all 1,106 tower tensors identical to upstream, and all 6,220 other language-model tensors identical to v1.0.0 ([report](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/results/repair-verify-Abliterated-BF16.json)).
 
 ## Summary
@@ -71,7 +69,7 @@ and legal review. Refusal-rate numbers are behavior measurements, not safety end
 
 ## Release reference
 
-Family release: [`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0). This immutable tag exists and the release contract is published.
+Family release: [`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0). This immutable tag exists and the release contract is published.
 
 ## Runtime
 

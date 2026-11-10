@@ -242,6 +242,7 @@ build/
 !/models/nemotron-3-nano-omni-r1/results/performance-base-nvfp4.json
 !/models/nemotron-3-nano-omni-r1/results/publication-readiness-ledger.json
 !/models/nemotron-3-nano-omni-r1/results/repair-media-identity-v1.1.0.json
+!/models/nemotron-3-nano-omni-r1/results/repair-publication-receipt-v1.1.0.json
 !/models/nemotron-3-nano-omni-r1/results/repair-receipt-v1.1.0.json
 !/models/nemotron-3-nano-omni-r1/results/repair-scales-abliterated-v1.1.0.json
 !/models/nemotron-3-nano-omni-r1/results/repair-scales-base-v1.1.0.json

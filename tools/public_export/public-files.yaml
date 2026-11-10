@@ -824,7 +824,7 @@ rules:
     source: "models/nemotron-3-nano-omni-r1/results/repair-*.json"
     disposition: copy
     public_destination: "{source}"
-    reason: Issue #35 v1.1.0 in-place repair evidence (per-tensor provenance reports and the staging receipt with manifest hashes and clean-download results); aggregates and hashes only.
+    reason: Issue #35 v1.1.0 in-place repair evidence (per-tensor provenance reports, and the staging and publication receipts with manifest hashes, clean-download and boot-smoke results); aggregates and hashes only.
     transformation: null
     owner: evaluation
     max_size_bytes: 65536

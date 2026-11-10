@@ -24,8 +24,6 @@ extra_gated_heading: Darkstar Nemotron-3-Nano-Omni 30B-A3B Abliterated ModelOpt 
 
 ## v1.1.0 repair
 
-**Publication status:** the v1.1.0 files are staged and verified; this repository is updated to them when the release is tagged, and serves v1.0.0 until then.
-
 **[model-forge#35](https://github.com/HangGlidersRule/model-forge/issues/35).** The weights published as v1.0.0 were a bare `NemotronHForCausalLM` language trunk: no vision or audio towers, so the model could not take image or audio input despite the `image-text-to-text` tag. Its 23 MoE routers' `e_score_correction_bias` tensors had also been rounded through BF16. v1.1.0 is the full `NemotronH_Nano_Omni_Reasoning_V3` wrapper:
 - 1,106 vision, audio and projector tensors added, every one byte-identical to upstream `nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16`;
 - the 23 router correction biases restored to the upstream float32 bytes;
@@ -54,7 +52,7 @@ byte around the quantized trunk (see v1.1.0 repair), with the towers identical t
 Full provenance, protocol, and caveats:
 
 - [Source card](https://github.com/HangGlidersRule/model-forge/blob/main/models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md)
-- [Recipe](https://github.com/HangGlidersRule/model-forge/blob/main/recipes/nemotron-3-nano-omni/w4a16_nvfp4_lmhead_nemotron_h.yaml)
+- [Recipe](https://github.com/HangGlidersRule/model-forge/blob/main/recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-modelopt-w4a16-nvfp4.yaml)
 
 ## Evaluation
 
@@ -85,7 +83,7 @@ and legal review. Refusal-rate numbers are behavior measurements, not safety end
 
 ## Release reference
 
-Family release: [`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0). This immutable tag exists and the release contract is published.
+Family release: [`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0). This immutable tag exists and the release contract is published.
 
 ## Runtime
 
