@@ -46,7 +46,7 @@ No HangGlidersRule repository exists or is planned for the unchanged BF16 contro
 
 ## v1.1.0: in-place repair (#35)
 
-**Publication status:** live since 2026-11-10 under the immutable tag [`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0); each repository was downloaded clean and served from that download after promotion ([`results/repair-publication-receipt-v1.1.0.json`](results/repair-publication-receipt-v1.1.0.json)).
+**Publication status:** live since 2026-11-10 under the tag [`darkstar-nemotron-3-nano-omni-v1.1.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.1.0); each repository was downloaded clean and served from that download after promotion ([`results/repair-publication-receipt-v1.1.0.json`](results/repair-publication-receipt-v1.1.0.json)).
 
 
 The v1.0.0 weights had three byte-level defects ([#35](https://github.com/HangGlidersRule/model-forge/issues/35)):

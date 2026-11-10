@@ -6,7 +6,7 @@
  "release_commit": "558a40b66ed157236939e7710c99f5c41ad9a976",
  "record_pr": "HangGlidersRule/model-forge#99",
  "runtime": "vLLM v0.32.0 (pinned digest befccf0e) with the audio extras, one RTX PRO 6000 Blackwell",
- "note": "Promotion replaced each public repository's tree in one commit with the staged, clean-download-smoked files of results/repair-receipt-v1.1.0.json. One file changed after staging, by design: the card (README.md), whose publication-status line was dropped and whose release reference moved to the v1.1.0 tag. So each published manifest.sha256 is the staged manifest with its README.md entry added (the two W4A16 products, whose staged manifests had no card entry) or replaced (Abliterated BF16); every other entry is identical to the staged manifest, as listed per product. The upload was refused unless every byte hashed to the published manifest. The public repositories were then downloaded into an empty cache at the promoted commits, every file checked against the hub and the repository manifest, every shard against the evaluated build, and each was served from that download with the card's command and asked 8 text prompts, 2 images and 1 speech clip. A text answer counts as answered when it is non-empty (the counting of repair-media-identity-v1.1.0.json); the check caps each text answer at 192 tokens, and the long-answer prompts that reach the cap are listed per product, as in the staged smoke (same prompts, same products). Images and speech count only answers that stopped on their own. The private staging repositories were deleted after their files were shown identical to the public ones.",
+ "note": "Promotion replaced each public repository's tree in one commit with the staged, clean-download-smoked files of results/repair-receipt-v1.1.0.json, except the card (README.md), which promotion replaced with the v1.1.0 card. The two W4A16 staged manifests listed no card, so their published manifests add a README.md entry; the BF16 staged manifest pinned the v1.0.0 card then live (staged_readme_sha256), and its published manifest replaces that entry. Every other entry is identical to the staged manifest, as listed per product, and the upload was refused unless every byte hashed to the published manifest. The public repositories were then downloaded into an empty cache at the promoted commits, every file checked against the hub and the repository manifest, every shard against the evaluated build, and each was served from that download with the card's command and asked 8 text prompts, 2 images and 1 speech clip. A text answer counts as answered when it is non-empty (the counting of repair-media-identity-v1.1.0.json); the check caps each text answer at 192 tokens, and the long-answer prompts that reach the cap are listed per product, as in the staged smoke (same prompts, same products). Images and speech count only answers that stopped on their own. The private staging repositories were deleted after their files were shown identical to the public ones.",
  "products": {
   "base": {
    "target_repository": "HangGlidersRule/Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4",
@@ -20,6 +20,7 @@
     "manifest_entries": 30,
     "staged_manifest_sha256": "51e6654e5dfc39e53a795ac273d28c7afc789a6af9fefd822c19fbd181d79b07",
     "staged_manifest_entries": 29,
+    "staged_readme_sha256": null,
     "manifest_entries_added": [
      "README.md"
     ],
@@ -94,6 +95,7 @@
     "manifest_entries": 30,
     "staged_manifest_sha256": "83d2c6bfb0c14c92558b433ef2a4da7c2d9ffd81b6b6ce5e2661eec1af70639e",
     "staged_manifest_entries": 29,
+    "staged_readme_sha256": null,
     "manifest_entries_added": [
      "README.md"
     ],
@@ -164,6 +166,7 @@
     "manifest_entries": 45,
     "staged_manifest_sha256": "15780a5ca1b48051a0c4927d53ff76838f1ad13cf302fec95aebb3f080a43111",
     "staged_manifest_entries": 45,
+    "staged_readme_sha256": "8ed2f830d976e2e02d0c39a2d9e47fe7716accbfd5d8f3e45667b06338e6596e",
     "manifest_entries_added": [],
     "manifest_entries_replaced": [
      "README.md"
