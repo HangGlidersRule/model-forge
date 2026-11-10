@@ -17,7 +17,7 @@ The four-cell release contract records the frozen evaluation evidence and gate s
 publication purposes, the unchanged BF16 cell is an upstream control, not a HangGlidersRule product
 or weight target. Its weights remain solely at
 [`nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16`](https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16),
-pinned to `24e67ea000b7c2837fc8f9488aa2008524fac8ba` under the NVIDIA Open Model License.
+pinned to `24e67ea000b7c2837fc8f9488aa2008524fac8ba` under the NVIDIA Open Model Agreement.
 
 The family release is the immutable tag
 [`darkstar-nemotron-3-nano-omni-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-nemotron-3-nano-omni-v1.0.0).
@@ -44,6 +44,46 @@ Exactly three public HangGlidersRule repositories contain complete checkpoints a
 
 No HangGlidersRule repository exists or is planned for the unchanged BF16 control.
 
+## v1.1.0: in-place repair (#35)
+
+**Publication status:** the v1.1.0 files are staged and verified; the three repositories are updated to them when the release is tagged, and serve v1.0.0 until then.
+
+
+The v1.0.0 weights had three byte-level defects ([#35](https://github.com/HangGlidersRule/model-forge/issues/35)):
+
+1. **Wrong weights in the Base repository.** From 2026-09-03 the Base W4A16 repository held the Abliterated W4A16
+   shards byte for byte (the reduced-refusal model under the base name). The base build survived only in that
+   repository's history, at commit `f3ae211e`; v1.1.0 restores it.
+2. **Text-only W4A16 products.** Both W4A16 checkpoints were the bare `NemotronHForCausalLM` trunk: 18,114
+   tensors and none of the 1,106 vision, audio and projector tensors, so they could not take image or audio input.
+3. **Rounded router biases.** In both abliterated checkpoints (and in the Abliterated W4A16 shards the Base
+   repository served), the 23 MoE routers' `e_score_correction_bias` tensors
+   (float32 upstream) were rounded through BF16.
+
+v1.1.0 replaces the weights in the same repositories when it is tagged:
+- **W4A16 products:** the full `NemotronH_Nano_Omni_Reasoning_V3` wrapper, rebuilt byte for byte around the
+  unchanged quantized trunk ([`scripts/reassemble_omni_wrapper.py`](scripts/reassemble_omni_wrapper.py)).
+- **Abliterated products:** router biases restored to the upstream float32 bytes (the base build already had them)
+  ([`scripts/restore_router_bias.py`](scripts/restore_router_bias.py)).
+- **Proof of byte-level scope:** an independent check reads every tensor of each repaired checkpoint and finds
+  router biases and towers identical to upstream and every trunk tensor identical to v1.0.0
+  ([`eval/verify_omni_repair.py`](eval/verify_omni_repair.py); reports `results/repair-verify-*.json`).
+
+**Re-measured** on vLLM 0.32.0 at the published GPQA protocol (8,192-token cap, concurrency 30):
+
+| Product | GPQA, v1.1.0 (vLLM 0.32.0) | v1.0.0 card (vLLM 0.27.1) |
+|---|---|---|
+| Base W4A16 | 93/198 (two runs: 90, 96) | 84/198 |
+| Abliterated W4A16 | 67.5/198 (two runs: 64, 71) | 58/198 |
+| Abliterated BF16 | 70/198 | 60/198 (different protocol) |
+
+- **Run-to-run spread is wide at this protocol:** identical Abliterated W4A16 bytes scored 64 and 71 in two runs.
+  Over two runs each, the base build leads the abliterated build by 25.5 questions (paired 95% CI +17 to +34.5).
+- **Behavior holds:** 200/200 + 0/83 on both repaired abliterated products.
+- **All three answer images and speech,** checked from a clean download.
+
+Results: `results/gpqa-*-v032.json`, `results/abliteration-eval-*-repaired-v032.json`.
+
 ## Measured gates (summary)
 
 - **Behavior** (treadon/abliteration-eval, 200 harmful + 83 safe over-refusal, temp 0, thinking
@@ -66,7 +106,7 @@ reasoning work.
 
 - All four evaluation cells are complete: build, gates (behavior + GPQA), throughput.
 - All three owned checkpoints are published and publicly verified (private-first, flip-verified).
-- License: NVIDIA Open Model License — derivatives require attribution and notice retention.
+- License: NVIDIA Open Model Agreement — derivatives require attribution and notice retention.
 
 ## Serving note
 

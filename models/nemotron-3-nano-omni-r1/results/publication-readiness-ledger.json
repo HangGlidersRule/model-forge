@@ -8,7 +8,9 @@
   "note": "Migrated to contract v3 from the legacy free-form ledger (issue #27). Gates without recorded evidence are marked missing.",
   "any_publication_claim": false,
   "rejected_historical": [],
-  "related_issues": [],
+  "related_issues": [
+    "#35"
+  ],
   "products": [
     {
       "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-BF16",
@@ -27,8 +29,8 @@
         {
           "id": "provenance_ownership",
           "status": "verified",
-          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea000b7c2837fc8f9488aa2008524fac8ba; edit and quantization lineage, ownership and license in artifact-lineage.md",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -83,16 +85,16 @@
         {
           "id": "provenance_ownership",
           "status": "verified",
-          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea000b7c2837fc8f9488aa2008524fac8ba; edit and quantization lineage, ownership and license in artifact-lineage.md",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "artifact_manifest",
-          "status": "missing",
-          "evidence": "No committed manifest for this cell",
-          "evidence_path": null,
-          "next_missing_proof": "commit the shipped manifest.sha256"
+          "status": "verified",
+          "evidence": "manifest.sha256 over 29 files of the v1.1.0 wrapper (staged commit 81c64d1a); every entry re-hashed after a clean download",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-receipt-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "recipe_edit_manifest",
@@ -103,10 +105,10 @@
         },
         {
           "id": "artifact_validation",
-          "status": "missing",
-          "evidence": "The lineage records the layout; no committed validation report",
-          "evidence_path": null,
-          "next_missing_proof": "commit a structural validation report for this exact artifact"
+          "status": "verified",
+          "evidence": "Every tensor read against its source: 23 router biases and 1,106 tower tensors identical to upstream BF16 24e67ea0, 18,091 trunk tensors identical to the base build at Hub f3ae211e; 24/24 BF16 attention projections identical to upstream (none from the abliterated edit)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-verify-Base-wrapper.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "modelopt_candidate_comparison",
@@ -117,10 +119,10 @@
         },
         {
           "id": "nvfp4_tensor_scale_validation",
-          "status": "missing",
-          "evidence": "No committed tensor/scale validation report for this cell",
-          "evidence_path": null,
-          "next_missing_proof": "commit a tensor/scale validation report for this exact artifact"
+          "status": "verified",
+          "evidence": "Validator measurement of this product (W4A16 mode): 5,936 per-tensor scales finite and positive; 1,886,631,936 FP8 block scales, 0 NaN, 0 zero (+0 or -0) and 0 negative; 0 k/v scales (BF16 KV, no FP8 KV scheme); 0 quantized tower layers, 1,106 tower tensors byte-identical to upstream; 0 attention layers with mixed-precision q/k/v; no MTP layers in this family",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-scales-base-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "kv_cache_effect_measured",
@@ -146,8 +148,8 @@
         {
           "id": "gpqa_matched_full_denominator",
           "status": "verified",
-          "evidence": "84/198 (thinking on, temp 0, full denominator)",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-base-nvfp4.json",
+          "evidence": "93/198 (two runs: 90, 96), 8,192-token cap, concurrency 30, vLLM 0.32.0; full denominator, 0 errors",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-base-nvfp4-repaired-v032-run1.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -174,9 +176,9 @@
         {
           "id": "clean_download_boot_smoke",
           "status": "missing",
-          "evidence": "Not recorded for this cell",
+          "evidence": "v1.0.0: not recorded. v1.1.0: staged-candidate smoke passed (results/repair-receipt-v1.1.0.json); the public-target smoke runs after promotion",
           "evidence_path": null,
-          "next_missing_proof": "record a clean re-download boot smoke"
+          "next_missing_proof": "clean download of the promoted public repository at the v1.1.0 commit, served with the card's command"
         },
         {
           "id": "release_tag",
@@ -188,12 +190,12 @@
         {
           "id": "no_inherited_unverified_results",
           "status": "verified",
-          "evidence": "Numbers on the card measured on this artifact",
+          "evidence": "Every v1.1.0 number on the card was measured on these weights; v1.0.0 numbers are labelled historical",
           "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/base-nvfp4.md",
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, artifact_validation, nvfp4_tensor_scale_validation, serving_capacity_profile, clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. v1.1.0 (issue #35) is staged and verified and replaces the weights on promotion. Not contract-complete until these gates have recorded evidence: serving_capacity_profile, clean_download_boot_smoke."
     },
     {
       "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-BF16",
@@ -211,8 +213,8 @@
         {
           "id": "provenance_ownership",
           "status": "verified",
-          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea000b7c2837fc8f9488aa2008524fac8ba; edit and quantization lineage, ownership and license in artifact-lineage.md",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -224,10 +226,10 @@
         },
         {
           "id": "artifact_manifest",
-          "status": "missing",
-          "evidence": "No committed manifest for this cell",
-          "evidence_path": null,
-          "next_missing_proof": "commit the shipped manifest.sha256"
+          "status": "verified",
+          "evidence": "manifest.sha256 over 45 files of v1.1.0 (staged commit e996b86d); every entry re-hashed after a clean download",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-receipt-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "recipe_edit_manifest",
@@ -260,15 +262,15 @@
         {
           "id": "gpqa_matched_full_denominator",
           "status": "verified",
-          "evidence": "60/198 (thinking on, temp 0); shipped with a documented cost by owner decision",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-bf16-sft-lora.json",
+          "evidence": "70/198, 8,192-token cap, concurrency 30, vLLM 0.32.0; full denominator, 0 errors",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-bf16-repaired-v032.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "behavior_refusal_eval",
           "status": "verified",
-          "evidence": "200/200 harmful compliance, 0/83 safe over-refusals, 0 errors",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/results/abliteration-eval-abliterated-bf16-sft-lora.json",
+          "evidence": "200/200 harmful compliance, 0/83 safe over-refusals, 0 errors, on the repaired weights",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/abliteration-eval-abliterated-bf16-repaired-v032.json",
           "next_missing_proof": "none - gate satisfied"
         },
         {
@@ -295,9 +297,9 @@
         {
           "id": "clean_download_boot_smoke",
           "status": "missing",
-          "evidence": "Not recorded",
+          "evidence": "v1.0.0: not recorded. v1.1.0: staged-candidate smoke passed (results/repair-receipt-v1.1.0.json); the public-target smoke runs after promotion",
           "evidence_path": null,
-          "next_missing_proof": "record a clean re-download boot smoke"
+          "next_missing_proof": "clean download of the promoted public repository at the v1.1.0 commit, served with the card's command"
         },
         {
           "id": "release_tag",
@@ -314,7 +316,7 @@
           "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, performance_profile, serving_capacity_profile, clean_download_boot_smoke."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. v1.1.0 (issue #35) is staged and verified and replaces the weights on promotion. Not contract-complete until these gates have recorded evidence: performance_profile, serving_capacity_profile, clean_download_boot_smoke."
     },
     {
       "product_id": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Abliterated-ModelOpt-W4A16-NVFP4",
@@ -352,16 +354,16 @@
         {
           "id": "provenance_ownership",
           "status": "verified",
-          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0 (OpenMDW-1.1)",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/recon.json",
+          "evidence": "Built from nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea000b7c2837fc8f9488aa2008524fac8ba; edit and quantization lineage, ownership and license in artifact-lineage.md",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/artifact-lineage.md",
           "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "artifact_manifest",
-          "status": "missing",
-          "evidence": "No committed manifest for this cell",
-          "evidence_path": null,
-          "next_missing_proof": "commit the shipped manifest.sha256"
+          "status": "verified",
+          "evidence": "manifest.sha256 over 29 files of the v1.1.0 wrapper (staged commit 942c83f7); every entry re-hashed after a clean download",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-receipt-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "recipe_edit_manifest",
@@ -372,10 +374,10 @@
         },
         {
           "id": "artifact_validation",
-          "status": "missing",
-          "evidence": "The lineage records the layout; no committed validation report",
-          "evidence_path": null,
-          "next_missing_proof": "commit a structural validation report for this exact artifact"
+          "status": "verified",
+          "evidence": "Every tensor read against its source: 23 router biases and 1,106 tower tensors identical to upstream BF16, 18,091 trunk tensors identical to v1.0.0 (5de5cd3d)",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-verify-Abliterated-wrapper.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "modelopt_candidate_comparison",
@@ -386,10 +388,10 @@
         },
         {
           "id": "nvfp4_tensor_scale_validation",
-          "status": "missing",
-          "evidence": "No committed tensor/scale validation report for this cell",
-          "evidence_path": null,
-          "next_missing_proof": "commit a tensor/scale validation report for this exact artifact"
+          "status": "verified",
+          "evidence": "Validator measurement of this product (W4A16 mode): 5,936 per-tensor scales finite and positive; 1,886,631,936 FP8 block scales, 0 NaN, 0 zero (+0 or -0) and 0 negative; 0 k/v scales (BF16 KV, no FP8 KV scheme); 0 quantized tower layers, 1,106 tower tensors byte-identical to the Abliterated BF16 parent; 0 attention layers with mixed-precision q/k/v; no MTP layers in this family",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/repair-scales-abliterated-v1.1.0.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "kv_cache_effect_measured",
@@ -414,17 +416,17 @@
         },
         {
           "id": "gpqa_matched_full_denominator",
-          "status": "missing",
-          "evidence": "58/198 is recorded for this cell in the family README, but the committed per-item file is the BF16 parent's run",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-bf16-thisrunner.json",
-          "next_missing_proof": "run GPQA Diamond on this exact artifact under the accepted protocol"
+          "status": "verified",
+          "evidence": "67.5/198 (two runs: 64, 71), 8,192-token cap, concurrency 30, vLLM 0.32.0; full denominator, 0 errors",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/gpqa-abliterated-nvfp4-repaired-v032-run1.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "behavior_refusal_eval",
-          "status": "missing",
-          "evidence": "200/200 + 0/83 reported in the family README; no stored eval file",
-          "evidence_path": "models/nemotron-3-nano-omni-r1/README.md",
-          "next_missing_proof": "commit the behavior eval result for this exact artifact"
+          "status": "verified",
+          "evidence": "200/200 harmful compliance, 0/83 safe over-refusals, 0 errors, on the repaired weights",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/results/abliteration-eval-abliterated-nvfp4-repaired-v032.json",
+          "next_missing_proof": "none - gate satisfied"
         },
         {
           "id": "serve_profile_frozen",
@@ -450,9 +452,9 @@
         {
           "id": "clean_download_boot_smoke",
           "status": "missing",
-          "evidence": "Not recorded for this cell",
+          "evidence": "v1.0.0: not recorded. v1.1.0: staged-candidate smoke passed (results/repair-receipt-v1.1.0.json); the public-target smoke runs after promotion",
           "evidence_path": null,
-          "next_missing_proof": "record a clean re-download boot smoke"
+          "next_missing_proof": "clean download of the promoted public repository at the v1.1.0 commit, served with the card's command"
         },
         {
           "id": "release_tag",
@@ -463,13 +465,13 @@
         },
         {
           "id": "no_inherited_unverified_results",
-          "status": "missing",
-          "evidence": "GPQA evidence is the BF16 parent's run until this artifact's own run is committed",
-          "evidence_path": null,
-          "next_missing_proof": "re-verify once every gate cites a measurement of this exact artifact"
+          "status": "verified",
+          "evidence": "Every v1.1.0 number on the card was measured on these weights",
+          "evidence_path": "models/nemotron-3-nano-omni-r1/model-card/abliterated-nvfp4.md",
+          "next_missing_proof": "none - gate satisfied"
         }
       ],
-      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. Not contract-complete until these gates have recorded evidence: artifact_manifest, artifact_validation, nvfp4_tensor_scale_validation, serving_capacity_profile, gpqa_matched_full_denominator, behavior_refusal_eval, clean_download_boot_smoke, no_inherited_unverified_results."
+      "target_repository_note": "Public on the Hub since the family's v1.0.0 release, which predates this ledger format. v1.1.0 (issue #35) is staged and verified and replaces the weights on promotion. Not contract-complete until these gates have recorded evidence: serving_capacity_profile, clean_download_boot_smoke."
     }
   ]
 }

@@ -1,0 +1,185 @@
+{
+ "protocol": "llm-inference-bench gpqa-diamond (chat template + thinking ON, temp 0, max_tokens 8192, concurrency 30)",
+ "serving": "vLLM v0.32.0 (pinned digest befccf0e) + audio extras, RTX PRO 6000 Blackwell, --reasoning-parser nemotron_v3 --mamba-ssm-cache-dtype float32 --max-model-len 131072, prefix caching off, KV auto; checkpoint: Abliterated W4A16 v1.1.0, served under the then-Base label: that wrapper was byte-identical to the Abliterated W4A16 v1.1.0 build (equal manifests) because the Base repository held the Abliterated shards; run 1 of 2, same session",
+ "accuracy": {
+  "items_total": 198,
+  "items_selected": 198,
+  "attempted": 198,
+  "scored": 198,
+  "correct": 64,
+  "accuracy": 0.32323232323232326,
+  "wilson95_low": 0.2619851056969361,
+  "wilson95_high": 0.3912080470479252,
+  "unparseable": 0,
+  "truncated_no_answer": 113,
+  "hit_max_tokens": 174,
+  "errors": 0,
+  "dataset_exhausted": false
+ },
+ "level_summaries": [
+  {
+   "concurrency": 30,
+   "phase": "profile",
+   "summary": {
+    "attempted": 198,
+    "completed": 198,
+    "errors": 0,
+    "correct": 64,
+    "wrong": 134,
+    "score_counts": {
+     "truncated": 113,
+     "exact": 64,
+     "fail": 21
+    },
+    "exact": 64,
+    "near": 0,
+    "fail": 21,
+    "truncated": 113,
+    "correct_rate": 0.32323232323232326,
+    "score_available": true,
+    "hit_max_tokens": 174,
+    "estimated_token_runs": 0,
+    "completion_tokens": {
+     "avg": 7402.80808080808,
+     "min": 164.0,
+     "max": 8192.0,
+     "p50": 8192.0,
+     "p90": 8192.0,
+     "p99": 8192.0,
+     "std": 2160.491950509774
+    },
+    "ttft": {
+     "avg": 0.1904770676110734,
+     "min": 0.04641643800005113,
+     "max": 0.4645934039999702,
+     "p50": 0.17947552299983727,
+     "p90": 0.46265625569967594,
+     "p99": 0.4645169890602392,
+     "std": 0.1337100434075516
+    },
+    "elapsed": {
+     "avg": 80.30845930894948,
+     "min": 1.970354475000022,
+     "max": 90.62965707700005,
+     "p50": 89.10301142799972,
+     "p90": 90.4320961223003,
+     "p99": 90.61492110758996,
+     "std": 23.521512305303627
+    },
+    "gen_elapsed": {
+     "avg": 80.10955741388383,
+     "min": 1.787938748999295,
+     "max": 90.57829065799979,
+     "p50": 88.93755232099966,
+     "p90": 90.19077082169979,
+     "p99": 90.5376936988002,
+     "std": 23.530050937050692
+    },
+    "gen_tok_s": {
+     "avg": 92.58394590474252,
+     "min": 89.36004527637354,
+     "max": 108.16158201180818,
+     "p50": 92.03469822033162,
+     "p90": 94.31825519405979,
+     "p99": 106.2533156985578,
+     "std": 2.5228678258628627
+    },
+    "e2e_tok_s": {
+     "avg": 92.16074815644724,
+     "min": 83.23375417004505,
+     "max": 108.01724581157679,
+     "p50": 91.781506585068,
+     "p90": 93.806343971853,
+     "p99": 106.1802747549971,
+     "std": 2.475098654062538
+    },
+    "aggregate_gen_tok_s": 92.40855048744903,
+    "aggregate_e2e_tok_s": 92.17968000518124
+   }
+  }
+ ],
+ "wrong_runs_count": 134,
+ "methodology": {
+  "name": "GPQA Diamond accuracy benchmark",
+  "prefill": "Dataset accuracy profiles send a different pinned item prompt per measured request, so a shared prefix-cache scout is disabled by default; prompts are short and prefill cost is negligible.",
+  "adaptive_concurrency": "If --profile-concurrency is set, the benchmark sends exactly the configured number of measured profile requests with that many concurrent workers. Otherwise it probes increasing concurrency levels and keeps the fastest aggregate generation-token throughput, then collects additional runs at the selected concurrency until min_results is reached.",
+  "token_need": "completion_tokens is taken from OpenAI stream usage. If usage is missing, streamed content chunks are used as an estimated fallback and the run is marked estimated_tokens=true.",
+  "correctness": "Each request is scored against its own pinned dataset item. The chosen option letter is extracted from an 'Answer: X' tag on the final line (falling back to a bare final-line letter, then the last answer tag in the visible text) and must match the reference letter. Headline metric is accuracy over scored items with a Wilson 95% interval, plus per-category accuracy. Runs are paired per item across configurations via --compare-baseline."
+ },
+ "selected_summary": {
+  "attempted": 198,
+  "completed": 198,
+  "errors": 0,
+  "correct": 64,
+  "wrong": 134,
+  "score_counts": {
+   "truncated": 113,
+   "exact": 64,
+   "fail": 21
+  },
+  "exact": 64,
+  "near": 0,
+  "fail": 21,
+  "truncated": 113,
+  "correct_rate": 0.32323232323232326,
+  "score_available": true,
+  "hit_max_tokens": 174,
+  "estimated_token_runs": 0,
+  "completion_tokens": {
+   "avg": 7402.80808080808,
+   "min": 164.0,
+   "max": 8192.0,
+   "p50": 8192.0,
+   "p90": 8192.0,
+   "p99": 8192.0,
+   "std": 2160.491950509774
+  },
+  "ttft": {
+   "avg": 0.1904770676110734,
+   "min": 0.04641643800005113,
+   "max": 0.4645934039999702,
+   "p50": 0.17947552299983727,
+   "p90": 0.46265625569967594,
+   "p99": 0.4645169890602392,
+   "std": 0.1337100434075516
+  },
+  "elapsed": {
+   "avg": 80.30845930894948,
+   "min": 1.970354475000022,
+   "max": 90.62965707700005,
+   "p50": 89.10301142799972,
+   "p90": 90.4320961223003,
+   "p99": 90.61492110758996,
+   "std": 23.521512305303627
+  },
+  "gen_elapsed": {
+   "avg": 80.10955741388383,
+   "min": 1.787938748999295,
+   "max": 90.57829065799979,
+   "p50": 88.93755232099966,
+   "p90": 90.19077082169979,
+   "p99": 90.5376936988002,
+   "std": 23.530050937050692
+  },
+  "gen_tok_s": {
+   "avg": 92.58394590474252,
+   "min": 89.36004527637354,
+   "max": 108.16158201180818,
+   "p50": 92.03469822033162,
+   "p90": 94.31825519405979,
+   "p99": 106.2533156985578,
+   "std": 2.5228678258628627
+  },
+  "e2e_tok_s": {
+   "avg": 92.16074815644724,
+   "min": 83.23375417004505,
+   "max": 108.01724581157679,
+   "p50": 91.781506585068,
+   "p90": 93.806343971853,
+   "p99": 106.1802747549971,
+   "std": 2.475098654062538
+  },
+  "aggregate_gen_tok_s": 92.40855048744903,
+  "aggregate_e2e_tok_s": 92.17968000518124
+ }
+}

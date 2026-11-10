@@ -127,10 +127,10 @@ rules:
     source: ".gitignore"
     disposition: transform
     public_destination: "{source}"
-    reason: Preserve useful ignores while removing private-only layout assumptions. Public metadata hygiene block plus generated negation lines can exceed a 16KB cap.
+    reason: Preserve useful ignores while removing private-only layout assumptions. Public metadata hygiene block plus one generated negation line per exported path can exceed a 32KB cap.
     transformation: sanitize_public_gitignore
     owner: release-engineering
-    max_size_bytes: 32768
+    max_size_bytes: 65536
     generated: false
     precedence: 100
 
@@ -820,6 +820,20 @@ rules:
     resolves:
       - model-results-default-private
 
+  - id: curated-nano-omni-repair-evidence
+    source: "models/nemotron-3-nano-omni-r1/results/repair-*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Issue #35 v1.1.0 in-place repair evidence (per-tensor provenance reports and the staging receipt with manifest hashes and clean-download results); aggregates and hashes only.
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+
   - id: nano-omni-lora-recipe
     source: "recipes/nemotron-3-nano-omni/darkstar-nemotron-3-nano-omni-30b-a3b-reasoning-abliterated-bf16.yaml"
     disposition: transform
@@ -1380,6 +1394,50 @@ rules:
     transformation: null
     owner: private-operations
     max_size_bytes: 1048576
+    generated: false
+    precedence: 100
+
+  - id: nano-omni-campaign-runners
+    source: "models/nemotron-3-nano-omni-r1/scripts/*.sh"
+    disposition: exclude
+    public_destination: null
+    reason: Operator launchers for one GPU host (serving windows, drain holds, host-local mounts). The quantization, wrapper reassembly, router-bias repair, validation and evaluation tools that reproduce the published numbers ship beside them.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 100
+
+  - id: nano-omni-build-scripts
+    source: "models/nemotron-3-nano-omni-r1/scripts/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The W4A4 quantization build, the byte-level wrapper reassembly, the router-bias repair and the recipe dry run, so the repaired and candidate artifacts are reproducible.
+    transformation: sanitize_python_script
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: nano-omni-calibration-builder
+    source: "models/nemotron-3-nano-omni-r1/calibration/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Builds the pinned text, image and speech calibration set from public datasets at recorded revisions.
+    transformation: sanitize_python_script
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: nano-omni-eval-harnesses
+    source: "models/nemotron-3-nano-omni-r1/eval/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The wrapper and W4A4 validators, the media check (text, image, speech, TTFT), the office-photo picker and scorer, and the TTFT re-measurement behind the published gate tables.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
     generated: false
     precedence: 100
 

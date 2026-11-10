@@ -3,7 +3,7 @@
 ## Provenance graph
 
 1. **Upstream BF16 control** — `nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16` @
-   `24e67ea000b7c2837fc8f9488aa2008524fac8ba` (NVIDIA Open Model License).
+   `24e67ea000b7c2837fc8f9488aa2008524fac8ba` (NVIDIA Open Model Agreement).
 2. **Abliterated-BF16 (SFT-r1)** — authored from pristine trunk weights: rank-32 LoRA adapter on
    the language trunk's q/k/v/o projections (α=64, dropout 0.05, 3 epochs, lr 1e-4 cosine), teacher
    = the model's own compliant outputs for `treadon/abliteration-eval` rows (25 harmful-compliant +
@@ -12,13 +12,33 @@
    trunk, 17 shards repaved. Vision tower, audio encoder, tokenizer, and wrapper byte-identical.
    Behavior gate 200/200 + 0/83 + 0 errors. GPQA 60/198 (30.3%; parse=20).
 3. **Base-ModelOpt-NVFP4** — ModelOpt `0.46.0rc2` (`43fd41a`) quantization of the upstream trunk at
-   the pinned revision (no edit). Trunk extracted standalone (plain `nemotron_h`), quantized, and
-   the VLM wrapper reassembled with towers byte-identical from the source BF16. Recipe:
+   the pinned revision (no edit). Trunk extracted standalone (plain `nemotron_h`) and quantized.
+   **Correction (#35):** the step that was meant to reassemble the VLM wrapper was never applied to
+   the v1.0.0 artifact, which was the bare trunk (18,114 tensors, 0 tower tensors), and its router
+   correction biases were rounded through BF16. Worse, a re-upload on 2026-09-03 replaced this
+   repository's shards with the Abliterated W4A16 shards; the base build survived only at Hub
+   commit `f3ae211e`. v1.1.0 restores that build and repairs it in place (below). Recipe:
    `w4a16_nvfp4_lmhead_nemotron_h.yaml` (NVFP4 experts + NVFP4 lm_head; Mamba/SSM/attention/norms/
-   embeddings/towers protected). Behavior: unedited control. GPQA 84/198 (42.4%).
+   embeddings/towers protected). Behavior: unedited control. GPQA 84/198 (42.4%) on vLLM 0.27.1
+   (v1.0.0, measured before the overwrite); 93/198 for v1.1.0 on vLLM 0.32.0 (two runs: 90, 96).
 4. **Abliterated-ModelOpt-NVFP4** — same quantization contract applied to the edited BF16 artifact
-   (step 2). GPQA 58/198 (29.3%) — zero quantization cost measured against the BF16 parent on the
-   same runner the same day. Behavior 200/200 + 0/83. This is the family's final servable product.
+   (step 2), with the same two defects in v1.0.0, repaired in v1.1.0. GPQA 58/198 (29.3%) on vLLM
+   0.27.1 (v1.0.0); 64 and 71 in two runs for v1.1.0 on vLLM 0.32.0, beside its BF16 parent's 70/198 in the same
+   session. Behavior 200/200 + 0/83 on both versions.
+
+## v1.1.0 repair (2026-11-08, #35)
+
+The three owned checkpoints are repaired in place when v1.1.0 is tagged (until then the repositories serve v1.0.0); their repositories keep their names:
+- **Base W4A16:** the true base build from Hub commit `f3ae211e` (its quantized-layer names normalized to the
+  `backbone.*` convention by `scripts/normalize_quant_names.py`; no tensor bytes change).
+- **W4A16 products:** the wrapper reassembled byte for byte around the unchanged quantized trunk
+  (`scripts/reassemble_omni_wrapper.py`), with all 1,106 tower tensors identical to upstream.
+- **Abliterated products:** the 23 router correction biases restored to the upstream float32 bytes (the base
+  build at `f3ae211e` already carried them)
+  (`scripts/restore_router_bias.py`).
+- **Verification:** `eval/verify_omni_repair.py` reads every tensor and checks its source: router biases and
+  towers against upstream, trunk against v1.0.0. All three PASS (`results/repair-verify-*.json`).
+- **W4A4 rebuild:** candidates A and B did not pass their pre-registered bars and are not published.
 
 ## Rejected lineage (kept for the record)
 

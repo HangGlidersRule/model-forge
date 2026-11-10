@@ -1,0 +1,37 @@
+{
+ "candidate": "W4A16",
+ "export": "Darkstar-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Base-ModelOpt-W4A16-NVFP4 v1.1.0 (staged 81c64d1a)",
+ "parent": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16@24e67ea0",
+ "quantized_layers": {
+  "experts/W4A16_NVFP4": 5888,
+  "lm_head/W4A16_NVFP4": 1,
+  "shared_experts/W4A16_NVFP4": 46
+ },
+ "kv_cache": null,
+ "towers": {
+  "upstream": 1106,
+  "present": 1106,
+  "byte_identical": 1106,
+  "absent_buffers": []
+ },
+ "untouched_language_model": {
+  "checked": 308,
+  "byte_identical": 308
+ },
+ "scales": {
+  "per_tensor_checked": 5936,
+  "bad_per_tensor": 0,
+  "fp8_block_scales": 1886631936,
+  "non_finite": 0,
+  "zero": 0,
+  "negative": 0
+ },
+ "fused_qkv_mixed_precision_layers": 0,
+ "quantized_non_language_model": 0,
+ "mtp_tensors": 0,
+ "kv_scales": 0,
+ "input_scales": 1,
+ "errors": [],
+ "verdict": "PASS",
+ "validator": "models/nemotron-3-nano-omni-r1/eval/validate_omni_w4a4.py (mode W4A16)"
+}
