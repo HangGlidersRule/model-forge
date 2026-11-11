@@ -89,7 +89,7 @@ docker run --gpus all -p 8000:8000 \
     --served-model-name darkstar-qwenimage21-base-fp8
 ```
 
-OpenAI-compatible endpoints: `POST ${PUBLIC_WORKSPACE}`, `POST ${PUBLIC_WORKSPACE}`.
+OpenAI-compatible endpoints: `POST /v1/images/generations`, `POST /v1/images/edits`.
 
 Note: the checkpoint config carries **component-prefixed ignore patterns** (`*transformer_blocks.N.*`).
 The vLLM-Omni runtime matches quantization exclusions against component-prefixed module names;

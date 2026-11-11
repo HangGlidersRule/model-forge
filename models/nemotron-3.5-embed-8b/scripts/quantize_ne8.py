@@ -37,11 +37,12 @@ def _open_dir(path, dir_fd=None):
                    dir_fd=dir_fd)
 
 
-def _walk_checkpoint(root, dir_fd, rel=Path()):
+def _walk_checkpoint(root, dir_fd, rel=Path(), listed=True):
     """Yield (relative path, fd of its directory) for every file under the checkpoint ``root``, open as ``dir_fd``.
 
     Subdirectories are opened through their parent's fd, so the walk never leaves the tree. A link or special file
-    anywhere is refused. Top-level hidden directories (.git, .cache) are download state and are not entered."""
+    anywhere is refused. Top-level hidden directories (.git, .cache) are download state: they are checked for links like
+    the rest of the tree, but their files are not yielded."""
     with os.scandir(dir_fd) as it:
         entries = sorted(it, key=lambda e: e.name)
     for e in entries:
@@ -49,15 +50,14 @@ def _walk_checkpoint(root, dir_fd, rel=Path()):
         if e.is_symlink():
             raise SystemExit(f"QUANT-FAILED: {root / path} is a link; the source checkpoint must hold regular files only")
         if e.is_dir(follow_symlinks=False):
-            if e.name.startswith(".") and not rel.parts:
-                continue
             sub_fd = _open_dir(e.name, dir_fd)
             try:
-                yield from _walk_checkpoint(root, sub_fd, path)
+                yield from _walk_checkpoint(root, sub_fd, path, listed and not (e.name.startswith(".") and not rel.parts))
             finally:
                 os.close(sub_fd)
         elif e.is_file(follow_symlinks=False):
-            yield path, dir_fd
+            if listed:
+                yield path, dir_fd
         else:
             raise SystemExit(f"QUANT-FAILED: {root / path} is not a regular file")
 

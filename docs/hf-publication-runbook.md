@@ -51,8 +51,8 @@ Run detached with its own container and a name like `omni-upload`; poll
    --public` if needed).
 3. Anonymous `curl -s -o /dev/null -w "%{http_code}"` on:
    - the card page (200)
-   - `${PUBLIC_WORKSPACE}` (200; follow redirects)
-   - `${PUBLIC_ARTIFACT_PATH}` (200; ~30s max-time is
+   - the repository's `resolve/main/config.json` URL (200; follow redirects)
+   - the repository's `resolve/main/model-00001-of-....safetensors` URL (200; ~30s max-time is
      enough to prove reachability, do not download the shard)
 4. Card read-back: fetch the raw README and re-run the gold-standard checks —
    HF metadata validation may reject front-matter (`license_link` must be a

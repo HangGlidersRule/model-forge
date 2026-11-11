@@ -55,15 +55,20 @@ RUN set -eux; \
 RUN set -eux; \
     python -m pip install --index-url "${TORCH_INDEX_URL}" "torch==${TORCH_VERSION}"
 
+# Build args reach python through os.environ and the shell only as quoted
+# expansions, never as program text.
 RUN set -eux; \
+    case "${MODELOPT_WHEEL_URL}" in https://*) ;; *) echo "MODELOPT_WHEEL_URL must be https" >&2; exit 1 ;; esac; \
     mkdir -p ${PUBLIC_WORKSPACE}/wheel; \
     curl -fSL -o "${PUBLIC_ARTIFACT_PATH}" "${MODELOPT_WHEEL_URL}"; \
     echo "${MODELOPT_WHEEL_SHA256}  ${PUBLIC_ARTIFACT_PATH}" | sha256sum -c -; \
     python -m pip install "${PUBLIC_ARTIFACT_PATH}[hf]" "${TRANSFORMERS_SPEC}"; \
-    python -c "import importlib.metadata as md; assert md.version('nvidia-modelopt') == '${MODELOPT_VERSION}'; assert md.version('torch').split('+')[0] == '${TORCH_VERSION}', md.version('torch')"; \
+    python -c "import importlib.metadata as md, os; assert md.version('nvidia-modelopt') == os.environ['MODELOPT_VERSION']; assert md.version('torch').split('+')[0] == os.environ['TORCH_VERSION'], md.version('torch')"; \
     rm -rf ${PUBLIC_WORKSPACE}/wheel
 
 RUN set -eux; \
+    case "${MODELOPT_COMMIT}" in *[!0-9a-f]* | '') echo "MODELOPT_COMMIT must be a commit hash" >&2; exit 1 ;; esac; \
+    test "${#MODELOPT_COMMIT}" -eq 40; \
     git clone --filter=blob:none "${MODELOPT_REPO_URL}" "${MODELOPT_ROOT}"; \
     cd "${MODELOPT_ROOT}"; \
     git checkout --detach "${MODELOPT_COMMIT}"; \
@@ -72,7 +77,7 @@ RUN set -eux; \
 
 RUN set -eux; \
     python -m pip install ${EXTRA_PIP_SPECS}; \
-    python -c "import importlib.metadata as md; assert md.version('torch').split('+')[0] == '${TORCH_VERSION}'; assert md.version('nvidia-modelopt') == '${MODELOPT_VERSION}'; import transformers; assert transformers.__version__ == '5.18.0', transformers.__version__; print('OK torch', md.version('torch'), 'modelopt', md.version('nvidia-modelopt'), 'transformers', transformers.__version__)"
+    python -c "import importlib.metadata as md, os; assert md.version('torch').split('+')[0] == os.environ['TORCH_VERSION']; assert md.version('nvidia-modelopt') == os.environ['MODELOPT_VERSION']; import transformers; assert transformers.__version__ == '5.18.0', transformers.__version__; print('OK torch', md.version('torch'), 'modelopt', md.version('nvidia-modelopt'), 'transformers', transformers.__version__)"
 
 LABEL org.opencontainers.image.title="model-forge-modelopt" \
       com.hangglidersrule.modelopt.version="${MODELOPT_VERSION}" \

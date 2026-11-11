@@ -55,22 +55,33 @@ def store_cache(cache: Path, data: bytes) -> None:
         os.unlink(tmp)
 
 
-def pinned_parquet(cache: Path) -> bytes:
-    """The pinned parquet's bytes, read once: the bytes that are hashed are the bytes that are parsed."""
+def pinned_parquet(cache: Path, *, explicit: bool) -> bytes:
+    """The pinned parquet's bytes, read once: the bytes that are hashed are the bytes that are parsed.
+
+    An explicit --cache that does not hold the pinned bytes is refused. Anything else at the default
+    cache path is left as is, and the pinned bytes are downloaded instead.
+    """
     url = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}/{PARQUET}"
-    downloaded = not cache.exists()
-    if downloaded:
-        with contextlib.closing(urllib.request.urlopen(url, timeout=600)) as resp:
-            data = resp.read()
-    else:
+    existed = cache.exists()
+    if existed:
         with os.fdopen(os.open(cache, os.O_RDONLY | os.O_NONBLOCK), "rb") as f:
-            if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
-                raise SystemExit(f"{cache} is not a regular file")
-            data = f.read()
+            if stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+                data = f.read()
+                digest = hashlib.sha256(data).hexdigest()
+                if digest == PARQUET_SHA256:
+                    return data
+                problem = f"sha256 {digest} is not the pinned {PARQUET_SHA256}"
+            else:
+                problem = "not a regular file"
+        if explicit:
+            raise SystemExit(f"{cache}: {problem}")
+        print(f"warning: ignoring {cache} ({problem}); downloading the pinned parquet", file=sys.stderr)
+    with contextlib.closing(urllib.request.urlopen(url, timeout=600)) as resp:
+        data = resp.read()
     digest = hashlib.sha256(data).hexdigest()
     if digest != PARQUET_SHA256:
-        raise SystemExit(f"{url if downloaded else cache}: sha256 {digest} is not the pinned {PARQUET_SHA256}")
-    if downloaded:
+        raise SystemExit(f"{url}: sha256 {digest} is not the pinned {PARQUET_SHA256}")
+    if not existed:
         store_cache(cache, data)
     return data
 
@@ -83,7 +94,7 @@ def main() -> int:
 
     import pyarrow.parquet as pq
 
-    data = pinned_parquet(args.cache or default_cache())
+    data = pinned_parquet(args.cache or default_cache(), explicit=args.cache is not None)
     rows = pq.read_table(io.BytesIO(data), columns=["query_id", "query", "passages"]).to_pylist()
     rng = random.Random(SEED)
     rng.shuffle(rows)

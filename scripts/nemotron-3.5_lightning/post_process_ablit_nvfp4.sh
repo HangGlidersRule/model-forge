@@ -5,9 +5,9 @@
 # 3. Change quant_algo W4A16_NVFP4 -> NVFP4 in hf_quant_config.json
 # 4. Write quantization_config (modelopt_mixed) into config.json for vLLM
 set -e
-EXPORT=${1:-/mnt/d/model-forge/cache/lightning-ablit-export}
-SRC_BF16=${2:-/mnt/d/model-forge/ablit/runs/apply_abliteration}
-SRC_BF16_CFG=${3:-/mnt/d/model-forge/lightning-bf16}
+EXPORT=${1:?Pass argument 1 as the public artifact path}
+SRC_BF16=${2:?Pass argument 2 as the public artifact path}
+SRC_BF16_CFG=${3:?Pass argument 3 as the public artifact path}
 
 echo "=== 1. strip sentinels ==="
 python3 ${PUBLIC_ARTIFACT_PATH} "$EXPORT/hf_quant_config.json" 2>/dev/null || \

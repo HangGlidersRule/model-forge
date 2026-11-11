@@ -41,7 +41,7 @@ def request(base: str, model: str, content: str, max_tokens: int) -> dict:
         "chat_template_kwargs": {"enable_thinking": False},
     }
     req = urllib.request.Request(
-        base.rstrip("/") + "${PUBLIC_WORKSPACE}",
+        base.rstrip("/") + "/v1/chat/completions",
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )

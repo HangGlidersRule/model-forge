@@ -8,6 +8,8 @@ Checks on the exact directory to be uploaded:
     above (NVFP4 group 16), lm_head not listed; every MTP and vision tensor stays unquantized, which is
     checked on the tensors themselves (ModelOpt lists excluded modules either as patterns like `mtp*`
     or by omission from quantized_layers; vLLM leaves any unlisted layer unquantized)
+  - shards: every shard the index names is one file name, the .safetensors files at the top of the directory are
+    exactly those shards, and each is a regular file there, not a symlink; anything else fails before a tensor is read
   - tensors: NVFP4 linears have U8 packed weight + F8_E4M3 weight_scale + F32 weight_scale_2 +
     input_scale; FP8 linears have F8_E4M3 weight + F32 weight_scale + input_scale; lm_head, embeddings,
     norms, vision tower and MTP are BF16; every F32 scale finite and > 0; NVFP4 block scales: counts of
@@ -28,9 +30,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import stat
 import sys
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 import torch
 from safetensors import safe_open
@@ -56,6 +61,81 @@ def sha(p: Path) -> str:
     return h.hexdigest()
 
 
+class ShardError(Exception):
+    pass
+
+
+FD_DIR = "/proc/self/fd" if os.path.isdir("/proc/self/fd") else "/dev/fd"
+
+
+class Checkpoint:
+    """A checkpoint directory whose shards are each opened once, relative to the directory and without following a
+    link, and then read only through that open file (safe_open gets its FD_DIR entry, never the name again)."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        self._fds: dict[str, int] = {}
+        self._handles: dict[str, Any] = {}
+        try:
+            self._dir = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        except OSError as e:
+            raise ShardError(f"{root}: cannot open checkpoint directory ({e.strerror})") from e
+        local = {e.name for e in os.scandir(self._dir) if e.name.endswith(".safetensors")}
+        wm = self._weight_map()
+        named = set(wm.values()) if wm is not None else {"model.safetensors"}
+        if local != named:
+            raise ShardError(f"{root}: safetensors files are not exactly the indexed shards: unindexed "
+                             f"{sorted(local - named)[:4]}, missing {sorted(named - local)[:4]}")
+        for name in sorted(named):
+            try:
+                self._fds[name] = self._open(name)
+            except FileNotFoundError as e:
+                raise ShardError(f"{root}/{name}: shard disappeared") from e
+        self.weight_map = wm if wm is not None else {k: "model.safetensors" for k in self.handle("model.safetensors").keys()}
+
+    def _open(self, name: str) -> int:
+        try:
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=self._dir)
+        except FileNotFoundError:
+            raise
+        except OSError as e:
+            raise ShardError(f"{self.root}/{name}: cannot open as a file in the directory ({e.strerror})") from e
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            os.close(fd)
+            raise ShardError(f"{self.root}/{name}: not a regular file")
+        return fd
+
+    def _weight_map(self) -> dict[str, str] | None:
+        try:
+            fd = self._open("model.safetensors.index.json")
+        except FileNotFoundError:
+            return None
+        with os.fdopen(fd, "rb") as f:
+            try:
+                wm = json.load(f)["weight_map"]
+            except (ValueError, KeyError, TypeError) as e:
+                raise ShardError(f"{self.root}: unreadable model.safetensors.index.json ({e})") from e
+        if not isinstance(wm, dict):
+            raise ShardError(f"{self.root}: weight_map is not a mapping")
+        for k, v in wm.items():
+            if not isinstance(v, str) or v in ("", ".", "..") or "/" in v or "\\" in v or "\0" in v \
+                    or not v.endswith(".safetensors"):
+                raise ShardError(f"{self.root}: {k} maps to {v!r}, not a .safetensors file name in the directory")
+        return wm
+
+    def path(self, shard: str) -> str:
+        return f"{FD_DIR}/{self._fds[shard]}"
+
+    def handle(self, shard: str):
+        if shard not in self._handles:
+            self._handles[shard] = safe_open(self.path(shard), "pt")
+        return self._handles[shard]
+
+    def get(self, name: str):
+        h = self.handle(self.weight_map[name])
+        return h.get_slice(name), h
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--layout", choices=("mixed", "fp4"), required=True)
@@ -75,7 +155,14 @@ def main() -> int:
         errors.append(f"quant_algo {q.get('quant_algo')} (want {want_algo})")
     if q.get("kv_cache_quant_algo") is not None:
         errors.append(f"kv_cache_quant_algo {q.get('kv_cache_quant_algo')} (want null: BF16 KV)")
-    index = json.loads((art / "model.safetensors.index.json").read_text())["weight_map"]
+    try:
+        ck = Checkpoint(art)
+    except ShardError as e:
+        rep.update(errors=[*errors, str(e)], verdict="FAIL")
+        a.report.write_text(json.dumps(rep, indent=1))
+        print("ERROR", e)
+        return 1
+    index = ck.weight_map
     if a.layout == "mixed":
         ql = q["quantized_layers"]
     else:
@@ -116,7 +203,7 @@ def main() -> int:
     dtypes, bad_scales, nvfp4_block = {}, [], {"elements": 0, "nonfinite": 0, "zero": 0}
     scal: dict[str, float] = {}
     for shard, keys in sorted(by_shard.items()):
-        with safe_open(str(art / shard), framework="pt") as f:
+        with safe_open(ck.path(shard), framework="pt") as f:
             for k in keys:
                 t = f.get_tensor(k)
                 dtypes[k] = str(t.dtype).replace("torch.", "")

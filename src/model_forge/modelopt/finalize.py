@@ -10,7 +10,6 @@ dependency) so ``no NaN/Inf/zero scales`` is checked against the actual bytes.
 
 from __future__ import annotations
 
-import json
 import os
 import struct
 from array import array
@@ -20,13 +19,20 @@ from typing import Any
 from model_forge.modelopt.validate import (
     SCALE_NAME_MARKERS,
     ValidationError,
+    read_safetensors_header,
     validate_checkpoint_contract,
 )
 from model_forge.pipeline import (
     SUCCESS_MARKER,
+    ArtifactVerificationError,
     SuccessManifest,
-    sha256_file,
+    artifact_dir_identity,
+    artifact_tree_unchanged,
+    open_artifact_dir,
+    path_dir_identity,
+    read_success_marker,
     sha256_tree,
+    verify_artifact_tree,
 )
 
 _FLOAT_DTYPES = {"F64", "F32", "F16", "BF16"}
@@ -60,6 +66,27 @@ def _decode_floats(dtype: str, raw: bytes, limit: int) -> list[float]:
     return []
 
 
+def _scale_data_offsets(
+    shard: str, name: str, meta: dict[str, Any], data_size: int
+) -> tuple[int, int]:
+    offsets = meta.get("data_offsets")
+    if not (
+        isinstance(offsets, list)
+        and len(offsets) == 2
+        and all(type(value) is int for value in offsets)
+    ):
+        raise ValidationError(
+            f"{shard}: {name} data_offsets must be two integers, got {offsets!r}"
+        )
+    begin, end = offsets
+    if not 0 <= begin <= end <= data_size:
+        raise ValidationError(
+            f"{shard}: {name} data_offsets {offsets!r} must satisfy "
+            f"0 <= begin <= end <= {data_size}"
+        )
+    return begin, end
+
+
 def read_scale_samples(
     export_dir: Path,
     *,
@@ -75,9 +102,8 @@ def read_scale_samples(
     samples: dict[str, list[float]] = {}
     for shard in _iter_safetensors(export_dir):
         with shard.open("rb") as handle:
-            header_len = struct.unpack("<Q", handle.read(8))[0]
-            header = json.loads(handle.read(header_len))
-            data_start = 8 + header_len
+            header, data_start = read_safetensors_header(handle, label=shard.name)
+            data_size = os.fstat(handle.fileno()).st_size - data_start
             for name, meta in header.items():
                 if name == "__metadata__" or not isinstance(meta, dict):
                     continue
@@ -86,7 +112,7 @@ def read_scale_samples(
                 dtype = meta.get("dtype")
                 if dtype not in _FLOAT_DTYPES:
                     continue
-                begin, end = meta.get("data_offsets", (0, 0))
+                begin, end = _scale_data_offsets(shard.name, name, meta, data_size)
                 handle.seek(data_start + begin)
                 raw = handle.read(min(end - begin, max_per_tensor * 8))
                 decoded = _decode_floats(dtype, raw, max_per_tensor)
@@ -170,20 +196,32 @@ def promote_atomic(partial_dir: Path, final_dir: Path) -> None:
     Requires a validated ``_SUCCESS.json`` in the partial directory so a partial
     or unvalidated export can never be promoted.
     """
-    if final_dir.exists():
+    if os.path.lexists(final_dir):
         raise PromotionError(f"Refusing overwrite of existing artifact: {final_dir}")
-    marker = partial_dir / SUCCESS_MARKER
-    if not marker.exists():
-        raise PromotionError(
-            f"Refusing to promote unvalidated export (missing {SUCCESS_MARKER}): {partial_dir}"
-        )
-    # Sanity: the marker must hash-match the files it claims (no post-validation drift).
-    manifest = SuccessManifest.from_json(marker.read_text(encoding="utf-8"))
-    for rel, expected in manifest.output_hashes.items():
-        if rel == SUCCESS_MARKER:
-            continue
-        target = partial_dir / rel
-        if not target.exists() or sha256_file(target) != expected:
-            raise PromotionError(f"Export drift detected before promotion: {rel}")
-    final_dir.parent.mkdir(parents=True, exist_ok=True)
-    os.rename(str(partial_dir), str(final_dir))
+    try:
+        root_fd = open_artifact_dir(partial_dir)
+    except OSError as e:
+        raise PromotionError(f"Partial export is not a plain directory: {partial_dir}") from e
+    try:
+        try:
+            manifest = read_success_marker(root_fd)
+            if manifest is None:
+                raise PromotionError(
+                    f"Refusing to promote unvalidated export (missing {SUCCESS_MARKER}): "
+                    f"{partial_dir}"
+                )
+            # The marker must describe exactly the files present (no post-validation drift).
+            expected = verify_artifact_tree(root_fd, manifest)
+        except ArtifactVerificationError as e:
+            raise PromotionError(f"Export drift detected before promotion: {e}") from e
+        root_id = artifact_dir_identity(root_fd)
+        final_dir.parent.mkdir(parents=True, exist_ok=True)
+        if path_dir_identity(partial_dir) != root_id:
+            raise PromotionError(f"Partial export replaced before promotion: {partial_dir}")
+        os.rename(str(partial_dir), str(final_dir))
+        if path_dir_identity(final_dir) != root_id or not artifact_tree_unchanged(
+            root_fd, expected
+        ):
+            raise PromotionError(f"Export changed during promotion: {final_dir}")
+    finally:
+        os.close(root_fd)

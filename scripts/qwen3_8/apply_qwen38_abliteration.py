@@ -24,13 +24,13 @@ from model_forge.abliteration import (
 from model_forge.experiment import load_experiment
 from model_forge.pipeline import (
     INDEX_NAME,
+    CheckpointAssets,
     OutputDir,
     RunLock,
     SourceDir,
     StageContext,
     SuccessManifest,
     UnsafeCheckpointFile,
-    copy_checkpoint_assets,
     sha256_file,
     shard_names,
 )
@@ -104,6 +104,17 @@ def main() -> None:
         sys.exit(1)
 
     shards = {name: source.open(name) for name in sorted(set(weight_map.values()))}
+    # Assets are opened before the lock and the partial directory exist, so a refused source leaves the
+    # run root untouched. Links are refused, except Hugging Face snapshot links into blobs/. The index is
+    # written below from the validated bytes.
+    try:
+        assets = CheckpointAssets(
+            model_path,
+            skip=lambda name: name.endswith(".safetensors") or name.startswith(".") or name == INDEX_NAME,
+        )
+    except UnsafeCheckpointFile as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"Applying projection to {len(target_names)} tensors...")
     lock = RunLock(args.run_root / "apply_abliteration.lock")
@@ -111,17 +122,8 @@ def main() -> None:
         partial = ctx.partial_dir
         target_set = set(target_names)
 
-        # Copy non-safetensor assets: links are refused, except Hugging Face snapshot links into blobs/, and
-        # every asset is opened before anything is written. The index is written below from the validated bytes.
-        try:
-            copy_checkpoint_assets(
-                model_path,
-                partial,
-                skip=lambda name: name.endswith(".safetensors") or name.startswith(".") or name == INDEX_NAME,
-            )
-        except UnsafeCheckpointFile as e:
-            print(f"ERROR: {e}", file=sys.stderr)
-            sys.exit(1)
+        with assets:
+            assets.write(partial)
         out = OutputDir(partial)
 
         edit_report: list[dict[str, object]] = []
