@@ -27,6 +27,9 @@ _READ_FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
 _DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
 _WRITE_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC
 
+# (st_dev, st_ino, st_size, st_mtime_ns, st_ctime_ns)
+FileIdentity = tuple[int, int, int, int, int]
+
 
 def canonical_json(obj: Any) -> str:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
@@ -122,31 +125,191 @@ class StageError(RuntimeError):
     pass
 
 
+class ArtifactVerificationError(RuntimeError):
+    """An artifact directory does not match the success marker that describes it."""
+
+
+class MarkerNotRegularError(ArtifactVerificationError):
+    """The success marker is a link or a special file, so it says nothing about this directory."""
+
+
+def _file_identity(st: os.stat_result) -> FileIdentity:
+    return (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+
+
+def _dir_identity(st: os.stat_result) -> tuple[int, int]:
+    return (st.st_dev, st.st_ino)
+
+
+def open_artifact_dir(path: Path) -> int:
+    """Open ``path`` as a directory descriptor, refusing a symlink at ``path`` itself."""
+    return os.open(str(path), _DIR_FLAGS | os.O_NOFOLLOW)
+
+
+def artifact_dir_identity(root_fd: int) -> tuple[int, int]:
+    return _dir_identity(os.fstat(root_fd))
+
+
+def path_dir_identity(path: Path) -> tuple[int, int] | None:
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISDIR(st.st_mode):
+        return None
+    return _dir_identity(st)
+
+
+def _sha256_fd(fd: int) -> str:
+    h = hashlib.sha256()
+    while chunk := os.read(fd, 1 << 20):
+        h.update(chunk)
+    return h.hexdigest()
+
+
+def _scan_tree(
+    dir_fd: int, prefix: str, identities: dict[str, FileIdentity], hashes: dict[str, str] | None
+) -> None:
+    for name in sorted(os.listdir(dir_fd)):
+        rel = prefix + name
+        st = os.stat(name, dir_fd=dir_fd, follow_symlinks=False)
+        if stat.S_ISDIR(st.st_mode):
+            child = os.open(name, _DIR_FLAGS | os.O_NOFOLLOW, dir_fd=dir_fd)
+            try:
+                if _dir_identity(os.fstat(child)) != _dir_identity(st):
+                    raise ArtifactVerificationError(f"directory changed while scanning: {rel}")
+                _scan_tree(child, rel + "/", identities, hashes)
+            finally:
+                os.close(child)
+        elif stat.S_ISREG(st.st_mode):
+            fd = os.open(name, _READ_FLAGS, dir_fd=dir_fd)
+            try:
+                before = os.fstat(fd)
+                if not stat.S_ISREG(before.st_mode) or _file_identity(before) != _file_identity(st):
+                    raise ArtifactVerificationError(f"file changed while scanning: {rel}")
+                if hashes is not None and rel != SUCCESS_MARKER:
+                    hashes[rel] = _sha256_fd(fd)
+                    if _file_identity(os.fstat(fd)) != _file_identity(before):
+                        raise ArtifactVerificationError(f"file changed while hashing: {rel}")
+                identities[rel] = _file_identity(before)
+            finally:
+                os.close(fd)
+        else:
+            kind = "symlink" if stat.S_ISLNK(st.st_mode) else "non-regular entry"
+            raise ArtifactVerificationError(f"artifact contains a {kind}: {rel}")
+
+
+def snapshot_artifact_tree(root_fd: int) -> dict[str, FileIdentity]:
+    """Identities of every regular file under ``root_fd``, including the success marker.
+
+    Raises ``ArtifactVerificationError`` on any symlink or non-regular entry.
+    """
+    identities: dict[str, FileIdentity] = {}
+    try:
+        _scan_tree(root_fd, "", identities, None)
+    except OSError as e:
+        raise ArtifactVerificationError(f"cannot scan artifact: {e}") from e
+    return identities
+
+
+def artifact_tree_unchanged(root_fd: int, expected: dict[str, FileIdentity]) -> bool:
+    try:
+        return snapshot_artifact_tree(root_fd) == expected
+    except ArtifactVerificationError:
+        return False
+
+
+def read_success_marker(root_fd: int) -> SuccessManifest | None:
+    """Parse the marker directly under ``root_fd``; ``None`` when there is none.
+
+    Raises ``ArtifactVerificationError`` when the marker is a symlink, not a
+    regular file, or not a well-formed manifest.
+    """
+    try:
+        fd = os.open(SUCCESS_MARKER, _READ_FLAGS, dir_fd=root_fd)
+    except FileNotFoundError:
+        return None
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise MarkerNotRegularError(f"{SUCCESS_MARKER} is a symlink") from e
+        raise ArtifactVerificationError(f"unreadable {SUCCESS_MARKER}: {e}") from e
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise MarkerNotRegularError(f"{SUCCESS_MARKER} is not a regular file")
+        chunks = []
+        while chunk := os.read(fd, 1 << 20):
+            chunks.append(chunk)
+    finally:
+        os.close(fd)
+    try:
+        manifest = SuccessManifest.from_json(b"".join(chunks).decode("utf-8"))
+    except (ValueError, TypeError, AttributeError) as e:
+        raise ArtifactVerificationError(f"malformed {SUCCESS_MARKER}") from e
+    hashes = manifest.output_hashes
+    if not isinstance(hashes, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in hashes.items()
+    ):
+        raise ArtifactVerificationError(f"{SUCCESS_MARKER} output_hashes is not a str->str map")
+    return manifest
+
+
+def verify_artifact_tree(root_fd: int, manifest: SuccessManifest) -> dict[str, FileIdentity]:
+    """Require ``manifest.output_hashes`` to describe exactly the files under ``root_fd``.
+
+    Every regular file other than the root success marker must be listed with
+    its SHA-256, and every key must name one of those files. Hashes are taken
+    from descriptors opened during the scan, never from a path built out of a
+    marker key, so absolute keys, parent segments, and symlinks cannot redirect
+    a check outside the directory. Returns the identities of the files that
+    were hashed (plus the marker, when present) so callers can detect changes
+    before acting on the directory.
+    """
+    if not manifest.output_hashes:
+        raise ArtifactVerificationError(f"{SUCCESS_MARKER} lists no output hashes")
+    identities: dict[str, FileIdentity] = {}
+    hashes: dict[str, str] = {}
+    try:
+        _scan_tree(root_fd, "", identities, hashes)
+    except OSError as e:
+        raise ArtifactVerificationError(f"cannot scan artifact: {e}") from e
+    listed = set(manifest.output_hashes)
+    present = set(hashes)
+    if listed != present:
+        unlisted = sorted(present - listed)
+        missing = sorted(listed - present)
+        raise ArtifactVerificationError(
+            f"marker does not match artifact files (unlisted={unlisted[:5]}, "
+            f"missing={missing[:5]})"
+        )
+    for rel, digest in hashes.items():
+        if manifest.output_hashes[rel] != digest:
+            raise ArtifactVerificationError(f"hash mismatch: {rel}")
+    return identities
+
+
 def validate_success_marker(
     stage_dir: Path, expected_config_sha: str
 ) -> SuccessManifest | None:
     """Return manifest if stage completed validly, else None."""
-    marker = stage_dir / SUCCESS_MARKER
-    if not marker.exists():
+    try:
+        root_fd = open_artifact_dir(stage_dir)
+    except OSError:
         return None
     try:
-        manifest = SuccessManifest.from_json(marker.read_text())
-    except (json.JSONDecodeError, TypeError):
-        return None
-    if manifest.config_sha != expected_config_sha:
-        return None
-    for rel_path, expected_hash in manifest.output_hashes.items():
-        out_file = stage_dir / rel_path
-        if not out_file.exists():
+        manifest = read_success_marker(root_fd)
+        if manifest is None or manifest.config_sha != expected_config_sha:
             return None
-        if sha256_file(out_file) != expected_hash:
-            return None
+        verify_artifact_tree(root_fd, manifest)
+    except ArtifactVerificationError:
+        return None
+    finally:
+        os.close(root_fd)
     return manifest
 
 
 def quarantine_partial(stage_dir: Path) -> Path | None:
     """Move a stale/corrupt stage directory to a timestamped quarantine path."""
-    if not stage_dir.exists():
+    if not os.path.lexists(stage_dir):
         return None
     ts = time.strftime("%Y%m%dT%H%M%S")
     quarantine = stage_dir.parent / f"{stage_dir.name}.quarantine.{ts}.{os.getpid()}"
@@ -178,11 +341,32 @@ class StageContext:
         """Atomically promote partial dir to final stage dir after writing manifest."""
         if self._partial is None:
             raise StageError("No partial directory to promote")
-        marker = self._partial / SUCCESS_MARKER
-        marker.write_text(manifest.to_json())
-        if self.stage_dir.exists():
-            quarantine_partial(self.stage_dir)
-        os.rename(str(self._partial), str(self.stage_dir))
+        try:
+            root_fd = open_artifact_dir(self._partial)
+        except OSError as e:
+            raise StageError(f"Partial directory is not a plain directory: {self._partial}") from e
+        try:
+            try:
+                expected = verify_artifact_tree(root_fd, manifest)
+            except ArtifactVerificationError as e:
+                raise StageError(f"Refusing to promote {self._partial}: {e}") from e
+            fd = os.open(SUCCESS_MARKER, _WRITE_FLAGS, 0o644, dir_fd=root_fd)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(manifest.to_json())
+                f.flush()
+                expected[SUCCESS_MARKER] = _file_identity(os.fstat(f.fileno()))
+            if os.path.lexists(self.stage_dir):
+                quarantine_partial(self.stage_dir)
+            root_id = artifact_dir_identity(root_fd)
+            if path_dir_identity(self._partial) != root_id:
+                raise StageError(f"Partial directory replaced before promotion: {self._partial}")
+            os.rename(str(self._partial), str(self.stage_dir))
+            if path_dir_identity(self.stage_dir) != root_id or not artifact_tree_unchanged(
+                root_fd, expected
+            ):
+                raise StageError(f"Stage directory changed during promotion: {self.stage_dir}")
+        finally:
+            os.close(root_fd)
         self._partial = None
 
     def cleanup_partial(self) -> None:
@@ -476,27 +660,64 @@ def copy_checkpoint_assets(
     written until every file has been opened that way. Returns the copied paths relative to
     ``source``.
     """
-    blobs = _snapshot_blobs(source)
-    root_fd = os.open(source, _DIR_FLAGS)
-    blobs_fd = os.open(blobs, _DIR_FLAGS | os.O_NOFOLLOW) if blobs is not None else None
-    dirs: list[Path] = []
-    files: list[tuple[Path, int]] = []
-    try:
-        _open_checkpoint_dir(source, root_fd, Path(), skip, blobs, blobs_fd, dirs, files)
-        for rel in dirs:
+    with CheckpointAssets(source, skip=skip) as assets:
+        return assets.write(dest)
+
+
+class CheckpointAssets:
+    """The entries of a checkpoint directory, opened as ``copy_checkpoint_assets`` opens them.
+
+    Constructing it opens every file and raises ``UnsafeCheckpointFile`` before the caller has
+    created any output, so a refused source leaves nothing behind. ``write`` copies the bytes of
+    the files that were opened.
+    """
+
+    def __init__(self, source: Path, *, skip: Callable[[str], bool]) -> None:
+        self.dirs: list[Path] = []
+        self.files: list[tuple[Path, int]] = []
+        blobs = _snapshot_blobs(source)
+        root_fd = os.open(source, _DIR_FLAGS)
+        blobs_fd: int | None = None
+        try:
+            if blobs is not None:
+                blobs_fd = os.open(blobs, _DIR_FLAGS | os.O_NOFOLLOW)
+            _open_checkpoint_dir(
+                source, root_fd, Path(), skip, blobs, blobs_fd, self.dirs, self.files
+            )
+        except BaseException:
+            self.close()
+            raise
+        finally:
+            os.close(root_fd)
+            if blobs_fd is not None:
+                os.close(blobs_fd)
+
+    def write(self, dest: Path) -> list[str]:
+        """Copy every opened entry into ``dest``; return the copied paths relative to the source."""
+        for rel in self.dirs:
             (dest / rel).mkdir(exist_ok=True)
-        for rel, src_fd in files:
+        for rel, src_fd in self.files:
             with open(src_fd, "rb", closefd=False) as fin, open(
                 os.open(dest / rel, _WRITE_FLAGS, 0o644), "wb"
             ) as fout:
                 shutil.copyfileobj(fin, fout, 1 << 20)
-    finally:
-        for _, src_fd in files:
+        return [rel.as_posix() for rel, _ in self.files]
+
+    def close(self) -> None:
+        for _, src_fd in self.files:
             os.close(src_fd)
-        os.close(root_fd)
-        if blobs_fd is not None:
-            os.close(blobs_fd)
-    return [rel.as_posix() for rel, _ in files]
+        self.files.clear()
+
+    def __enter__(self) -> CheckpointAssets:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self.close()
 
 
 def _snapshot_blobs(source: Path) -> Path | None:

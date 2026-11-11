@@ -22,12 +22,17 @@ Checks, all of which must pass:
   4. Sidecars. chat_template.jinja, tokenizer files and the sentence-transformers files are byte-identical
      to the source. config.json equals the source apart from quantization_config.
   5. hf_quant_config.json names the right algorithm and keeps the KV cache unquantized.
+The checks read only the shards of the directory under test: every shard the index names must be one file name, the
+.safetensors files at the top of the directory must be exactly those shards (model.safetensors without an index), and
+each one must be a regular file there, not a symlink. Anything else fails before a tensor is read.
 Prints VALIDATE-OK or VALIDATE-FAIL and writes a JSON report."""
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 from typing import Any
@@ -46,15 +51,90 @@ errors: list[str] = []
 report: dict = {"candidate": CAND, "plan": PLAN}
 
 
-def tensors(d: Path) -> dict[str, tuple[str, Path]]:
-    idx = d / "model.safetensors.index.json"
-    if idx.exists():
-        wm = json.loads(idx.read_text())["weight_map"]
-        return {k: ("", d / v) for k, v in wm.items()}
-    return {k: ("", d / "model.safetensors") for k in safe_open(str(d / "model.safetensors"), "pt").keys()}
+class ShardError(Exception):
+    pass
 
 
-src_t, exp_t = tensors(SRC), tensors(EXP)
+FD_DIR = "/proc/self/fd" if os.path.isdir("/proc/self/fd") else "/dev/fd"
+
+
+class Checkpoint:
+    """A checkpoint directory whose shards are each opened once, relative to the directory and without following a
+    link, and then read only through that open file (safe_open gets its FD_DIR entry, never the name again)."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        self._fds: dict[str, int] = {}
+        self._handles: dict[str, Any] = {}
+        try:
+            self._dir = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        except OSError as e:
+            raise ShardError(f"{root}: cannot open checkpoint directory ({e.strerror})") from e
+        local = {e.name for e in os.scandir(self._dir) if e.name.endswith(".safetensors")}
+        wm = self._weight_map()
+        named = set(wm.values()) if wm is not None else {"model.safetensors"}
+        if local != named:
+            raise ShardError(f"{root}: safetensors files are not exactly the indexed shards: unindexed "
+                             f"{sorted(local - named)[:4]}, missing {sorted(named - local)[:4]}")
+        for name in sorted(named):
+            try:
+                self._fds[name] = self._open(name)
+            except FileNotFoundError as e:
+                raise ShardError(f"{root}/{name}: shard disappeared") from e
+        self.weight_map = wm if wm is not None else {k: "model.safetensors" for k in self.handle("model.safetensors").keys()}
+
+    def _open(self, name: str) -> int:
+        try:
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=self._dir)
+        except FileNotFoundError:
+            raise
+        except OSError as e:
+            raise ShardError(f"{self.root}/{name}: cannot open as a file in the directory ({e.strerror})") from e
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            os.close(fd)
+            raise ShardError(f"{self.root}/{name}: not a regular file")
+        return fd
+
+    def _weight_map(self) -> dict[str, str] | None:
+        try:
+            fd = self._open("model.safetensors.index.json")
+        except FileNotFoundError:
+            return None
+        with os.fdopen(fd, "rb") as f:
+            try:
+                wm = json.load(f)["weight_map"]
+            except (ValueError, KeyError, TypeError) as e:
+                raise ShardError(f"{self.root}: unreadable model.safetensors.index.json ({e})") from e
+        if not isinstance(wm, dict):
+            raise ShardError(f"{self.root}: weight_map is not a mapping")
+        for k, v in wm.items():
+            if not isinstance(v, str) or v in ("", ".", "..") or "/" in v or "\\" in v or "\0" in v \
+                    or not v.endswith(".safetensors"):
+                raise ShardError(f"{self.root}: {k} maps to {v!r}, not a .safetensors file name in the directory")
+        return wm
+
+    def path(self, shard: str) -> str:
+        return f"{FD_DIR}/{self._fds[shard]}"
+
+    def handle(self, shard: str):
+        if shard not in self._handles:
+            self._handles[shard] = safe_open(self.path(shard), "pt")
+        return self._handles[shard]
+
+    def get(self, name: str):
+        h = self.handle(self.weight_map[name])
+        return h.get_slice(name), h
+
+
+try:
+    src_ck, exp_ck = Checkpoint(SRC), Checkpoint(EXP)
+except ShardError as e:
+    report.update(errors=[str(e)], verdict="FAIL")
+    OUT.write_text(json.dumps(report, indent=1))
+    print("VALIDATE-FAIL", json.dumps({"candidate": CAND}), flush=True)
+    print("  ERROR", e, flush=True)
+    sys.exit(1)
+src_t, exp_t = src_ck.weight_map, exp_ck.weight_map
 # The source (a plain Mistral3Model) names the text tower language_model.layers.N.*; the exporter may write
 # model.language_model.*, language_model.model.* or the same. Map every name, source and export, to that form.
 CANON = [(re.compile(r"^model\.language_model\.model\."), "language_model."),
@@ -74,15 +154,6 @@ def canon(name: str) -> str:
 exp_by_canon = {canon(k): k for k in exp_t}
 report["export_tensors"], report["source_tensors"] = len(exp_t), len(src_t)
 lin = re.compile(r"^language_model\.layers\.(\d+)\.(?:self_attn|mlp)\.(" + "|".join(ATTN + MLP) + r")\.(weight|weight_scale|weight_scale_2|input_scale)$")
-handles: dict[Path, Any] = {}
-
-
-def get(path: Path, name: str):
-    if path not in handles:
-        handles[path] = safe_open(str(path), "pt")
-    return handles[path].get_slice(name), handles[path]
-
-
 seen_q: dict[tuple[int, str], dict[str, str]] = {}
 nan_blocks = zero_blocks = total_blocks = 0
 for cname, ename in sorted(exp_by_canon.items()):
@@ -90,7 +161,7 @@ for cname, ename in sorted(exp_by_canon.items()):
     if not m:
         continue
     layer, proj, part = int(m.group(1)), m.group(2), m.group(3)
-    sl, h = get(exp_t[ename][1], ename)
+    sl, h = exp_ck.get(ename)
     seen_q.setdefault((layer, proj), {})[part] = sl.get_dtype()
     if part == "weight_scale" and sl.get_dtype() == "F8_E4M3":
         v = h.get_tensor(ename).to(torch.float32)
@@ -131,7 +202,7 @@ from fused_groups import fused_group_mismatches  # noqa: E402
 
 def read_scalar(cname: str) -> float:
     ename = exp_by_canon[cname]
-    _, h = get(exp_t[ename][1], ename)
+    _, h = exp_ck.get(ename)
     return float(h.get_tensor(ename).to(torch.float32).item())
 
 
@@ -142,7 +213,7 @@ if fused["mismatched"]:
 
 # 3. Protected tensors: every source tensor that is not a quantized linear's weight must be byte-identical in the export.
 protected = identical = 0
-for sname, (_, spath) in sorted(src_t.items()):
+for sname in sorted(src_t):
     m = lin.match(sname)
     if m and PLAN[m.group(2)] != "bf16":
         continue
@@ -151,8 +222,8 @@ for sname, (_, spath) in sorted(src_t.items()):
     if ename is None:
         errors.append(f"protected tensor missing from export: {sname}")
         continue
-    ss, sh = get(spath, sname)
-    es, eh = get(exp_t[ename][1], ename)
+    ss, sh = src_ck.get(sname)
+    es, eh = exp_ck.get(ename)
     if ss.get_dtype() != es.get_dtype() or ss.get_shape() != es.get_shape():
         errors.append(f"{sname}: dtype/shape {es.get_dtype()} {es.get_shape()} vs source {ss.get_dtype()} {ss.get_shape()}")
         continue

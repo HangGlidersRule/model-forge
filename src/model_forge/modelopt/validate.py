@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import struct
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
 from model_forge.modelopt.policy import (
     FINAL_EXCLUSION_GLOBS,
@@ -25,10 +26,45 @@ from model_forge.modelopt.policy import (
 
 EXPECTED_MTP_TENSORS = 15
 SCALE_NAME_MARKERS = ("weight_scale", "input_scale", "scale", "amax")
+# huggingface/safetensors refuses headers above 100_000_000 bytes (MAX_HEADER_SIZE).
+SAFETENSORS_MAX_HEADER_BYTES = 100_000_000
 
 
 class ValidationError(ValueError):
     pass
+
+
+def read_safetensors_header(handle: BinaryIO, *, label: str) -> tuple[dict[str, Any], int]:
+    """Parse the header of an open safetensors shard; return ``(header, data_start)``.
+
+    The 8-byte length prefix is untrusted: it is bounded by the safetensors header
+    cap and by the shard's size before anything is read, so a hostile shard cannot
+    force a large allocation.
+    """
+    prefix = handle.read(8)
+    if len(prefix) != 8:
+        raise ValidationError(f"{label}: truncated safetensors header length prefix")
+    (header_len,) = struct.unpack("<Q", prefix)
+    if header_len > SAFETENSORS_MAX_HEADER_BYTES:
+        raise ValidationError(
+            f"{label}: safetensors header length {header_len} exceeds the "
+            f"{SAFETENSORS_MAX_HEADER_BYTES}-byte limit"
+        )
+    shard_size = os.fstat(handle.fileno()).st_size
+    if header_len > shard_size - 8:
+        raise ValidationError(
+            f"{label}: safetensors header length {header_len} exceeds the shard size {shard_size}"
+        )
+    raw = handle.read(header_len)
+    if len(raw) != header_len:
+        raise ValidationError(f"{label}: truncated safetensors header")
+    try:
+        header = json.loads(raw)
+    except (ValueError, RecursionError) as exc:
+        raise ValidationError(f"{label}: safetensors header is not valid JSON: {exc}") from exc
+    if not isinstance(header, dict):
+        raise ValidationError(f"{label}: safetensors header is not a JSON object")
+    return header, 8 + header_len
 
 
 @dataclass
@@ -106,8 +142,7 @@ def _tensor_names_from_checkpoint(root: Path) -> list[str]:
     names: list[str] = []
     for path in sorted(root.glob("*.safetensors")):
         with path.open("rb") as handle:
-            header_len = struct.unpack("<Q", handle.read(8))[0]
-            header = json.loads(handle.read(header_len))
+            header, _data_start = read_safetensors_header(handle, label=path.name)
         names.extend(key for key in header if key != "__metadata__")
     return sorted(set(names))
 

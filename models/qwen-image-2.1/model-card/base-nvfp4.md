@@ -90,7 +90,7 @@ docker run --gpus all -p 8000:8000 \
     --served-model-name darkstar-qwenimage21-base-nvfp4
 ```
 
-OpenAI-compatible endpoints: `POST ${PUBLIC_WORKSPACE}`, `POST ${PUBLIC_WORKSPACE}`. Seed
+OpenAI-compatible endpoints: `POST /v1/images/generations`, `POST /v1/images/edits`. Seed
 determinism is byte-identical for repeated same-seed requests (`max_num_seqs=1` profile).
 
 Note: the checkpoint config carries **component-prefixed ignore patterns** (`*transformer_blocks.N.*`).

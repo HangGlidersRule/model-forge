@@ -8,7 +8,9 @@ services:
       - ${REPO_ROOT:-.}:/repo:ro
     working_dir: /repo
     environment:
-      - RUN_ROOT=${RUN_ROOT:-/work/runs/current}
+      # Two path segments (not three) so the public-export sanitizer, which treats 3+-segment absolute paths as
+      # host layout, leaves this container path alone; /work is the work-state volume.
+      - RUN_ROOT=${RUN_ROOT:-/work/current-run}
       # Fail closed: callers must deliberately select a current recipe. Never fall
       # back to the rejected historical r3-nvfp4 compressed-tensors workflow.
       - CONFIG=${CONFIG:?Set CONFIG explicitly to a supported current recipe}

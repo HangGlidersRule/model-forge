@@ -7,7 +7,11 @@ Rules (per stream; routed and shared up_proj share the up stream):
   p9999   G = 99.99th percentile of per-block amax (capped at the observed max)
   p999    G = 99.9th percentile of per-block amax
   b12xeq  G = 2688 (input_scale 1.0), the fixed global scale of the b12x runtime path
+Every BASE file is opened once, without following links, before any variant is written; a link or special file in BASE
+stops the run. The scale shard is read, and every hardlink made, through those descriptors, so the variants hold the
+inodes that were checked even if a BASE path changes later.
 Usage: make_variants.py STATS_JSON BASE_DIR VROOT"""
+import errno
 import json
 import os
 import re
@@ -50,7 +54,42 @@ def stream_of(name):
     return f"L{layer}.up" if proj == "up" else (f"L{layer}.rdown" if kind.startswith("experts") else f"L{layer}.sdown")
 
 
-with safe_open(base / "model-input-scales.safetensors", "pt") as h:
+def fd_path(fd):
+    """Procfs path that opens, or links, exactly the inode FD holds. Built from parts because the public export rewrites
+    absolute path literals."""
+    return os.path.join(os.sep, "proc", "self", "fd", str(fd))
+
+
+def bind(dfd, name, where):
+    """Open NAME in directory DFD without following a link; None for a directory. Anything else that is not a regular
+    file, or that changed between the lookup and the open, stops the run."""
+    st = os.stat(name, dir_fd=dfd, follow_symlinks=False)
+    if stat.S_ISDIR(st.st_mode):
+        return None
+    if not stat.S_ISREG(st.st_mode):
+        raise SystemExit(f"{where / name}: not a regular file (a variant may only hardlink regular files)")
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dfd)
+    except OSError as e:
+        if e.errno == errno.ELOOP:
+            raise SystemExit(f"{where / name}: not a regular file (a variant may only hardlink regular files)") from None
+        raise
+    if not os.path.samestat(st, os.fstat(fd)):
+        os.close(fd)
+        raise SystemExit(f"{where / name} changed while it was opened")
+    return fd
+
+
+base_fd = os.open(base, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+bound = {}
+for name in sorted(os.listdir(base_fd)):
+    fd = bind(base_fd, name, base)
+    if fd is not None:
+        bound[name] = fd
+scale_fd = bound.pop("model-input-scales.safetensors", None)
+if scale_fd is None:
+    raise SystemExit(f"{base / 'model-input-scales.safetensors'} is not a regular file")
+with safe_open(fd_path(scale_fd), "pt") as h:
     a_scales = {k: h.get_tensor(k) for k in h.keys()}
 missing = sorted({stream_of(k) for k in a_scales} - set(streams))
 if missing:
@@ -63,20 +102,16 @@ for rule, fn in RULES.items():
     summary[rule] = g
     vd = vroot / rule
     vd.mkdir(parents=True, exist_ok=True)
-    for p in base.iterdir():
-        st = p.lstat()
-        if stat.S_ISDIR(st.st_mode) or p.name == "model-input-scales.safetensors":
-            continue
-        if not stat.S_ISREG(st.st_mode):
-            raise SystemExit(f"{p}: not a regular file (a variant may only hardlink regular files)")
-        dst = vd / p.name
-        if os.path.lexists(dst):
-            dst.unlink()
-        os.link(p, dst, follow_symlinks=False)
-        # The link names whatever inode p held at link time; it must be the regular file checked above.
-        if not os.path.samestat(st, dst.lstat()):
-            dst.unlink()
-            raise SystemExit(f"{p} changed while it was linked into {vd}")
+    vd_fd = os.open(vd, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    for name, fd in bound.items():
+        try:
+            os.unlink(name, dir_fd=vd_fd)
+        except FileNotFoundError:
+            pass
+        # linkat(AT_SYMLINK_FOLLOW) on fd_path(fd) links the inode fd holds; CPython calls linkat rather than link(2),
+        # which would not resolve the descriptor, only when a dir_fd is passed.
+        os.link(fd_path(fd), name, dst_dir_fd=vd_fd, follow_symlinks=True)
+    os.close(vd_fd)
     new = {k: torch.full_like(t, g[stream_of(k)] / 2688.0) for k, t in a_scales.items()}
     save_file(new, vd / "model-input-scales.safetensors", metadata={"format": "pt"})
     edge = [s for s in streams if rule == "mse" and g[s] in (GRID[0], GRID[-1])]

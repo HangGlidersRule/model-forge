@@ -18,7 +18,7 @@ PUBLIC_WORKSPACE_PLACEHOLDER = "${PUBLIC_WORKSPACE}"
 
 _ABSOLUTE_PATH = re.compile(
     r"(?:/(?:Users|home|Volumes)/[^\s\"'`<>{})|;]+"
-    r"|(?<![A-Za-z0-9._:/}-])/[A-Za-z0-9._-]+(?:/[A-Za-z0-9._${}-]+){2,}"
+    r"|(?<![A-Za-z0-9._:/}])/[A-Za-z0-9._-]+(?:/[A-Za-z0-9._${}-]+){2,}"
     r"|(?<![A-Za-z0-9])[A-Za-z]:[\\/][^\s\"'`<>{})|;]+"
     r"|\\\\[A-Za-z0-9._-]+[\\/][^\s\"'`<>{})|;]+)"
 )
@@ -36,9 +36,13 @@ _METRIC_AT_K = re.compile(r"[^@]+@[0-9]+")
 def _public_contact_rewrite(match: re.Match[str], contact: str) -> str:
     token = match.group()
     return token if _METRIC_AT_K.fullmatch(token) else contact
+
+
+# Any parameter default whose value is an absolute path: named or positional
+# (${1:-...}), with or without the colon, and the assigning form (:= / =).
 _SHELL_PRIVATE_DEFAULT = re.compile(
-    r'\$\{(?P<name>[A-Z][A-Z0-9_]*):-'
-    r"(?P<value>(?:/(?:Users|home|Volumes)/|/[A-Za-z0-9._-]+/|[A-Za-z]:[\\/]|"
+    r"\$\{(?P<name>[A-Za-z_][A-Za-z0-9_]*|[0-9]+):?[-=]"
+    r"(?P<value>[\"']?(?:/(?:Users|home|Volumes)/|/[A-Za-z0-9._-]+/|[A-Za-z]:[\\/]|"
     r"\\\\)[^}\r\n]+)\}"
 )
 _ARTIFACT_WORDS = re.compile(
@@ -46,6 +50,17 @@ _ARTIFACT_WORDS = re.compile(
 )
 _PRIVATE_PATH_WORDS = re.compile(
     r"(?i)(?:^|[/\\._-])(?:private|workspace|worktree)(?:$|[/\\._-])"
+)
+# Public paths that are not host layout and must survive the generic rewrite: an HTTP API route
+# (`/v1/chat/completions`; rewriting it broke the exported clients) and the kernel's per-process descriptor
+# directories (`/proc/self/fd`).
+_API_ROUTE = re.compile(r"/v[0-9]+(?:/[A-Za-z0-9_${}-][A-Za-z0-9._${}-]*)+/?")
+# Exactly the descriptor directories, optionally followed by ONE final entry that is a number or a single
+# interpolation of a descriptor (`{fd}`, `{}`, `{self._fd}`, `$FD`, `${FD}`). Nothing deeper: `/proc/self/root/...`
+# and `/proc/self/cwd/...` resolve into the host filesystem, and a descriptor entry never has children.
+_KERNEL_PATH = re.compile(
+    r"/(?:proc/(?:self|thread-self)/fd|dev/fd)"
+    r"(?:/(?:[0-9]+|\{[A-Za-z_][A-Za-z0-9_.]*\}|\{\}|\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\}))?/?"
 )
 _PUBLIC_SYSTEM_PATH_PREFIXES = (
     "/bin/",
@@ -110,13 +125,24 @@ def _path_placeholder(match: re.Match[str]) -> str:
     token_prefix = re.split(r"[\s\"'`<>]", prefix)[-1]
     if "://" in token_prefix or token_prefix.startswith("re:"):
         return value
+    # A path that ends a ${name:-/path} expansion also matches the closing brace;
+    # keep it outside the placeholder so the expansion stays balanced.
+    closing = ""
+    while value.endswith("}") and value.count("}") > value.count("{"):
+        value, closing = value[:-1], "}" + closing
+    if (
+        # _API_ROUTE segments cannot start with "." (so no `..` escape); host identity roots are never routes.
+        (_API_ROUTE.fullmatch(value) and not re.search(r"/(?:Users|home|Volumes)(?:/|$)", value))
+        or _KERNEL_PATH.fullmatch(value)
+    ):
+        return value + closing
     if _ARTIFACT_WORDS.search(value):
-        return PUBLIC_ARTIFACT_PLACEHOLDER
+        return PUBLIC_ARTIFACT_PLACEHOLDER + closing
     if _PRIVATE_PATH_WORDS.search(value):
-        return PUBLIC_WORKSPACE_PLACEHOLDER
+        return PUBLIC_WORKSPACE_PLACEHOLDER + closing
     if value.startswith(_PUBLIC_SYSTEM_PATH_PREFIXES):
-        return value
-    return PUBLIC_WORKSPACE_PLACEHOLDER
+        return value + closing
+    return PUBLIC_WORKSPACE_PLACEHOLDER + closing
 
 
 def _replace_private_values(text: str, context: TransformContext) -> str:
@@ -239,6 +265,8 @@ def _script(name: str, *, python: bool = False) -> Transform:
 
         def required_argument(match: re.Match[str]) -> str:
             variable = match.group("name")
+            if variable.isdigit():
+                return f"${{{variable}:?Pass argument {variable} as the public artifact path}}"
             return f"${{{variable}:?Set {variable} to the public artifact path}}"
 
         text = _SHELL_PRIVATE_DEFAULT.sub(required_argument, text)
