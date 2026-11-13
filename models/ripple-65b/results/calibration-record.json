@@ -1,0 +1,4815 @@
+{
+ "seed": 1234,
+ "rank_key": "sha256('1234:<file>:<row index>') ascending",
+ "max_row_tokens": 4096,
+ "max_total_tokens": 1048576,
+ "template_sha256": "877c2dbf365243dda14738ca250b31398059b35ffd91d4ed0ec68be45ca6ebd3",
+ "vocab_file_sha256": "73fd5254624f39a88e3faac6a8e11300fc3c735ed37880d4f4f08db898eaecca",
+ "cnn_instruction": "Summarize the following news article.\n\n",
+ "sources": [
+  {
+   "key": "cnn_dailymail",
+   "rows": 128,
+   "repo": "abisee/cnn_dailymail",
+   "revision": "96df5e686bee6baa90b8bee7c28b81fa3fa6223d",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "sha256": "a56093836f6283ceac48128515f6c87ade70abb11aec31d23a176c4d90ae1736",
+   "file_rows": 95705
+  },
+  {
+   "key": "nemotron_if_chat_reasoning_on",
+   "rows": 128,
+   "repo": "nvidia/Nemotron-SFT-Instruction-Following-Chat-v2",
+   "revision": "1a9454ed054b8544503ab8d8c0a519d141a44c5b",
+   "file": "data/reasoning_on.jsonl",
+   "sha256": "2ab423660dd2bfd6b219f1745821ac5d5fb13643755ef77b56765fca524cbb4e",
+   "file_rows": 929237
+  },
+  {
+   "key": "swe_smith_tool",
+   "rows": 192,
+   "repo": "SWE-bench/SWE-smith-trajectories",
+   "revision": "08e109b4a59eaeebf80e4675cd125d42e7ac99a4",
+   "file": "data/tool-00000-of-00008.parquet",
+   "sha256": "ac76e9efe75978f83d4daec98a55604587dd58b0f1509364893b8778cbf5b487",
+   "file_rows": 3013
+  },
+  {
+   "key": "hermes_function_calling",
+   "rows": 64,
+   "repo": "NousResearch/hermes-function-calling-v1",
+   "revision": "dae3e1d28cfbcf4b915c04ea1e072030529b4bda",
+   "file": "func-calling.json",
+   "sha256": "769478035a886678d525d057ea66e3fd1e247f43e35c8d6d7cc866e080b6742b",
+   "file_rows": 1893
+  }
+ ],
+ "row_cap_tokens": 4096,
+ "calibration_total_tokens": 927103,
+ "calibration_tokens": {
+  "p50": 1605,
+  "p90": 3540,
+  "max": 4096,
+  "min": 178
+ },
+ "heldout_total_tokens": 116664,
+ "heldout_tokens": {
+  "p50": 1635,
+  "max": 4050,
+  "min": 371
+ },
+ "calibration_per_source": {
+  "cnn_dailymail": 128,
+  "nemotron_if_chat_reasoning_on": 128,
+  "swe_smith_tool": 192,
+  "hermes_function_calling": 64
+ },
+ "heldout_per_source": {
+  "cnn_dailymail": 16,
+  "nemotron_if_chat_reasoning_on": 16,
+  "swe_smith_tool": 16,
+  "hermes_function_calling": 16
+ },
+ "outputs": {
+  "ripple39_calib_512.jsonl": "403730e417b94a5e412144ee72b47975c3996c61abf8a32ac7580cf0c73ca508",
+  "ripple39_heldout_64.jsonl": "c258051a0a8fa7bb281fc54c55452b68f8e5e0b8eb904505bb59cc0c307b3adc"
+ },
+ "row_list_digest": "4c8c67af0c16d2810c945f86ff3c373396d1d6f3352131b138cc4ed376b806d5",
+ "heldout_list_digest": "951b985fb6488e87ed62baf8698944d922bf14e5690ef1bf675bb098bb327c88",
+ "row_list": [
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 33346,
+   "messages_kept": 2,
+   "tokens": 967
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 59942,
+   "messages_kept": 2,
+   "tokens": 453
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 41526,
+   "messages_kept": 2,
+   "tokens": 1181
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 69595,
+   "messages_kept": 2,
+   "tokens": 1327
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 63321,
+   "messages_kept": 2,
+   "tokens": 975
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 46983,
+   "messages_kept": 2,
+   "tokens": 1565
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 21344,
+   "messages_kept": 2,
+   "tokens": 558
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 90274,
+   "messages_kept": 2,
+   "tokens": 935
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 47573,
+   "messages_kept": 2,
+   "tokens": 1168
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 35824,
+   "messages_kept": 2,
+   "tokens": 675
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 66899,
+   "messages_kept": 2,
+   "tokens": 1091
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 64748,
+   "messages_kept": 2,
+   "tokens": 1251
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 91453,
+   "messages_kept": 2,
+   "tokens": 621
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 1273,
+   "messages_kept": 2,
+   "tokens": 626
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 17577,
+   "messages_kept": 2,
+   "tokens": 2184
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 21744,
+   "messages_kept": 2,
+   "tokens": 470
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 81461,
+   "messages_kept": 2,
+   "tokens": 914
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 30861,
+   "messages_kept": 2,
+   "tokens": 1250
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 50677,
+   "messages_kept": 2,
+   "tokens": 1517
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 89251,
+   "messages_kept": 2,
+   "tokens": 1228
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 73863,
+   "messages_kept": 2,
+   "tokens": 746
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 9056,
+   "messages_kept": 2,
+   "tokens": 1189
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 74619,
+   "messages_kept": 2,
+   "tokens": 1459
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 36677,
+   "messages_kept": 2,
+   "tokens": 1064
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 7009,
+   "messages_kept": 2,
+   "tokens": 1304
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 37208,
+   "messages_kept": 2,
+   "tokens": 1721
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 69337,
+   "messages_kept": 2,
+   "tokens": 971
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 14420,
+   "messages_kept": 2,
+   "tokens": 395
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 34283,
+   "messages_kept": 2,
+   "tokens": 700
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 70407,
+   "messages_kept": 2,
+   "tokens": 1488
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 26146,
+   "messages_kept": 2,
+   "tokens": 1154
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 65490,
+   "messages_kept": 2,
+   "tokens": 1710
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 46765,
+   "messages_kept": 2,
+   "tokens": 536
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 5871,
+   "messages_kept": 2,
+   "tokens": 930
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 82038,
+   "messages_kept": 2,
+   "tokens": 1120
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 94399,
+   "messages_kept": 2,
+   "tokens": 862
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 83523,
+   "messages_kept": 2,
+   "tokens": 1247
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 52696,
+   "messages_kept": 2,
+   "tokens": 1500
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 62392,
+   "messages_kept": 2,
+   "tokens": 871
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 34246,
+   "messages_kept": 2,
+   "tokens": 936
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 14830,
+   "messages_kept": 2,
+   "tokens": 951
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 10623,
+   "messages_kept": 2,
+   "tokens": 1830
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 80703,
+   "messages_kept": 2,
+   "tokens": 1012
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 39527,
+   "messages_kept": 2,
+   "tokens": 675
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 12331,
+   "messages_kept": 2,
+   "tokens": 1483
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 90468,
+   "messages_kept": 2,
+   "tokens": 405
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 58920,
+   "messages_kept": 2,
+   "tokens": 852
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 12116,
+   "messages_kept": 2,
+   "tokens": 412
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 68760,
+   "messages_kept": 2,
+   "tokens": 649
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 61647,
+   "messages_kept": 2,
+   "tokens": 679
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 85968,
+   "messages_kept": 2,
+   "tokens": 827
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 81062,
+   "messages_kept": 2,
+   "tokens": 1076
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 55912,
+   "messages_kept": 2,
+   "tokens": 779
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 76022,
+   "messages_kept": 2,
+   "tokens": 905
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 23501,
+   "messages_kept": 2,
+   "tokens": 677
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 54390,
+   "messages_kept": 2,
+   "tokens": 944
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 20388,
+   "messages_kept": 2,
+   "tokens": 1386
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 76362,
+   "messages_kept": 2,
+   "tokens": 798
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 76563,
+   "messages_kept": 2,
+   "tokens": 2087
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 46833,
+   "messages_kept": 2,
+   "tokens": 365
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 2524,
+   "messages_kept": 2,
+   "tokens": 1040
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 22763,
+   "messages_kept": 2,
+   "tokens": 715
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 9656,
+   "messages_kept": 2,
+   "tokens": 1062
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 10193,
+   "messages_kept": 2,
+   "tokens": 271
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 59003,
+   "messages_kept": 2,
+   "tokens": 615
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 92024,
+   "messages_kept": 2,
+   "tokens": 371
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 20770,
+   "messages_kept": 2,
+   "tokens": 627
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 47582,
+   "messages_kept": 2,
+   "tokens": 1107
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 91833,
+   "messages_kept": 2,
+   "tokens": 835
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 70599,
+   "messages_kept": 2,
+   "tokens": 1158
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 51564,
+   "messages_kept": 2,
+   "tokens": 730
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 87313,
+   "messages_kept": 2,
+   "tokens": 1233
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 2800,
+   "messages_kept": 2,
+   "tokens": 370
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 16571,
+   "messages_kept": 2,
+   "tokens": 728
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 86546,
+   "messages_kept": 2,
+   "tokens": 540
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 40562,
+   "messages_kept": 2,
+   "tokens": 1026
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 90861,
+   "messages_kept": 2,
+   "tokens": 1014
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 56446,
+   "messages_kept": 2,
+   "tokens": 654
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 64220,
+   "messages_kept": 2,
+   "tokens": 1130
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 50305,
+   "messages_kept": 2,
+   "tokens": 1782
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 49409,
+   "messages_kept": 2,
+   "tokens": 1397
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 50171,
+   "messages_kept": 2,
+   "tokens": 605
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 35659,
+   "messages_kept": 2,
+   "tokens": 2097
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 13037,
+   "messages_kept": 2,
+   "tokens": 650
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 28287,
+   "messages_kept": 2,
+   "tokens": 748
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 19968,
+   "messages_kept": 2,
+   "tokens": 612
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 81465,
+   "messages_kept": 2,
+   "tokens": 417
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 14544,
+   "messages_kept": 2,
+   "tokens": 270
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 33399,
+   "messages_kept": 2,
+   "tokens": 446
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 9074,
+   "messages_kept": 2,
+   "tokens": 647
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 7241,
+   "messages_kept": 2,
+   "tokens": 638
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 62333,
+   "messages_kept": 2,
+   "tokens": 492
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 3308,
+   "messages_kept": 2,
+   "tokens": 316
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 28211,
+   "messages_kept": 2,
+   "tokens": 178
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 26088,
+   "messages_kept": 2,
+   "tokens": 363
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 77825,
+   "messages_kept": 2,
+   "tokens": 1893
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 49711,
+   "messages_kept": 2,
+   "tokens": 1580
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 15945,
+   "messages_kept": 2,
+   "tokens": 985
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 27716,
+   "messages_kept": 2,
+   "tokens": 1267
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 33186,
+   "messages_kept": 2,
+   "tokens": 1105
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 86922,
+   "messages_kept": 2,
+   "tokens": 1288
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 40397,
+   "messages_kept": 2,
+   "tokens": 1189
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 43725,
+   "messages_kept": 2,
+   "tokens": 1193
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 46976,
+   "messages_kept": 2,
+   "tokens": 1523
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 90678,
+   "messages_kept": 2,
+   "tokens": 941
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 1270,
+   "messages_kept": 2,
+   "tokens": 937
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 57334,
+   "messages_kept": 2,
+   "tokens": 2035
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 84978,
+   "messages_kept": 2,
+   "tokens": 538
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 6896,
+   "messages_kept": 2,
+   "tokens": 635
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 65180,
+   "messages_kept": 2,
+   "tokens": 532
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 92718,
+   "messages_kept": 2,
+   "tokens": 849
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 47884,
+   "messages_kept": 2,
+   "tokens": 572
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 7901,
+   "messages_kept": 2,
+   "tokens": 1193
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 36208,
+   "messages_kept": 2,
+   "tokens": 866
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 30662,
+   "messages_kept": 2,
+   "tokens": 763
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 36385,
+   "messages_kept": 2,
+   "tokens": 1219
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 89792,
+   "messages_kept": 2,
+   "tokens": 1299
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 6820,
+   "messages_kept": 2,
+   "tokens": 1725
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 93134,
+   "messages_kept": 2,
+   "tokens": 1027
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 76413,
+   "messages_kept": 2,
+   "tokens": 2244
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 74660,
+   "messages_kept": 2,
+   "tokens": 457
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 12197,
+   "messages_kept": 2,
+   "tokens": 446
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 10482,
+   "messages_kept": 2,
+   "tokens": 1803
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 88030,
+   "messages_kept": 2,
+   "tokens": 1204
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 5713,
+   "messages_kept": 2,
+   "tokens": 511
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 76294,
+   "messages_kept": 2,
+   "tokens": 505
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 70189,
+   "messages_kept": 2,
+   "tokens": 1087
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 12190,
+   "messages_kept": 2,
+   "tokens": 1125
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 452822,
+   "messages_kept": 4,
+   "tokens": 2100
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 802724,
+   "messages_kept": 2,
+   "tokens": 252
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 223986,
+   "messages_kept": 2,
+   "tokens": 2350
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 889243,
+   "messages_kept": 2,
+   "tokens": 832
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 538528,
+   "messages_kept": 2,
+   "tokens": 1278
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 742990,
+   "messages_kept": 4,
+   "tokens": 591
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 464475,
+   "messages_kept": 2,
+   "tokens": 549
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 394662,
+   "messages_kept": 2,
+   "tokens": 1991
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 83064,
+   "messages_kept": 3,
+   "tokens": 3551
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 631660,
+   "messages_kept": 4,
+   "tokens": 2097
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 855019,
+   "messages_kept": 2,
+   "tokens": 372
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 316436,
+   "messages_kept": 2,
+   "tokens": 600
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 820222,
+   "messages_kept": 2,
+   "tokens": 1037
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 252208,
+   "messages_kept": 2,
+   "tokens": 2324
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 146008,
+   "messages_kept": 4,
+   "tokens": 1472
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 240350,
+   "messages_kept": 4,
+   "tokens": 2912
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 278720,
+   "messages_kept": 2,
+   "tokens": 222
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 393553,
+   "messages_kept": 2,
+   "tokens": 3387
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 299610,
+   "messages_kept": 2,
+   "tokens": 940
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 369353,
+   "messages_kept": 2,
+   "tokens": 1923
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 783469,
+   "messages_kept": 2,
+   "tokens": 1852
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 197614,
+   "messages_kept": 3,
+   "tokens": 2035
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 654179,
+   "messages_kept": 2,
+   "tokens": 3259
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 27787,
+   "messages_kept": 2,
+   "tokens": 1207
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 692415,
+   "messages_kept": 3,
+   "tokens": 2327
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 632011,
+   "messages_kept": 2,
+   "tokens": 898
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 437129,
+   "messages_kept": 2,
+   "tokens": 743
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 239029,
+   "messages_kept": 2,
+   "tokens": 963
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 2596,
+   "messages_kept": 2,
+   "tokens": 790
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 228479,
+   "messages_kept": 2,
+   "tokens": 672
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 417692,
+   "messages_kept": 2,
+   "tokens": 1330
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 820406,
+   "messages_kept": 2,
+   "tokens": 738
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 598026,
+   "messages_kept": 4,
+   "tokens": 772
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 303634,
+   "messages_kept": 4,
+   "tokens": 3464
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 819305,
+   "messages_kept": 2,
+   "tokens": 460
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 920595,
+   "messages_kept": 4,
+   "tokens": 3618
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 775162,
+   "messages_kept": 2,
+   "tokens": 2751
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 684769,
+   "messages_kept": 2,
+   "tokens": 362
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 312469,
+   "messages_kept": 2,
+   "tokens": 2604
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 742717,
+   "messages_kept": 2,
+   "tokens": 1909
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 917782,
+   "messages_kept": 2,
+   "tokens": 706
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 827882,
+   "messages_kept": 3,
+   "tokens": 3484
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 238235,
+   "messages_kept": 2,
+   "tokens": 1301
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 440053,
+   "messages_kept": 2,
+   "tokens": 1036
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 480964,
+   "messages_kept": 2,
+   "tokens": 1281
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 13454,
+   "messages_kept": 3,
+   "tokens": 2868
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 293801,
+   "messages_kept": 2,
+   "tokens": 522
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 213093,
+   "messages_kept": 2,
+   "tokens": 1500
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 111652,
+   "messages_kept": 2,
+   "tokens": 1905
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 173608,
+   "messages_kept": 4,
+   "tokens": 3730
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 586499,
+   "messages_kept": 2,
+   "tokens": 957
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 180765,
+   "messages_kept": 2,
+   "tokens": 1336
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 626138,
+   "messages_kept": 2,
+   "tokens": 2311
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 491887,
+   "messages_kept": 3,
+   "tokens": 2391
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 917424,
+   "messages_kept": 4,
+   "tokens": 1917
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 190435,
+   "messages_kept": 2,
+   "tokens": 1033
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 917249,
+   "messages_kept": 2,
+   "tokens": 4096
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 827202,
+   "messages_kept": 2,
+   "tokens": 257
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 407208,
+   "messages_kept": 2,
+   "tokens": 1007
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 843491,
+   "messages_kept": 4,
+   "tokens": 1773
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 105774,
+   "messages_kept": 2,
+   "tokens": 1521
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 292502,
+   "messages_kept": 2,
+   "tokens": 188
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 30140,
+   "messages_kept": 2,
+   "tokens": 1394
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 255540,
+   "messages_kept": 2,
+   "tokens": 1586
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 776961,
+   "messages_kept": 2,
+   "tokens": 2895
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 512933,
+   "messages_kept": 2,
+   "tokens": 2182
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 51262,
+   "messages_kept": 2,
+   "tokens": 1920
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 799835,
+   "messages_kept": 2,
+   "tokens": 673
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 182386,
+   "messages_kept": 2,
+   "tokens": 2204
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 315050,
+   "messages_kept": 2,
+   "tokens": 3572
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 808475,
+   "messages_kept": 3,
+   "tokens": 2596
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 329335,
+   "messages_kept": 2,
+   "tokens": 633
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 156859,
+   "messages_kept": 4,
+   "tokens": 2498
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 775445,
+   "messages_kept": 2,
+   "tokens": 598
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 175401,
+   "messages_kept": 2,
+   "tokens": 382
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 275292,
+   "messages_kept": 2,
+   "tokens": 445
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 404333,
+   "messages_kept": 2,
+   "tokens": 2881
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 88141,
+   "messages_kept": 2,
+   "tokens": 2141
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 888026,
+   "messages_kept": 4,
+   "tokens": 2018
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 629073,
+   "messages_kept": 4,
+   "tokens": 3627
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 89294,
+   "messages_kept": 3,
+   "tokens": 3710
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 307410,
+   "messages_kept": 2,
+   "tokens": 2519
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 635201,
+   "messages_kept": 4,
+   "tokens": 390
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 721378,
+   "messages_kept": 4,
+   "tokens": 3942
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 41778,
+   "messages_kept": 2,
+   "tokens": 885
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 133013,
+   "messages_kept": 4,
+   "tokens": 3676
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 347344,
+   "messages_kept": 4,
+   "tokens": 3465
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 728560,
+   "messages_kept": 2,
+   "tokens": 1055
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 813554,
+   "messages_kept": 2,
+   "tokens": 3138
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 738192,
+   "messages_kept": 2,
+   "tokens": 2778
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 672136,
+   "messages_kept": 2,
+   "tokens": 1340
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 293771,
+   "messages_kept": 2,
+   "tokens": 1605
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 219788,
+   "messages_kept": 2,
+   "tokens": 2217
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 800979,
+   "messages_kept": 2,
+   "tokens": 733
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 13343,
+   "messages_kept": 4,
+   "tokens": 3262
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 820914,
+   "messages_kept": 2,
+   "tokens": 2530
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 879171,
+   "messages_kept": 3,
+   "tokens": 2715
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 870233,
+   "messages_kept": 3,
+   "tokens": 3584
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 664053,
+   "messages_kept": 2,
+   "tokens": 2137
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 742201,
+   "messages_kept": 3,
+   "tokens": 3268
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 900439,
+   "messages_kept": 2,
+   "tokens": 3207
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 654469,
+   "messages_kept": 2,
+   "tokens": 3297
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 29502,
+   "messages_kept": 2,
+   "tokens": 3540
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 143445,
+   "messages_kept": 3,
+   "tokens": 3198
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 87439,
+   "messages_kept": 4,
+   "tokens": 938
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 636000,
+   "messages_kept": 2,
+   "tokens": 1627
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 485019,
+   "messages_kept": 3,
+   "tokens": 3356
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 263782,
+   "messages_kept": 2,
+   "tokens": 1986
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 822848,
+   "messages_kept": 4,
+   "tokens": 2322
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 875999,
+   "messages_kept": 2,
+   "tokens": 3125
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 391161,
+   "messages_kept": 4,
+   "tokens": 1643
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 529793,
+   "messages_kept": 2,
+   "tokens": 306
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 360754,
+   "messages_kept": 2,
+   "tokens": 1938
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 574991,
+   "messages_kept": 2,
+   "tokens": 433
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 774886,
+   "messages_kept": 2,
+   "tokens": 1721
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 821480,
+   "messages_kept": 2,
+   "tokens": 1052
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 519813,
+   "messages_kept": 2,
+   "tokens": 1034
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 247817,
+   "messages_kept": 2,
+   "tokens": 1339
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 254397,
+   "messages_kept": 2,
+   "tokens": 1399
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 849241,
+   "messages_kept": 2,
+   "tokens": 192
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 219006,
+   "messages_kept": 2,
+   "tokens": 2501
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 881212,
+   "messages_kept": 4,
+   "tokens": 1599
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 774234,
+   "messages_kept": 2,
+   "tokens": 1359
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 199971,
+   "messages_kept": 2,
+   "tokens": 404
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 698380,
+   "messages_kept": 3,
+   "tokens": 3310
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 241960,
+   "messages_kept": 2,
+   "tokens": 1123
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 535195,
+   "messages_kept": 2,
+   "tokens": 584
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 82787,
+   "messages_kept": 2,
+   "tokens": 375
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1270,
+   "messages_kept": 5,
+   "tokens": 3803
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 441,
+   "messages_kept": 7,
+   "tokens": 1907
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2638,
+   "messages_kept": 5,
+   "tokens": 2182
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1266,
+   "messages_kept": 3,
+   "tokens": 930
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2249,
+   "messages_kept": 5,
+   "tokens": 2143
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1885,
+   "messages_kept": 7,
+   "tokens": 3699
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1262,
+   "messages_kept": 5,
+   "tokens": 4050
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1734,
+   "messages_kept": 9,
+   "tokens": 1683
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2058,
+   "messages_kept": 5,
+   "tokens": 2888
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 569,
+   "messages_kept": 3,
+   "tokens": 1215
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2306,
+   "messages_kept": 5,
+   "tokens": 2359
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 484,
+   "messages_kept": 5,
+   "tokens": 1517
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2137,
+   "messages_kept": 5,
+   "tokens": 2437
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 16,
+   "messages_kept": 7,
+   "tokens": 2232
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 114,
+   "messages_kept": 3,
+   "tokens": 1274
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 309,
+   "messages_kept": 7,
+   "tokens": 3362
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2352,
+   "messages_kept": 7,
+   "tokens": 3517
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2285,
+   "messages_kept": 6,
+   "tokens": 4052
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2264,
+   "messages_kept": 3,
+   "tokens": 2040
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1617,
+   "messages_kept": 3,
+   "tokens": 1280
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1055,
+   "messages_kept": 3,
+   "tokens": 961
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2378,
+   "messages_kept": 5,
+   "tokens": 2184
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 110,
+   "messages_kept": 7,
+   "tokens": 2728
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1189,
+   "messages_kept": 5,
+   "tokens": 3894
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 945,
+   "messages_kept": 7,
+   "tokens": 2391
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 241,
+   "messages_kept": 5,
+   "tokens": 3507
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1698,
+   "messages_kept": 5,
+   "tokens": 2068
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1,
+   "messages_kept": 7,
+   "tokens": 1941
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2280,
+   "messages_kept": 7,
+   "tokens": 3499
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 224,
+   "messages_kept": 7,
+   "tokens": 2447
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 787,
+   "messages_kept": 7,
+   "tokens": 3875
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 788,
+   "messages_kept": 13,
+   "tokens": 3480
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 713,
+   "messages_kept": 7,
+   "tokens": 3888
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2726,
+   "messages_kept": 5,
+   "tokens": 2457
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2603,
+   "messages_kept": 5,
+   "tokens": 2229
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 439,
+   "messages_kept": 14,
+   "tokens": 4061
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2452,
+   "messages_kept": 5,
+   "tokens": 2175
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2609,
+   "messages_kept": 5,
+   "tokens": 2200
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2844,
+   "messages_kept": 5,
+   "tokens": 2517
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2160,
+   "messages_kept": 5,
+   "tokens": 2262
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 324,
+   "messages_kept": 5,
+   "tokens": 2257
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2359,
+   "messages_kept": 5,
+   "tokens": 3147
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2925,
+   "messages_kept": 5,
+   "tokens": 2246
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 21,
+   "messages_kept": 5,
+   "tokens": 1383
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2145,
+   "messages_kept": 5,
+   "tokens": 2518
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 201,
+   "messages_kept": 3,
+   "tokens": 1365
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 95,
+   "messages_kept": 5,
+   "tokens": 2115
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 581,
+   "messages_kept": 11,
+   "tokens": 4069
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2110,
+   "messages_kept": 5,
+   "tokens": 3557
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1219,
+   "messages_kept": 3,
+   "tokens": 949
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1783,
+   "messages_kept": 9,
+   "tokens": 1820
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2667,
+   "messages_kept": 5,
+   "tokens": 2199
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2248,
+   "messages_kept": 5,
+   "tokens": 2392
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1247,
+   "messages_kept": 10,
+   "tokens": 3837
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1285,
+   "messages_kept": 5,
+   "tokens": 3531
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2721,
+   "messages_kept": 5,
+   "tokens": 2638
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 743,
+   "messages_kept": 5,
+   "tokens": 2385
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1223,
+   "messages_kept": 3,
+   "tokens": 952
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 86,
+   "messages_kept": 3,
+   "tokens": 1177
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2188,
+   "messages_kept": 22,
+   "tokens": 4094
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2770,
+   "messages_kept": 3,
+   "tokens": 2048
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2543,
+   "messages_kept": 7,
+   "tokens": 2613
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1039,
+   "messages_kept": 9,
+   "tokens": 1989
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 257,
+   "messages_kept": 7,
+   "tokens": 3791
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1188,
+   "messages_kept": 7,
+   "tokens": 3337
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 446,
+   "messages_kept": 5,
+   "tokens": 1628
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 3004,
+   "messages_kept": 5,
+   "tokens": 2192
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 850,
+   "messages_kept": 5,
+   "tokens": 3797
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 760,
+   "messages_kept": 9,
+   "tokens": 3731
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1762,
+   "messages_kept": 5,
+   "tokens": 1458
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2487,
+   "messages_kept": 5,
+   "tokens": 2206
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1043,
+   "messages_kept": 7,
+   "tokens": 2081
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 998,
+   "messages_kept": 5,
+   "tokens": 2702
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1980,
+   "messages_kept": 5,
+   "tokens": 1982
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 884,
+   "messages_kept": 5,
+   "tokens": 1514
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 186,
+   "messages_kept": 14,
+   "tokens": 4032
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 753,
+   "messages_kept": 10,
+   "tokens": 3899
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 832,
+   "messages_kept": 5,
+   "tokens": 1374
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2223,
+   "messages_kept": 5,
+   "tokens": 2157
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1346,
+   "messages_kept": 5,
+   "tokens": 2710
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 7,
+   "messages_kept": 5,
+   "tokens": 1592
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 416,
+   "messages_kept": 7,
+   "tokens": 2378
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1929,
+   "messages_kept": 7,
+   "tokens": 2583
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1090,
+   "messages_kept": 6,
+   "tokens": 4050
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 740,
+   "messages_kept": 7,
+   "tokens": 1590
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2794,
+   "messages_kept": 5,
+   "tokens": 2253
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2577,
+   "messages_kept": 7,
+   "tokens": 2488
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1415,
+   "messages_kept": 7,
+   "tokens": 1804
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1002,
+   "messages_kept": 5,
+   "tokens": 1906
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1992,
+   "messages_kept": 5,
+   "tokens": 2871
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2039,
+   "messages_kept": 5,
+   "tokens": 2996
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2020,
+   "messages_kept": 5,
+   "tokens": 2838
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 773,
+   "messages_kept": 5,
+   "tokens": 1426
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1921,
+   "messages_kept": 11,
+   "tokens": 2555
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2656,
+   "messages_kept": 7,
+   "tokens": 2577
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1399,
+   "messages_kept": 3,
+   "tokens": 1002
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 585,
+   "messages_kept": 5,
+   "tokens": 1343
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 291,
+   "messages_kept": 5,
+   "tokens": 1500
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 116,
+   "messages_kept": 5,
+   "tokens": 1895
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1779,
+   "messages_kept": 9,
+   "tokens": 2049
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2055,
+   "messages_kept": 7,
+   "tokens": 3884
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1520,
+   "messages_kept": 5,
+   "tokens": 2018
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2444,
+   "messages_kept": 5,
+   "tokens": 2213
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1958,
+   "messages_kept": 7,
+   "tokens": 3675
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 5,
+   "messages_kept": 5,
+   "tokens": 1467
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 728,
+   "messages_kept": 11,
+   "tokens": 3968
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1737,
+   "messages_kept": 7,
+   "tokens": 3817
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2758,
+   "messages_kept": 5,
+   "tokens": 2663
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1542,
+   "messages_kept": 3,
+   "tokens": 972
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1558,
+   "messages_kept": 9,
+   "tokens": 1496
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 317,
+   "messages_kept": 7,
+   "tokens": 3833
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 535,
+   "messages_kept": 3,
+   "tokens": 1281
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1649,
+   "messages_kept": 6,
+   "tokens": 3985
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 74,
+   "messages_kept": 5,
+   "tokens": 2222
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1321,
+   "messages_kept": 3,
+   "tokens": 989
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2883,
+   "messages_kept": 7,
+   "tokens": 3676
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1919,
+   "messages_kept": 3,
+   "tokens": 1233
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 64,
+   "messages_kept": 5,
+   "tokens": 1343
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 660,
+   "messages_kept": 7,
+   "tokens": 4078
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2259,
+   "messages_kept": 7,
+   "tokens": 2199
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 364,
+   "messages_kept": 5,
+   "tokens": 1463
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 643,
+   "messages_kept": 9,
+   "tokens": 4009
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 300,
+   "messages_kept": 7,
+   "tokens": 2658
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1767,
+   "messages_kept": 5,
+   "tokens": 3981
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 586,
+   "messages_kept": 5,
+   "tokens": 1362
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 638,
+   "messages_kept": 7,
+   "tokens": 2914
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2275,
+   "messages_kept": 5,
+   "tokens": 2291
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1078,
+   "messages_kept": 3,
+   "tokens": 953
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1904,
+   "messages_kept": 6,
+   "tokens": 3493
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 534,
+   "messages_kept": 5,
+   "tokens": 1532
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 476,
+   "messages_kept": 7,
+   "tokens": 2085
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 723,
+   "messages_kept": 7,
+   "tokens": 3976
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2725,
+   "messages_kept": 4,
+   "tokens": 4078
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 910,
+   "messages_kept": 7,
+   "tokens": 1691
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2859,
+   "messages_kept": 5,
+   "tokens": 2695
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2001,
+   "messages_kept": 7,
+   "tokens": 1248
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1907,
+   "messages_kept": 7,
+   "tokens": 3494
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2868,
+   "messages_kept": 3,
+   "tokens": 2010
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2772,
+   "messages_kept": 5,
+   "tokens": 2401
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 235,
+   "messages_kept": 5,
+   "tokens": 1504
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2766,
+   "messages_kept": 5,
+   "tokens": 2317
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1006,
+   "messages_kept": 10,
+   "tokens": 3833
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 640,
+   "messages_kept": 7,
+   "tokens": 3232
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2610,
+   "messages_kept": 7,
+   "tokens": 2573
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 49,
+   "messages_kept": 7,
+   "tokens": 1543
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1433,
+   "messages_kept": 5,
+   "tokens": 1701
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2456,
+   "messages_kept": 7,
+   "tokens": 2459
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1180,
+   "messages_kept": 3,
+   "tokens": 925
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2750,
+   "messages_kept": 3,
+   "tokens": 2146
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1466,
+   "messages_kept": 3,
+   "tokens": 973
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1201,
+   "messages_kept": 5,
+   "tokens": 1063
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2200,
+   "messages_kept": 9,
+   "tokens": 3821
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1685,
+   "messages_kept": 9,
+   "tokens": 3744
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1758,
+   "messages_kept": 7,
+   "tokens": 2335
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1599,
+   "messages_kept": 5,
+   "tokens": 2204
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 986,
+   "messages_kept": 16,
+   "tokens": 3753
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2286,
+   "messages_kept": 7,
+   "tokens": 3273
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 826,
+   "messages_kept": 3,
+   "tokens": 1198
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1162,
+   "messages_kept": 5,
+   "tokens": 1902
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1948,
+   "messages_kept": 5,
+   "tokens": 1286
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1587,
+   "messages_kept": 5,
+   "tokens": 1572
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2930,
+   "messages_kept": 5,
+   "tokens": 2448
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 248,
+   "messages_kept": 7,
+   "tokens": 3725
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1170,
+   "messages_kept": 5,
+   "tokens": 1941
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2391,
+   "messages_kept": 5,
+   "tokens": 2330
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 757,
+   "messages_kept": 5,
+   "tokens": 1659
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 885,
+   "messages_kept": 5,
+   "tokens": 1338
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 895,
+   "messages_kept": 7,
+   "tokens": 1843
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1250,
+   "messages_kept": 4,
+   "tokens": 3476
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2376,
+   "messages_kept": 5,
+   "tokens": 2547
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 614,
+   "messages_kept": 5,
+   "tokens": 1619
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2695,
+   "messages_kept": 5,
+   "tokens": 2273
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 956,
+   "messages_kept": 11,
+   "tokens": 3475
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2973,
+   "messages_kept": 7,
+   "tokens": 3087
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 863,
+   "messages_kept": 7,
+   "tokens": 2335
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2840,
+   "messages_kept": 5,
+   "tokens": 2264
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 995,
+   "messages_kept": 5,
+   "tokens": 2210
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2919,
+   "messages_kept": 5,
+   "tokens": 2381
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 762,
+   "messages_kept": 5,
+   "tokens": 2084
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1278,
+   "messages_kept": 9,
+   "tokens": 3947
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 166,
+   "messages_kept": 5,
+   "tokens": 2096
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1377,
+   "messages_kept": 5,
+   "tokens": 4065
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 573,
+   "messages_kept": 5,
+   "tokens": 1357
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 295,
+   "messages_kept": 9,
+   "tokens": 2266
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 944,
+   "messages_kept": 7,
+   "tokens": 2763
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2308,
+   "messages_kept": 5,
+   "tokens": 2182
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1872,
+   "messages_kept": 12,
+   "tokens": 4036
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 919,
+   "messages_kept": 13,
+   "tokens": 3983
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 2828,
+   "messages_kept": 14,
+   "tokens": 3832
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1149,
+   "messages_kept": 3,
+   "tokens": 960
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1749,
+   "messages_kept": 9,
+   "tokens": 1994
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 151,
+   "messages_kept": 8,
+   "tokens": 3989
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 520,
+   "messages_kept": 4,
+   "tokens": 926
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1037,
+   "messages_kept": 6,
+   "tokens": 2202
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 936,
+   "messages_kept": 5,
+   "tokens": 782
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 772,
+   "messages_kept": 4,
+   "tokens": 1176
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 86,
+   "messages_kept": 6,
+   "tokens": 2590
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 457,
+   "messages_kept": 6,
+   "tokens": 1956
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 452,
+   "messages_kept": 6,
+   "tokens": 1261
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 52,
+   "messages_kept": 5,
+   "tokens": 1636
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 193,
+   "messages_kept": 4,
+   "tokens": 783
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 515,
+   "messages_kept": 5,
+   "tokens": 931
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 964,
+   "messages_kept": 5,
+   "tokens": 1015
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 424,
+   "messages_kept": 5,
+   "tokens": 709
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 146,
+   "messages_kept": 4,
+   "tokens": 1518
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 804,
+   "messages_kept": 7,
+   "tokens": 2169
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 797,
+   "messages_kept": 7,
+   "tokens": 1626
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 157,
+   "messages_kept": 4,
+   "tokens": 1009
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 391,
+   "messages_kept": 6,
+   "tokens": 2083
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 421,
+   "messages_kept": 4,
+   "tokens": 497
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 574,
+   "messages_kept": 6,
+   "tokens": 1498
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 174,
+   "messages_kept": 5,
+   "tokens": 902
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 468,
+   "messages_kept": 6,
+   "tokens": 1817
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 278,
+   "messages_kept": 7,
+   "tokens": 2262
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 216,
+   "messages_kept": 4,
+   "tokens": 1269
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1064,
+   "messages_kept": 4,
+   "tokens": 1703
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 134,
+   "messages_kept": 4,
+   "tokens": 1612
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 356,
+   "messages_kept": 5,
+   "tokens": 1466
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 926,
+   "messages_kept": 4,
+   "tokens": 1010
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 825,
+   "messages_kept": 6,
+   "tokens": 1385
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 263,
+   "messages_kept": 4,
+   "tokens": 1255
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 829,
+   "messages_kept": 4,
+   "tokens": 1206
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1008,
+   "messages_kept": 7,
+   "tokens": 1815
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 636,
+   "messages_kept": 7,
+   "tokens": 2149
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 111,
+   "messages_kept": 4,
+   "tokens": 1766
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 563,
+   "messages_kept": 6,
+   "tokens": 1791
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 181,
+   "messages_kept": 4,
+   "tokens": 546
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 26,
+   "messages_kept": 6,
+   "tokens": 2202
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 75,
+   "messages_kept": 6,
+   "tokens": 1756
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 688,
+   "messages_kept": 6,
+   "tokens": 1696
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 763,
+   "messages_kept": 4,
+   "tokens": 1092
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 380,
+   "messages_kept": 5,
+   "tokens": 1242
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 394,
+   "messages_kept": 6,
+   "tokens": 1717
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 123,
+   "messages_kept": 5,
+   "tokens": 1317
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 438,
+   "messages_kept": 5,
+   "tokens": 1052
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 798,
+   "messages_kept": 6,
+   "tokens": 1937
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 404,
+   "messages_kept": 4,
+   "tokens": 2549
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1096,
+   "messages_kept": 5,
+   "tokens": 1335
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 685,
+   "messages_kept": 4,
+   "tokens": 1640
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 707,
+   "messages_kept": 4,
+   "tokens": 1593
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 883,
+   "messages_kept": 4,
+   "tokens": 802
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 539,
+   "messages_kept": 4,
+   "tokens": 879
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1073,
+   "messages_kept": 6,
+   "tokens": 1680
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 954,
+   "messages_kept": 4,
+   "tokens": 906
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 806,
+   "messages_kept": 6,
+   "tokens": 1666
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 385,
+   "messages_kept": 6,
+   "tokens": 1501
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 853,
+   "messages_kept": 4,
+   "tokens": 1628
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 290,
+   "messages_kept": 6,
+   "tokens": 1485
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1061,
+   "messages_kept": 4,
+   "tokens": 895
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 45,
+   "messages_kept": 5,
+   "tokens": 985
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 625,
+   "messages_kept": 4,
+   "tokens": 1606
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 940,
+   "messages_kept": 5,
+   "tokens": 1239
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 602,
+   "messages_kept": 4,
+   "tokens": 2458
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 970,
+   "messages_kept": 6,
+   "tokens": 2151
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1053,
+   "messages_kept": 5,
+   "tokens": 925
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 1055,
+   "messages_kept": 6,
+   "tokens": 911
+  }
+ ],
+ "heldout_list": [
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 44673,
+   "messages_kept": 2,
+   "tokens": 575,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 25077,
+   "messages_kept": 2,
+   "tokens": 1086,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 34031,
+   "messages_kept": 2,
+   "tokens": 638,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 68904,
+   "messages_kept": 2,
+   "tokens": 523,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 55183,
+   "messages_kept": 2,
+   "tokens": 446,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 64877,
+   "messages_kept": 2,
+   "tokens": 1635,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 37804,
+   "messages_kept": 2,
+   "tokens": 776,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 26997,
+   "messages_kept": 2,
+   "tokens": 1155,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 36616,
+   "messages_kept": 2,
+   "tokens": 371,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 32269,
+   "messages_kept": 2,
+   "tokens": 1478,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 41265,
+   "messages_kept": 2,
+   "tokens": 640,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 27689,
+   "messages_kept": 2,
+   "tokens": 499,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 39285,
+   "messages_kept": 2,
+   "tokens": 415,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 19986,
+   "messages_kept": 2,
+   "tokens": 737,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 56933,
+   "messages_kept": 2,
+   "tokens": 2068,
+   "span_start": null
+  },
+  {
+   "source": "cnn_dailymail",
+   "file": "3.0.0/train-00000-of-00003.parquet",
+   "index": 34373,
+   "messages_kept": 2,
+   "tokens": 637,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 853641,
+   "messages_kept": 2,
+   "tokens": 814,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 187147,
+   "messages_kept": 2,
+   "tokens": 3866,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 903617,
+   "messages_kept": 2,
+   "tokens": 2609,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 721669,
+   "messages_kept": 4,
+   "tokens": 2013,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 281726,
+   "messages_kept": 2,
+   "tokens": 1910,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 641547,
+   "messages_kept": 4,
+   "tokens": 3837,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 327936,
+   "messages_kept": 4,
+   "tokens": 3900,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 243374,
+   "messages_kept": 2,
+   "tokens": 527,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 767031,
+   "messages_kept": 4,
+   "tokens": 1744,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 808026,
+   "messages_kept": 2,
+   "tokens": 1455,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 55039,
+   "messages_kept": 2,
+   "tokens": 1742,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 684988,
+   "messages_kept": 4,
+   "tokens": 2875,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 797393,
+   "messages_kept": 3,
+   "tokens": 3180,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 599579,
+   "messages_kept": 4,
+   "tokens": 1439,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 91833,
+   "messages_kept": 3,
+   "tokens": 1375,
+   "span_start": null
+  },
+  {
+   "source": "nemotron_if_chat_reasoning_on",
+   "file": "data/reasoning_on.jsonl",
+   "index": 355006,
+   "messages_kept": 3,
+   "tokens": 3307,
+   "span_start": null
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1750,
+   "messages_kept": 3,
+   "tokens": 1244,
+   "span_start": 1118
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 835,
+   "messages_kept": 7,
+   "tokens": 2060,
+   "span_start": 2013
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1267,
+   "messages_kept": 5,
+   "tokens": 4050,
+   "span_start": 3952
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1672,
+   "messages_kept": 5,
+   "tokens": 1990,
+   "span_start": 1882
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1917,
+   "messages_kept": 7,
+   "tokens": 3219,
+   "span_start": 3144
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1444,
+   "messages_kept": 7,
+   "tokens": 3582,
+   "span_start": 3525
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1831,
+   "messages_kept": 9,
+   "tokens": 3742,
+   "span_start": 3685
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1332,
+   "messages_kept": 5,
+   "tokens": 4017,
+   "span_start": 3963
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 751,
+   "messages_kept": 5,
+   "tokens": 1982,
+   "span_start": 1927
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1159,
+   "messages_kept": 11,
+   "tokens": 2607,
+   "span_start": 2559
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1243,
+   "messages_kept": 5,
+   "tokens": 2937,
+   "span_start": 2886
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1994,
+   "messages_kept": 7,
+   "tokens": 3008,
+   "span_start": 2927
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 308,
+   "messages_kept": 7,
+   "tokens": 3529,
+   "span_start": 3470
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 89,
+   "messages_kept": 5,
+   "tokens": 1314,
+   "span_start": 1258
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 940,
+   "messages_kept": 5,
+   "tokens": 1517,
+   "span_start": 1454
+  },
+  {
+   "source": "swe_smith_tool",
+   "file": "data/tool-00000-of-00008.parquet",
+   "index": 1492,
+   "messages_kept": 3,
+   "tokens": 958,
+   "span_start": 854
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 867,
+   "messages_kept": 6,
+   "tokens": 1277,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 317,
+   "messages_kept": 6,
+   "tokens": 1870,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 983,
+   "messages_kept": 6,
+   "tokens": 2050,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 864,
+   "messages_kept": 4,
+   "tokens": 1546,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 817,
+   "messages_kept": 6,
+   "tokens": 1992,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 782,
+   "messages_kept": 4,
+   "tokens": 1313,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 248,
+   "messages_kept": 6,
+   "tokens": 831,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 10,
+   "messages_kept": 6,
+   "tokens": 1316,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 312,
+   "messages_kept": 5,
+   "tokens": 1586,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 47,
+   "messages_kept": 4,
+   "tokens": 1001,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 899,
+   "messages_kept": 6,
+   "tokens": 1752,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 499,
+   "messages_kept": 7,
+   "tokens": 2094,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 231,
+   "messages_kept": 4,
+   "tokens": 1033,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 357,
+   "messages_kept": 7,
+   "tokens": 2134,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 66,
+   "messages_kept": 6,
+   "tokens": 1801,
+   "span_start": null
+  },
+  {
+   "source": "hermes_function_calling",
+   "file": "func-calling.json",
+   "index": 159,
+   "messages_kept": 4,
+   "tokens": 1040,
+   "span_start": null
+  }
+ ],
+ "skipped_ineligible": {
+  "cnn_dailymail": [],
+  "nemotron_if_chat_reasoning_on": [],
+  "swe_smith_tool": [],
+  "hermes_function_calling": [
+   [
+    1877,
+    "unparseable <tool_call>"
+   ],
+   [
+    1768,
+    "unparseable <tool_call>"
+   ],
+   [
+    1129,
+    "unparseable <tool_call>"
+   ],
+   [
+    1780,
+    "unparseable <tool_call>"
+   ],
+   [
+    1102,
+    "unparseable <tool_call>"
+   ],
+   [
+    1298,
+    "unparseable <tool_call>"
+   ],
+   [
+    1717,
+    "unparseable <tool_call>"
+   ],
+   [
+    1497,
+    "unparseable <tool_call>"
+   ],
+   [
+    1202,
+    "unparseable <tool_call>"
+   ],
+   [
+    1484,
+    "unparseable <tool_call>"
+   ],
+   [
+    1868,
+    "unparseable <tool_call>"
+   ],
+   [
+    1426,
+    "unparseable <tool_call>"
+   ],
+   [
+    1747,
+    "no tools list"
+   ],
+   [
+    1331,
+    "no tools list"
+   ],
+   [
+    1262,
+    "unparseable <tool_call>"
+   ],
+   [
+    1242,
+    "no tools list"
+   ],
+   [
+    1188,
+    "unparseable <tool_call>"
+   ],
+   [
+    1846,
+    "unparseable <tool_call>"
+   ],
+   [
+    1689,
+    "unparseable <tool_call>"
+   ],
+   [
+    1799,
+    "unparseable <tool_call>"
+   ],
+   [
+    1184,
+    "unparseable <tool_call>"
+   ],
+   [
+    1538,
+    "unparseable <tool_call>"
+   ],
+   [
+    1372,
+    "unparseable <tool_call>"
+   ],
+   [
+    1457,
+    "unparseable <tool_call>"
+   ],
+   [
+    1335,
+    "unparseable <tool_call>"
+   ],
+   [
+    1150,
+    "unparseable <tool_call>"
+   ],
+   [
+    1204,
+    "unparseable <tool_call>"
+   ],
+   [
+    1469,
+    "unparseable <tool_call>"
+   ],
+   [
+    1479,
+    "unparseable <tool_call>"
+   ],
+   [
+    1363,
+    "unparseable <tool_call>"
+   ],
+   [
+    1776,
+    "unparseable <tool_call>"
+   ],
+   [
+    1419,
+    "unparseable <tool_call>"
+   ],
+   [
+    1607,
+    "unparseable <tool_call>"
+   ],
+   [
+    1240,
+    "unparseable <tool_call>"
+   ],
+   [
+    1223,
+    "unparseable <tool_call>"
+   ],
+   [
+    1305,
+    "unparseable <tool_call>"
+   ],
+   [
+    1100,
+    "unparseable <tool_call>"
+   ],
+   [
+    1490,
+    "unparseable <tool_call>"
+   ],
+   [
+    1353,
+    "unparseable <tool_call>"
+   ],
+   [
+    1869,
+    "unparseable <tool_call>"
+   ],
+   [
+    1310,
+    "unparseable <tool_call>"
+   ],
+   [
+    1360,
+    "unparseable <tool_call>"
+   ],
+   [
+    1667,
+    "unparseable <tool_call>"
+   ],
+   [
+    1800,
+    "unparseable <tool_call>"
+   ],
+   [
+    1665,
+    "unparseable <tool_call>"
+   ],
+   [
+    1413,
+    "unparseable <tool_call>"
+   ],
+   [
+    1610,
+    "unparseable <tool_call>"
+   ],
+   [
+    1285,
+    "unparseable <tool_call>"
+   ],
+   [
+    1573,
+    "unparseable <tool_call>"
+   ],
+   [
+    1417,
+    "unparseable <tool_call>"
+   ],
+   [
+    1366,
+    "no tools list"
+   ],
+   [
+    1283,
+    "unparseable <tool_call>"
+   ],
+   [
+    1656,
+    "unparseable <tool_call>"
+   ],
+   [
+    1451,
+    "unparseable <tool_call>"
+   ],
+   [
+    1391,
+    "unparseable <tool_call>"
+   ],
+   [
+    1284,
+    "unparseable <tool_call>"
+   ],
+   [
+    1605,
+    "unparseable <tool_call>"
+   ],
+   [
+    1169,
+    "unparseable <tool_call>"
+   ],
+   [
+    1576,
+    "no tools list"
+   ],
+   [
+    969,
+    "tool turn without a preceding tool call"
+   ],
+   [
+    1124,
+    "unparseable <tool_call>"
+   ],
+   [
+    1249,
+    "unparseable <tool_call>"
+   ],
+   [
+    1377,
+    "unparseable <tool_call>"
+   ],
+   [
+    1735,
+    "unparseable <tool_call>"
+   ],
+   [
+    1554,
+    "no tools list"
+   ],
+   [
+    1549,
+    "unparseable <tool_call>"
+   ],
+   [
+    1613,
+    "unparseable <tool_call>"
+   ],
+   [
+    1388,
+    "unparseable <tool_call>"
+   ],
+   [
+    1881,
+    "unparseable <tool_call>"
+   ],
+   [
+    1348,
+    "unparseable <tool_call>"
+   ],
+   [
+    1891,
+    "unparseable <tool_call>"
+   ],
+   [
+    1510,
+    "unparseable <tool_call>"
+   ],
+   [
+    1171,
+    "unparseable <tool_call>"
+   ],
+   [
+    1108,
+    "unparseable <tool_call>"
+   ],
+   [
+    1180,
+    "unparseable <tool_call>"
+   ],
+   [
+    1300,
+    "unparseable <tool_call>"
+   ],
+   [
+    1434,
+    "unparseable <tool_call>"
+   ],
+   [
+    1213,
+    "unparseable <tool_call>"
+   ],
+   [
+    1500,
+    "unparseable <tool_call>"
+   ],
+   [
+    1687,
+    "unparseable <tool_call>"
+   ],
+   [
+    1254,
+    "unparseable <tool_call>"
+   ],
+   [
+    1141,
+    "unparseable <tool_call>"
+   ],
+   [
+    1396,
+    "unparseable <tool_call>"
+   ],
+   [
+    1696,
+    "unparseable <tool_call>"
+   ],
+   [
+    1338,
+    "unparseable <tool_call>"
+   ],
+   [
+    1423,
+    "unparseable <tool_call>"
+   ],
+   [
+    1854,
+    "unparseable <tool_call>"
+   ],
+   [
+    1162,
+    "unparseable <tool_call>"
+   ],
+   [
+    1620,
+    "unparseable <tool_call>"
+   ],
+   [
+    1439,
+    "unparseable <tool_call>"
+   ],
+   [
+    1771,
+    "unparseable <tool_call>"
+   ],
+   [
+    1405,
+    "unparseable <tool_call>"
+   ],
+   [
+    1648,
+    "no tools list"
+   ],
+   [
+    1673,
+    "unparseable <tool_call>"
+   ],
+   [
+    1511,
+    "unparseable <tool_call>"
+   ],
+   [
+    1855,
+    "unparseable <tool_call>"
+   ],
+   [
+    1244,
+    "no tools list"
+   ],
+   [
+    1482,
+    "unparseable <tool_call>"
+   ],
+   [
+    1591,
+    "no tools list"
+   ],
+   [
+    1671,
+    "unparseable <tool_call>"
+   ],
+   [
+    1191,
+    "unparseable <tool_call>"
+   ],
+   [
+    1686,
+    "unparseable <tool_call>"
+   ],
+   [
+    1705,
+    "unparseable <tool_call>"
+   ],
+   [
+    1670,
+    "unparseable <tool_call>"
+   ],
+   [
+    1442,
+    "unparseable <tool_call>"
+   ],
+   [
+    1848,
+    "unparseable <tool_call>"
+   ],
+   [
+    1839,
+    "unparseable <tool_call>"
+   ],
+   [
+    1429,
+    "unparseable <tool_call>"
+   ],
+   [
+    1154,
+    "unparseable <tool_call>"
+   ],
+   [
+    1330,
+    "unparseable <tool_call>"
+   ],
+   [
+    1774,
+    "unparseable <tool_call>"
+   ],
+   [
+    1645,
+    "unparseable <tool_call>"
+   ],
+   [
+    1738,
+    "unparseable <tool_call>"
+   ],
+   [
+    1491,
+    "unparseable <tool_call>"
+   ],
+   [
+    1385,
+    "no tools list"
+   ],
+   [
+    1765,
+    "unparseable <tool_call>"
+   ],
+   [
+    1325,
+    "unparseable <tool_call>"
+   ],
+   [
+    1835,
+    "unparseable <tool_call>"
+   ],
+   [
+    1724,
+    "unparseable <tool_call>"
+   ],
+   [
+    1543,
+    "no tools list"
+   ],
+   [
+    1635,
+    "unparseable <tool_call>"
+   ],
+   [
+    1606,
+    "unparseable <tool_call>"
+   ],
+   [
+    1222,
+    "unparseable <tool_call>"
+   ],
+   [
+    1334,
+    "unparseable <tool_call>"
+   ],
+   [
+    1566,
+    "unparseable <tool_call>"
+   ],
+   [
+    1580,
+    "unparseable <tool_call>"
+   ],
+   [
+    1631,
+    "unparseable <tool_call>"
+   ],
+   [
+    1477,
+    "unparseable <tool_call>"
+   ]
+  ]
+ },
+ "skipped_at_cap": [
+  [
+   "nemotron_if_chat_reasoning_on",
+   432675,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "nemotron_if_chat_reasoning_on",
+   186751,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "nemotron_if_chat_reasoning_on",
+   877865,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "nemotron_if_chat_reasoning_on",
+   147184,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "nemotron_if_chat_reasoning_on",
+   641763,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "nemotron_if_chat_reasoning_on",
+   267253,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "nemotron_if_chat_reasoning_on",
+   654731,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "nemotron_if_chat_reasoning_on",
+   603588,
+   "no message boundary <= 4096 tokens"
+  ],
+  [
+   "swe_smith_tool",
+   2269,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2237,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2155,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2692,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2446,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2972,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2581,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2162,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2181,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2178,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2489,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2683,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2633,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2075,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ],
+  [
+   "swe_smith_tool",
+   2888,
+   "no message boundary <= 4096 tokens ending at an assistant tool call"
+  ]
+ ]
+}

@@ -31,6 +31,10 @@ Historical compressed-tensors recipes (rejected for publication, retained for li
 
 - `nemotron-3.5-embed-8b/darkstar-nemotron-3.5-embed-8b-base-modelopt-w4a16-nvfp4.yaml` — Darkstar Base ModelOpt W4A16 NVFP4 (every text-tower linear, weight-only, MSE weight scales; vision tower BF16; published). Operator recipe SHA-256 `980c52fad59aa52b80a2a00865d9e44d1667a2f3539d9fc1291d4a568cd6d112`.
 
+## Ripple-65B Preview
+
+- `ripple-65b/darkstar-ripple-65b-preview-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 MLP, FP8 W8A8 attention (q/k/v/o and the output gate), W4A16 NVFP4 `lm_head` (Local-Hessian weight scales, layerwise calibration; embeddings and norms BF16). Operator recipe SHA-256 `624185c8df017e0130979905a36885bd761131baae6d6535472fa9d3515f9e4e`; `lm_head` stage SHA-256 `123e4e99af9634a16d5b6c467e8341ad6c0e72b93038f94fc2181b79f61e74f6`.
+
 ## Nemotron-3.5-Rerank-8B
 
 - `nemotron-3.5-rerank-8b/darkstar-nemotron-3.5-rerank-8b-base-modelopt-w4a4-nvfp4.yaml` — Darkstar Base ModelOpt W4A4 NVFP4 (every text-tower linear, `nvfp4_act_headroom` calibration; vision tower and score head BF16; published). Operator recipe SHA-256 `71874e44a460f1c5d29509a8d5de66e6eacda4b130a8fa3fd10f3f44a0329fa7`.

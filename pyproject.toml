@@ -46,6 +46,9 @@ select = ["E4", "E7", "E9", "F", "I"]
 "models/jev-27b/scripts/qad_train.py" = ["F821"]
 # The export-scale checker runs inside the training image next to qad_train.py (sys.path insert before the import).
 "models/jev-27b/eval/verify_export_scales.py" = ["E402", "I001"]
+# #39's BF16 CPU teacher, byte-identical to the copy whose run produced the teacher file (sha256 1dd863a7...): its
+# unused import and in-function import order stay as they ran.
+"models/ripple-65b/eval/bf16_teacher_cpu.py" = ["F401", "I001"]
 
 [tool.mypy]
 strict = true

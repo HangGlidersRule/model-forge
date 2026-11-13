@@ -1,0 +1,329 @@
+{
+ "schema_version": "1.0.0",
+ "contract": "contracts/darkstar-release/v3/contract.json",
+ "contract_version": "3.1.0",
+ "family": "ripple-65b",
+ "family_display": "Darkstar Ripple-65B Preview",
+ "source_revision": "ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf",
+ "note": "Dense 65B chat model (80 layers, gated sliding-window and global attention, value residuals). One quantized cell (#39): W4A4 NVFP4 MLP, FP8 attention, W4A16 NVFP4 lm_head, measured against the vendor's own NVFP4 checkpoint on one 96 GB GPU and a vLLM nightly. The BF16 control is too large for that GPU; closeness to BF16 is next-token KL against a CPU teacher. No abliteration cells are planned in #39.",
+ "any_publication_claim": false,
+ "products": [
+  {
+   "product_id": "Darkstar-Ripple-65B-Preview-Base-BF16",
+   "role": "base-bf16",
+   "task": "chat",
+   "lifecycle": "in_progress",
+   "target_repository": "ricursiveAI/Ripple-65B-Preview",
+   "target_repository_status": "resolved",
+   "target_repository_note": "Unchanged upstream reference (upstream reference only); no HangGlidersRule repository. Too large for the 96 GB GPU: closeness to it is measured as next-token KL against a CPU teacher of these weights.",
+   "served_model_alias": "darkstar-ripple65b-base-bf16",
+   "runtime_container_name": "vllm-darkstar-ripple65b-base-bf16",
+   "model_card": "models/ripple-65b/model-card/base-bf16.md",
+   "recipe": null,
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Source pinned to ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf (Apache-2.0)",
+     "evidence_path": "models/ripple-65b/results/calibration-record.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "performance_profile",
+     "status": "missing",
+     "evidence": "Not measured: BF16 (129.57 GB) does not fit the single 96 GB GPU the family is measured on",
+     "evidence_path": null,
+     "next_missing_proof": "a BF16 serve on a larger GPU"
+    },
+    {
+     "id": "gpqa_matched_full_denominator",
+     "status": "missing",
+     "evidence": "Not measured: BF16 does not fit the 96 GB GPU. The vendor reports 85.2 (their harness); quoted, never counted as a measurement",
+     "evidence_path": null,
+     "next_missing_proof": "a BF16 serve on a larger GPU"
+    }
+   ]
+  },
+  {
+   "product_id": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+   "role": "base-modelopt-nvfp4",
+   "task": "chat",
+   "lifecycle": "locally_complete_unpublished",
+   "target_repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+   "target_repository_status": "resolved",
+   "served_model_alias": "darkstar-ripple65b-base-nvfp4",
+   "runtime_container_name": "vllm-darkstar-ripple65b-base-modelopt",
+   "model_card": "models/ripple-65b/model-card/base-nvfp4.md",
+   "recipe": "recipes/ripple-65b/darkstar-ripple-65b-preview-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
+   "publication_claim": false,
+   "candidates": [
+    {
+     "candidate_id": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+     "precision_class": "W4A4-NVFP4-Mixed-FP8",
+     "target_repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+     "selection": "selected",
+     "promotion_status": "promoted",
+     "promotion_note": "Candidate A of #39: every bar passed and the pre-registered speed win (batch-1 decode 36.98 against the vendor's 28.28 (1.31x; bar 1.05x and above both vendor serves): PASS); no quality win (KL 0.0371 (vendor 0.0290; 1.28x, 95% CI of the difference +0.0064 to +0.0099)). C and B were not built (fallback rule).",
+     "recipe": "configs/modelopt/recipes/ripple-65b/a_nvfp4_w4a4_mlp-fp8_attn-kv_bf16_local_hessian_layerwise.yaml",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
+     "immutable_hashes": {
+      "model-00001-of-00005.safetensors": "7fdc78103415bf65d2e81963d0f0ce66cd35d775b750b5c63721c524c1a40a14",
+      "model-00002-of-00005.safetensors": "5ff99c813eadd9c9fc627fa31b625094633f8d112807ccd414ae4b1cfd0e686f",
+      "model-00003-of-00005.safetensors": "fd920c204bc78e5439631a5f620a295e2d8255bfef0271686b33c0b1aa3ef8bc",
+      "model-00004-of-00005.safetensors": "433cd7d2360177e50a81c5f6c5fa64bf3abdf3b1c19a84c6f5add16c15f4c5b3",
+      "model-00005-of-00005.safetensors": "b1b664fc14d3122e53d4ef1dfe1db9befddc7fe43767b85c82c6fed7795e487b",
+      "manifest.sha256": "6ffc77fa8d2fbca2804cfae04c21bf27a988f310fae8197f3dadebdb6d888fd7",
+      "operator_recipe": "624185c8df017e0130979905a36885bd761131baae6d6535472fa9d3515f9e4e",
+      "lm_head_recipe": "123e4e99af9634a16d5b6c467e8341ad6c0e72b93038f94fc2181b79f61e74f6",
+      "calibration_jsonl": "403730e417b94a5e412144ee72b47975c3996c61abf8a32ac7580cf0c73ca508"
+     },
+     "precision_map": {
+      "language_mlp": "W4A4-NVFP4-g16 (gate/up/down, 80 layers, 240 linears)",
+      "lm_head": "W4A16-NVFP4-g16 (weight-only, MSE weight scales)",
+      "self_attention": "FP8-W8A8 per-tensor (q/k/v/o and the output gate g_proj, 80 layers, 400 linears)",
+      "gdn_projections": "not present (dense transformer, no linear-attention projections)",
+      "kv_cache": "BF16",
+      "protected": "embeddings, norms, value_res_lambda (BF16, byte-identical to upstream)"
+     }
+    },
+    {
+     "candidate_id": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4",
+     "precision_class": "W4A4-NVFP4",
+     "target_repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4",
+     "selection": "not_built",
+     "promotion_status": "none",
+     "promotion_note": "Candidate C (attention BF16): built only if A failed a bar; A passed, so not built.",
+     "recipe": "configs/modelopt/recipes/ripple-65b/c_nvfp4_w4a4_mlp-bf16_attn-kv_bf16_local_hessian_layerwise.yaml",
+     "precision_map": {
+      "language_mlp": "W4A4-NVFP4-g16 (gate/up/down, 80 layers)",
+      "lm_head": "W4A16-NVFP4-g16 (weight-only, MSE weight scales)",
+      "self_attention": "BF16",
+      "gdn_projections": "not present (dense transformer, no linear-attention projections)",
+      "kv_cache": "BF16",
+      "protected": "embeddings, norms, value_res_lambda (BF16, byte-identical to upstream)"
+     }
+    },
+    {
+     "candidate_id": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+     "precision_class": "W4A16-NVFP4-Mixed-FP8",
+     "target_repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8",
+     "selection": "not_built",
+     "promotion_status": "none",
+     "promotion_note": "Candidate B (MLP weight-only): built only if C also failed; not built.",
+     "recipe": "configs/modelopt/recipes/ripple-65b/b_w4a16_nvfp4_mlp-fp8_attn-kv_bf16_local_hessian_layerwise.yaml",
+     "precision_map": {
+      "language_mlp": "W4A16-NVFP4-g16 (gate/up/down, 80 layers, weight-only)",
+      "lm_head": "W4A16-NVFP4-g16 (weight-only, MSE weight scales)",
+      "self_attention": "FP8-W8A8 per-tensor (q/k/v/o/g, 80 layers)",
+      "gdn_projections": "not present (dense transformer, no linear-attention projections)",
+      "kv_cache": "BF16",
+      "protected": "embeddings, norms, value_res_lambda (BF16, byte-identical to upstream)"
+     }
+    }
+   ],
+   "gates": [
+    {
+     "id": "provenance_ownership",
+     "status": "verified",
+     "evidence": "Built from ricursiveAI/Ripple-65B-Preview@240d5966 BF16 (Apache-2.0); the vendor NVFP4 scored as the reference only, never a build input",
+     "evidence_path": "models/ripple-65b/results/calibration-record.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "artifact_manifest",
+     "status": "verified",
+     "evidence": "manifest.sha256 over 17 files (sha256 6ffc77fa8d2f...), written at upload; every LFS sha256 on the hub equal to it",
+     "evidence_path": "models/ripple-65b/results/staging-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "recipe_edit_manifest",
+     "status": "verified",
+     "evidence": "Schema-2 recipe; operator recipes sha256 624185c8... (decoder) and 123e4e99... (lm_head); ModelOpt 0.48.0 pin (wheel sha256 bfcfd425...)",
+     "evidence_path": "recipes/ripple-65b/darkstar-ripple-65b-preview-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "artifact_validation",
+     "status": "verified",
+     "evidence": "Fail-closed validator PASS: 2,725 tensors; 562 BF16 tensors byte-identical to the source; quant config MIXED_PRECISION with one entry per linear in config.json and hf_quant_config.json; architecture fields equal the source's; remote code, chat template and tokenizer byte-identical",
+     "evidence_path": "models/ripple-65b/results/validation-A.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "modelopt_candidate_comparison",
+     "status": "verified",
+     "evidence": "A against the vendor NVFP4 under the posted bars: GPQA, tool-call proxy and artifact checks PASS; speed win (37.11 / 36.85 tok/s (vendor 27.41 / 29.15): 1.31x); C and B not built (fallback rule)",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "nvfp4_tensor_scale_validation",
+     "status": "verified",
+     "evidence": "240 W4A4 NVFP4, 400 FP8 and 1 W4A16 NVFP4 linear; 3,177,840,640 FP8 block scales and 1,281 per-tensor scales finite and positive (0 NaN, 0 zero, 0 negative); q/k/g input scales and gate/up global and input scales shared; no KV quantization",
+     "evidence_path": "models/ripple-65b/results/validation-A.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "kv_cache_effect_measured",
+     "status": "not_applicable",
+     "evidence": "kv_cache is BF16",
+     "evidence_path": null,
+     "next_missing_proof": "none - not applicable"
+    },
+    {
+     "id": "performance_profile",
+     "status": "verified",
+     "evidence": "RTX PRO 6000 Blackwell at 450 W, two serves each against the vendor NVFP4: decode batch 1 37.11 / 36.85 tok/s (vendor 27.41 / 29.15): 1.31x; batch 8 224.3 / 226.6 tok/s aggregate (vendor 182.3 / 181.9): 1.24x; TTFT ~16k 3.36 / 3.37 s (vendor 4.08 / 4.09): 0.82x; with DFlash2 218.7 / 223.3 tok/s (vendor 180.5 / 179.2): 1.23x",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "serving_capacity_profile",
+     "status": "verified",
+     "evidence": "Weights 40.76 GiB loaded (vendor 53.86); KV pool at fraction 0.92: 419,096 tokens (vendor 280,176); 272,872 tokens with DFlash2 (vendor 156,629); batch-8 TTFT at ~16k tokens 17.1 / 17.2 s (vendor 21.0 / 20.9): 0.82x",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "gpqa_matched_full_denominator",
+     "status": "verified",
+     "evidence": "GPQA Diamond (198, 65,536-token cap; a reasoning block on 198 of 198 items in every run of both checkpoints), two runs: 138 and 139 of 198 (mean 138.5) against the vendor NVFP4's 142 and 139 of 198 (mean 140.5); bar: at least the vendor's mean \u2212 11.88: PASS; paired bootstrap 95% CI of (A \u2212 vendor) -11.5 to +7.5 questions. Full denominator; truncations 42 and 48 of A's items, 42 and 38 of the vendor's count as wrong. BF16 not servable on the 96 GB GPU; vendor-reported BF16 85.2 quoted only",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "serve_profile_frozen",
+     "status": "verified",
+     "evidence": "Exact vllm serve command on the card, the measured flags (ripple parsers, auto tool choice, 131,072 context, 32 sequences, fraction 0.92) on the pinned nightly digest",
+     "evidence_path": "models/ripple-65b/model-card/base-nvfp4.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "model_card_final",
+     "status": "verified",
+     "evidence": "Gold-standard card: Apache-2.0 with its LICENSE file, evidence links, no placeholders, and the exact planned release tag darkstar-ripple-65b-v1.0.0 (whether the tag exists is the release_tag gate); every number checked by eval/check_card_numbers.py",
+     "evidence_path": "models/ripple-65b/model-card/base-nvfp4.md",
+     "next_missing_proof": "none - gate satisfied"
+    },
+    {
+     "id": "publication_targets_hf_ghcr",
+     "status": "in_progress",
+     "evidence": "Private staging at HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8: weights @ 2de54e807ee5 (18 files, every LFS sha256 equal to the export's manifest), card @ 891ff96ffb40 (weights unchanged, all 18 manifest entries verified on the hub); public flip after the export PR merges and the tag exists",
+     "evidence_path": "models/ripple-65b/results/staging-receipt.json",
+     "next_missing_proof": "merge the export PR, tag, flip public"
+    },
+    {
+     "id": "clean_download_boot_smoke",
+     "status": "in_progress",
+     "evidence": "Clean download of the private repository @ 2de54e807ee5 verified (17/17 manifest entries byte-identical to the export, the validator passes on the downloaded bytes) and booted with the card's serve command on the measured image (2026-11-13): plain up in 318 s (KV pool 419,096 tokens), with DFlash2 in 316 s (272,872 tokens); in both, the known answers, a parsed tool call and the chat request (finish stop), 0 fatal log markers. The card commit 891ff96ffb40 has the same weights. Open until the public repository is downloaded after the flip: the gate attests the published artifact",
+     "evidence_path": "models/ripple-65b/results/staging-receipt.json",
+     "next_missing_proof": "the clean download of the public repository after the flip"
+    },
+    {
+     "id": "release_tag",
+     "status": "in_progress",
+     "evidence": "Tag darkstar-ripple-65b-v1.0.0 follows the export PR merge",
+     "evidence_path": null,
+     "next_missing_proof": "tag the merge commit"
+    },
+    {
+     "id": "no_inherited_unverified_results",
+     "status": "verified",
+     "evidence": "Every number on the card measured on this exact artifact; the BF16 GPQA is labelled vendor-reported",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
+     "next_missing_proof": "none - gate satisfied"
+    }
+   ]
+  },
+  {
+   "product_id": "Darkstar-Ripple-65B-Preview-Abliterated-BF16",
+   "role": "abliterated-bf16",
+   "task": "chat",
+   "lifecycle": "in_progress",
+   "target_repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Abliterated-BF16",
+   "target_repository_status": "resolved",
+   "served_model_alias": "darkstar-ripple65b-abliterated-bf16",
+   "runtime_container_name": "vllm-darkstar-ripple65b-abliterated-bf16",
+   "model_card": "models/ripple-65b/model-card/base-nvfp4.md",
+   "recipe": null,
+   "publication_claim": false,
+   "gates": [
+    {
+     "id": "abliteration_pass",
+     "status": "missing",
+     "evidence": "Not planned in #39 (a base quantization campaign)",
+     "evidence_path": null,
+     "next_missing_proof": "a separate abliteration campaign"
+    },
+    {
+     "id": "gpqa_matched_full_denominator",
+     "status": "missing",
+     "evidence": "Not built",
+     "evidence_path": null,
+     "next_missing_proof": "build the cell first"
+    }
+   ]
+  },
+  {
+   "product_id": "Darkstar-Ripple-65B-Preview-Abliterated-ModelOpt-NVFP4",
+   "role": "abliterated-modelopt-nvfp4",
+   "task": "chat",
+   "lifecycle": "in_progress",
+   "target_repository": null,
+   "target_repository_status": "unresolved_pending_precision_winner",
+   "served_model_alias": "darkstar-ripple65b-abliterated-nvfp4",
+   "runtime_container_name": "vllm-darkstar-ripple65b-abliterated-modelopt",
+   "model_card": "models/ripple-65b/model-card/base-nvfp4.md",
+   "recipe": null,
+   "publication_claim": false,
+   "candidates": [
+    {
+     "candidate_id": "Darkstar-Ripple-65B-Preview-Abliterated-ModelOpt-W4A4-NVFP4",
+     "precision_class": "W4A4-NVFP4",
+     "target_repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Abliterated-ModelOpt-W4A4-NVFP4",
+     "selection": "not_built",
+     "promotion_status": "none",
+     "promotion_note": "Reserved id only; no abliteration is planned in #39.",
+     "recipe": null,
+     "precision_map": {
+      "language_mlp": "not built",
+      "lm_head": "not built",
+      "self_attention": "not built",
+      "gdn_projections": "not present (dense transformer, no linear-attention projections)",
+      "kv_cache": "BF16",
+      "protected": "not built"
+     }
+    }
+   ],
+   "gates": [
+    {
+     "id": "abliteration_pass",
+     "status": "missing",
+     "evidence": "Not planned in #39",
+     "evidence_path": null,
+     "next_missing_proof": "a separate abliteration campaign"
+    },
+    {
+     "id": "gpqa_matched_full_denominator",
+     "status": "missing",
+     "evidence": "Not built",
+     "evidence_path": null,
+     "next_missing_proof": "build the cell first"
+    },
+    {
+     "id": "kv_cache_effect_measured",
+     "status": "not_applicable",
+     "evidence": "No selected candidate: nothing is served, so there is no KV cache",
+     "evidence_path": null,
+     "next_missing_proof": "none - not applicable"
+    }
+   ]
+  }
+ ],
+ "rejected_historical": [],
+ "related_issues": [
+  "HangGlidersRule/model-forge#39"
+ ]
+}
