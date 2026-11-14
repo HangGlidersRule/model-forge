@@ -15,6 +15,9 @@ Every name that comes from a checkpoint is data, not a path:
     of its file is refused before the header is read, and every tensor's data_offsets must lie inside its file. The
     largest header in this family's checkpoints is 70,208 bytes (the export's shards; BF16 9,816, the vendor NVFP4
     39,232, the drafter 8,968).
+  - A small file read whole (a config, a sidecar, the index) is capped at MAX_SMALL_FILE_BYTES, 64 MiB: a larger one is
+    refused from its size before any of it is read. The largest such file in this family is tokenizer.json, 7,137,177
+    bytes.
   - refuse_links() walks a whole tree the same way, for a directory that libraries later read by path (transformers,
     accelerate and ModelOpt's exporter read the BF16 source): a link or a special file anywhere in it is refused.
   - read_source() is how the build and the teacher read the source: refuse_links() over the tree, then each pinned
@@ -37,6 +40,8 @@ from pathlib import Path
 INDEX = "model.safetensors.index.json"
 SINGLE = "model.safetensors"
 MAX_HEADER_BYTES = 100_000_000
+# Configs, sidecars and the index (Directory.read_optional); the largest, tokenizer.json, is 7,137,177 bytes.
+MAX_SMALL_FILE_BYTES = 64 * 1024 * 1024
 DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC
 FD_DIR = "/proc/self/fd" if os.path.isdir("/proc/self/fd") else "/dev/fd"
 CHUNK = 1 << 24
@@ -92,13 +97,18 @@ class Directory:
         return fd
 
     def read_optional(self, name: str) -> bytes | None:
-        """The bytes of the regular file ``name``, or None when there is no such entry."""
+        """The bytes of the regular file ``name``, or None when there is no such entry. A file larger than
+        MAX_SMALL_FILE_BYTES is refused from its size, before any of it is read."""
         try:
             fd = self.open(name)
         except FileNotFoundError:
             return None
         try:
-            return pread_exact(fd, 0, os.fstat(fd).st_size, f"{self.root}/{name}")
+            size = os.fstat(fd).st_size
+            if size > MAX_SMALL_FILE_BYTES:
+                raise ShardError(f"{self.root}/{name}: {size:,} bytes exceeds the {MAX_SMALL_FILE_BYTES:,}-byte limit for "
+                                 "a small file")
+            return pread_exact(fd, 0, size, f"{self.root}/{name}")
         finally:
             os.close(fd)
 

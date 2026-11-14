@@ -110,7 +110,8 @@ Enabled quantizers after both stages: A 1,281, B 1,041, C 481.
 - `eval/checkpoint_files.py`: how the build, the validator, the size report and the BF16 teacher read a checkpoint
   directory: one plain file name per indexed shard, exactly the indexed `.safetensors` files, every file opened inside
   its directory without following a link and read through that open file, safetensors headers capped at 100,000,000
-  bytes and at the file's size, and every file the build reads by name checked against its sha256 pin.
+  bytes and at the file's size, every tensor inside its file and in exactly one shard, small files (configs, sidecars,
+  the index) capped at 64 MiB, and every file the build reads by name checked against its sha256 pin.
 - `eval/bf16_teacher_cpu.py`: the BF16 teacher (FP32 on CPU, layer by layer) for KL and top-1.
 - `eval/serve_checks.py`, `eval/speed_grid.py`, `eval/gate_ripple39.py`: serve smoke and KL collection, the speed grid,
   and the bars and selection rule.
@@ -119,9 +120,20 @@ Enabled quantizers after both stages: A 1,281, B 1,041, C 481.
   `eval/build_ledger.py`: the record's curation, evidence, card-number and ledger builders.
 - `eval/ripple_layout.py`: candidate layouts and pins shared by every script, tested in
   `tests/test_ripple_65b_kit.py`.
-- The window ran these scripts at kit commit `ca79435`. Since then `eval/tasks_synthetic.py` and
-  `eval/toolcall_proxy.py` changed only in how a few literal paths are written (joined from parts, so the public
-  export's path rewrite leaves them as they are); the generated task set still hashes to its pin `110ed227…`.
+- The window ran the kit at commit `ca79435`: its build, validator, BF16 teacher, serve checks, tool-call proxy, speed
+  grid and gate are the exact files that built the shipped weights and produced the window's measurements. The
+  record's curation, evidence, card-number and ledger builders and the size report were written after the window.
+  Since `ca79435`:
+  - `eval/tasks_synthetic.py` and `eval/toolcall_proxy.py` write a few literal paths joined from parts, so the public
+    export's path rewrite leaves them as they are; the generated task set still hashes to its pin `110ed227…`.
+  - Review round 1 of the record PR routed every checkpoint read of the build (`scripts/quantize_ripple.py`), the
+    validator (`eval/validate_export.py`), the size report (`eval/checkpoint_sizes.py`) and the BF16 teacher
+    (`eval/bf16_teacher_cpu.py`) through the new `eval/checkpoint_files.py` (confined reads; the validator's self-test
+    `eval/validate_selftest.py` now closes what it opens). It pinned four more source files in `eval/ripple_layout.py`
+    (`LICENSE`, `tokenizer_config.json`, `special_tokens_map.json`, `config.json`), made the build refuse a link
+    anywhere in its export, and made the validator check `generation_config.json`'s token ids against `config.json`.
+    Review round 2 capped the small files these reads take whole (configs, sidecars, the index) at 64 MiB.
+  - None of this changes the computation: the build quantizes, and the teacher scores, as at `ca79435`.
 - `scripts/window_ripple39.sh`, `scripts/stage_ripple39.sh`, `scripts/clean_boot_smoke.sh` and `rehearsal/`: operator
   launchers for the GPU host and their offline rehearsal; not published. The measured window served every cell as
   `ripple`; the committed launcher uses the ledger alias `darkstar-ripple65b-base-nvfp4`, which changes no result.

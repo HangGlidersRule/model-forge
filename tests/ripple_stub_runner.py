@@ -15,8 +15,11 @@ SPEC keys:
                  synthetic source passes the pin checks the test does not exercise; a file the code does not pin stays
                  unpinned
   calib_sha256   replaces ripple_layout.CALIB_SHA256 (build)
-  export_files   {name: text} the stand-in exporter writes besides its own files (build)
-  export_links   {name: target} the stand-in exporter leaves as symbolic links (replacing any file it wrote) (build)
+  export_files   {name: text} the stand-in exporter writes besides its own files; a name may hold a subdirectory,
+                 created as needed (build)
+  export_links   {name: target} the stand-in exporter leaves as symbolic links (replacing any file it wrote); a name
+                 may hold a subdirectory, created as needed (build)
+  export_sparse  {name: size} files the stand-in exporter then extends (or creates) as sparse files of that size (build)
   swaps          [{"at": "load_recipe" | "config" | "export", "path": p, "target": t}]: at the first call of that
                  stand-in (ModelOpt's load_recipe, transformers' AutoConfig.from_pretrained, the exporter), replace the
                  file p with a symbolic link to t, as a source changed after the script first read it
@@ -212,10 +215,15 @@ def _install(spec: dict, safe_open_log: list[str]) -> None:
         (d / "generation_config.json").write_text(json.dumps({"bos_token_id": 1}))
         (d / "model.safetensors").write_bytes(b"\x02\x00\x00\x00\x00\x00\x00\x00{}")
         for name, text in spec.get("export_files", {}).items():
+            (d / name).parent.mkdir(parents=True, exist_ok=True)
             (d / name).write_text(text)
         for name, target in spec.get("export_links", {}).items():
+            (d / name).parent.mkdir(parents=True, exist_ok=True)
             (d / name).unlink(missing_ok=True)
             os.symlink(target, d / name)
+        for name, size in spec.get("export_sparse", {}).items():
+            (d / name).touch(exist_ok=True)
+            os.truncate(d / name, size)
 
     _module("modelopt.torch.export").export_hf_checkpoint = export_hf_checkpoint  # type: ignore[attr-defined]
 

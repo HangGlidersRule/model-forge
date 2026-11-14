@@ -53,8 +53,9 @@ def precision(mlp: str, attn: str) -> dict:
 
 va = g["artifact_validation"]
 q = va["quantized_layers"]
-# Provenance: the source security@hangglidersrule.com and its license, read from gate-summary.json (build_gate_summary.py records the
-# license the upstream card declares at that revision), so the gates' text is recomputable from the file they cite.
+# Provenance: the source repository and revision and their license, read from gate-summary.json (build_gate_summary.py
+# records the license the upstream card declares at that revision), so the gates' text is recomputable from the file
+# they cite.
 src_repo, _, src_rev = g["source"].partition("@")
 if (src_repo, src_rev) != (SRC_REPO, SRC_REV):
     raise SystemExit(f"gate-summary.json source {g['source']} is not {SRC_REPO}@{SRC_REV}")

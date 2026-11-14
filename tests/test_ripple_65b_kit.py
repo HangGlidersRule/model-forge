@@ -6,7 +6,10 @@ tool-call tasks (reference solutions pass and no-ops fail in the local sandbox b
 Review round 1 of the record PR added the confinement tests: the export validator, the size report, the build and the
 BF16 teacher read checkpoint files only inside their directories (eval/checkpoint_files.py), and the build publishes
 only the pinned source bytes as regular files. The build and the teacher run for real under stand-ins for torch,
-transformers, safetensors and ModelOpt (none is installed in CI), each in its own process."""
+transformers, safetensors and ModelOpt (none is installed in CI), each in its own process.
+Review round 2 added dot-named links at every depth, tensor spans at the exact end of their file, a tensor held by two
+shards, the small-file cap (64 MiB), a pin one digit off and a pinned file removed, every pin's value, and one
+negative test per self-check of the record's builders."""
 
 from __future__ import annotations
 
@@ -549,7 +552,7 @@ def test_header_bounds_are_inclusive(tmp_path: Path) -> None:
         s.tensors()  # at the cap exactly, the length passes both bounds and the (blank) header is parsed
 
 
-@pytest.mark.parametrize("offsets", [[0, 10 ** 9], [-4, 0], [8, 4], [0, "8"], [0.0, 8]])
+@pytest.mark.parametrize("offsets", [[0, 10 ** 9], [-4, 0], [8, 4], [0, "8"], [0.0, 8], [False, True]])
 def test_validator_refuses_a_tensor_span_outside_its_shard(ripple_trees: Path, tmp_path: Path, offsets: list) -> None:
     src, exp = _fresh(ripple_trees, tmp_path)
     p = exp / "model.safetensors"
@@ -561,6 +564,70 @@ def test_validator_refuses_a_tensor_span_outside_its_shard(ripple_trees: Path, t
     h += b" " * ((8 - len(h) % 8) % 8)
     p.write_bytes(struct.pack("<Q", len(h)) + h + raw[8 + n:])
     _refused(_validate(exp, src), "fall outside the file")
+
+
+LAST_PACKED = "model.layers.1.mlp.down_proj.weight"  # a packed NVFP4 weight (U8) in candidate A's layout
+
+
+def _write_with_last(path: Path, tensors: dict[str, tuple[str, list[int], bytes]], last: str, cut: int = 0) -> None:
+    """Write a safetensors file the way an export lays one out (8-byte length, the header padded to 8 bytes, then the
+    data in header order) with ``last`` as the last tensor in the file, cut ``cut`` bytes short of its end."""
+    order = [n for n in sorted(tensors) if n != last] + [last]
+    header, off = {}, 0
+    for n in order:
+        dt, shape, data = tensors[n]
+        header[n] = {"dtype": dt, "shape": shape, "data_offsets": [off, off + len(data)]}
+        off += len(data)
+    h = json.dumps(header, separators=(",", ":")).encode()
+    h += b" " * ((8 - len(h) % 8) % 8)
+    raw = struct.pack("<Q", len(h)) + h + b"".join(tensors[n][2] for n in order)
+    path.write_bytes(raw[:len(raw) - cut])
+
+
+def test_a_tensor_ending_exactly_at_the_end_of_its_file_passes(ripple_trees: Path, tmp_path: Path) -> None:
+    """The span bound is inclusive: the last tensor in the file, a packed U8 weight, may end at the file's last byte."""
+    cf = _cf()
+    src, exp = _fresh(ripple_trees, tmp_path)
+    t = _read_tensors(exp / "model.safetensors")
+    assert t[LAST_PACKED][0] == "U8"
+    _write_with_last(exp / "model.safetensors", t, LAST_PACKED)
+    with cf.Shards(exp) as s:
+        _, offset, nbytes, dtype, _ = s.tensors()[LAST_PACKED]
+    assert offset + nbytes == (exp / "model.safetensors").stat().st_size and dtype == "U8"
+    res = ve.validate(exp, src, "A")
+    assert res["verdict"] == "PASS", res
+
+
+def test_a_tensor_one_byte_past_the_end_of_its_file_is_refused(ripple_trees: Path, tmp_path: Path) -> None:
+    """The same file one byte short: the validator never reads a packed weight's bytes, so the span bound is the only
+    check that sees the missing byte (safetensors' own reader refuses such a file too)."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    t = _read_tensors(exp / "model.safetensors")
+    _write_with_last(exp / "model.safetensors", t, LAST_PACKED, cut=1)
+    res = _validate(exp, src)
+    _refused(res, "fall outside the file")
+    assert f"{LAST_PACKED}: data_offsets" in " | ".join(res["errors"]), res
+
+
+@pytest.mark.parametrize("copy_in", ["earlier", "later"])
+def test_a_tensor_held_by_two_shards_is_refused(ripple_trees: Path, tmp_path: Path, copy_in: str) -> None:
+    """Two shards, the index naming the one that holds the real tensor; the other shard (the earlier or the later one)
+    also carries an all-zero copy of it. A loader that reads every tensor of every indexed shard could load either copy,
+    so the checkpoint is refused whichever shard is read last."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    t = _read_tensors(exp / "model.safetensors")
+    shards = ("model-00001-of-00002.safetensors", "model-00002-of-00002.safetensors")
+    named, other = (shards[1], shards[0]) if copy_in == "earlier" else shards
+    rest = [n for n in sorted(t) if n != LAST_PACKED]
+    parts = {shards[0]: rest[:20], shards[1]: rest[20:]}
+    parts[named] = [*parts[named], LAST_PACKED]
+    dt, shape, data = t[LAST_PACKED]
+    (exp / "model.safetensors").unlink()
+    for shard, members in parts.items():
+        extra = {LAST_PACKED: (dt, shape, bytes(len(data)))} if shard == other else {}
+        vst.write_safetensors(exp / shard, {**{n: t[n] for n in members}, **extra})
+    _index(exp, {n: shard for shard, members in parts.items() for n in members})
+    _refused(_validate(exp, src), f"{LAST_PACKED} appears in two shards")
 
 
 def test_validator_reads_tensors_through_the_descriptors_it_opened(ripple_trees: Path, tmp_path: Path) -> None:
@@ -614,6 +681,15 @@ def test_validator_refuses_a_sidecar_linked_outside(ripple_trees: Path, tmp_path
     _refused(_validate(exp, src), "links are refused")
 
 
+def test_validator_skips_a_sidecar_the_source_lacks(ripple_trees: Path, tmp_path: Path) -> None:
+    """A sidecar absent from the source is not required in the export (a present one must match byte for byte)."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    for d in (src, exp):
+        (d / "special_tokens_map.json").unlink()
+    res = ve.validate(exp, src, "A")
+    assert res["verdict"] == "PASS", res
+
+
 def test_validator_checks_generation_config_token_ids(ripple_trees: Path, tmp_path: Path) -> None:
     src, exp = _fresh(ripple_trees, tmp_path)
     ids = {k: vst.source_config()[k] for k in ("bos_token_id", "eos_token_id", "pad_token_id")}
@@ -623,6 +699,9 @@ def test_validator_checks_generation_config_token_ids(ripple_trees: Path, tmp_pa
     for key, bad in (("bos_token_id", 1), ("eos_token_id", [100265]), ("pad_token_id", None)):
         (exp / "generation_config.json").write_text(json.dumps({**ids, key: bad}))
         _refused(_validate(exp, src), f"generation_config.json token ids differ from config.json: ['{key}")
+    for key in ids:  # a key dropped from generation_config.json is a difference too
+        (exp / "generation_config.json").write_text(json.dumps({k: v for k, v in ids.items() if k != key}))
+        _refused(_validate(exp, src), f"generation_config.json token ids differ from config.json: ['{key} None")
     (exp / "generation_config.json").write_text("[1, 2]")
     _refused(_validate(exp, src), "generation_config.json token ids differ")
 
@@ -676,18 +755,22 @@ def test_sizes_refuses_a_header_over_the_cap_and_past_the_end(ripple_trees: Path
 
 # -- pins -------------------------------------------------------------------------------------------------------------------------
 def test_every_file_the_build_reads_by_name_is_pinned() -> None:
-    """The four pins added in review round 1 were computed from the model store's copy at the pinned revision and
-    cross-checked against its SHA256SUMS.upstream and the Hugging Face API at that revision."""
+    """All eight pins with their values (the stand-in runs replace every pin, so only this test keeps them): the first
+    four posted on the issue, the other four added in review round 1. Each equals the model store's SHA256SUMS.upstream
+    line and the bytes the Hugging Face API serves at the pinned revision."""
     assert set(PINNED_SOURCE_FILES) <= set(lay.SOURCE_FILE_PINS)
-    added = """\
-58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd  LICENSE
+    pins = """\
+f83865ef643e273a6c9aecf1575e85c95ad01fd995b1e43c3c7a892765006bb3  modeling_ricursive.py
+002cb3915be9685eb962d617623bec14d45b5d6b5d46e689fac98a3b38cb6cf6  configuration_ricursive.py
+877c2dbf365243dda14738ca250b31398059b35ffd91d4ed0ec68be45ca6ebd3  chat_template.jinja
+73fd5254624f39a88e3faac6a8e11300fc3c735ed37880d4f4f08db898eaecca  tokenizer.json
 dbd4722605382159a16f2cf5779f4a8b29c51d8b397d2a05c099c90eeacfe771  tokenizer_config.json
 3f7cd7d0cfb20f9faa47c75fd4df91b1c9a78aef0be27ded12cb705b23951341  special_tokens_map.json
+58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd  LICENSE
 9a5654b256ead01855f0d74cf7a70fa65294267e6b7b754b5e5737457a45e14a  config.json
 """
-    for line in added.splitlines():
-        digest, name = line.split()
-        assert lay.SOURCE_FILE_PINS[name] == digest, name
+    want = {line.split()[1]: line.split()[0] for line in pins.splitlines()}
+    assert len(want) == 8 and lay.SOURCE_FILE_PINS == want
 
 
 # -- the build and the teacher, run for real under stand-ins --------------------------------------------------------------------
@@ -796,17 +879,25 @@ def test_build_refuses_a_config_linked_outside_the_source(ripple_trees: Path, tm
     assert str(outside) not in res["opened"], res["opened"]
 
 
-def test_build_refuses_a_link_anywhere_in_the_source_tree(ripple_trees: Path, tmp_path: Path) -> None:
-    """transformers, accelerate and the exporter read the source by path: a linked shard is refused before they run."""
-    outside = tmp_path / "outside.safetensors"
+@pytest.mark.parametrize("name", ["model.safetensors", ".cache-note", "inference/.cache-note", ".cache/download/note"])
+def test_build_refuses_a_link_anywhere_in_the_source_tree(ripple_trees: Path, tmp_path: Path, name: str) -> None:
+    """transformers, accelerate and the exporter read the source by path: a link anywhere in it is refused before they
+    run, dot-named entries included, at the top level and in subdirectories (real checkpoints carry .gitattributes and
+    a .cache directory)."""
+    outside = tmp_path / "outside-file"
 
     def link(src: Path) -> None:
-        os.rename(src / "model.safetensors", outside)
-        os.symlink(outside, src / "model.safetensors")
+        if name == "model.safetensors":
+            os.rename(src / name, outside)
+        else:
+            outside.write_text("OUTSIDE THE SOURCE DIRECTORY\n")
+        (src / name).parent.mkdir(parents=True, exist_ok=True)
+        os.symlink(outside, src / name)
 
     res, src, out = _build(ripple_trees, tmp_path, link)
     _not_built(res, out)
-    assert "model.safetensors" in res["out"], res["out"]
+    assert f"/{name}: cannot open it in its directory" in res["out"], res["out"]
+    assert str(outside) not in res["opened"], res["opened"]
 
 
 def test_build_publishes_the_bytes_it_checked_when_a_sidecar_is_swapped_later(ripple_trees: Path,
@@ -842,11 +933,23 @@ def test_build_refuses_an_export_config_linked_outside(ripple_trees: Path, tmp_p
     assert str(outside) not in res["opened"], res["opened"]
 
 
-def test_build_refuses_a_link_left_anywhere_in_the_export(ripple_trees: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize("name", ["NOTICE", ".notice", "extra/.notice", ".cache/download/notice"])
+def test_build_refuses_a_link_left_anywhere_in_the_export(ripple_trees: Path, tmp_path: Path, name: str) -> None:
+    """No link may remain in the export, dot-named entries included, at the top level and in subdirectories."""
     outside = _outside(tmp_path)
-    res, src, out = _build(ripple_trees, tmp_path, export_links={"NOTICE": str(outside)})
+    res, src, out = _build(ripple_trees, tmp_path, export_links={name: str(outside)})
     _not_built(res, out, before_export=False)
-    assert "NOTICE" in res["out"], res["out"]
+    assert f"/{name}: cannot open it in its directory" in res["out"], res["out"]
+
+
+@pytest.mark.parametrize("cfg", [{"dtype": "bfloat16"}, {"quantization_config": {}, "dtype": "bfloat16"},
+                                 {"quantization_config": None}])
+def test_build_refuses_an_export_config_without_a_quantization_config(ripple_trees: Path, tmp_path: Path,
+                                                                     cfg: dict) -> None:
+    """The exporter's config.json must carry a quantization_config: without one the build stops before publishing."""
+    res, src, out = _build(ripple_trees, tmp_path, export_files={"config.json": json.dumps(cfg)})
+    _not_built(res, out, before_export=False)
+    assert "the export's config.json has no quantization_config" in res["out"], res["out"]
 
 
 def test_control_cpu_smoke_writes_the_pinned_sidecars_into_its_tiny_source(ripple_trees: Path,
@@ -950,6 +1053,52 @@ def test_teacher_refuses_a_tokenizer_file_linked_outside(ripple_trees: Path, tmp
     assert str(outside) not in res["opened"]
 
 
+@pytest.mark.parametrize("name", [".cache-note", "inference/.cache-note"])
+def test_teacher_refuses_a_dot_named_link_in_the_source(ripple_trees: Path, tmp_path: Path, name: str) -> None:
+    outside = _outside(tmp_path, "outside-note")
+
+    def link(src: Path) -> None:
+        (src / name).parent.mkdir(parents=True, exist_ok=True)
+        os.symlink(outside, src / name)
+
+    res, _ = _teacher(ripple_trees, tmp_path, link)
+    assert res["exit"] != 0 and "TEACHER-STREAMER-OK" not in res["out"], res["out"]
+    assert f"/{name}: cannot open it in its directory" in res["out"], res["out"]
+
+
+def _run_script(script: str, trees: Path, tmp_path: Path, mutate=None, pins: dict | None = None) -> dict:
+    """The build or the teacher on a fresh synthetic source; either way it must refuse (nothing built, no tensor read)."""
+    if script == "build":
+        res, src, out = _build(trees, tmp_path, mutate, pins=pins)
+        _not_built(res, out)
+    else:
+        res, _ = _teacher(trees, tmp_path, mutate, pins=pins)
+        assert res["exit"] != 0 and "TEACHER-STREAMER-OK" not in res["out"], res["out"]
+    return res
+
+
+@pytest.mark.parametrize("position", [0, 63])
+@pytest.mark.parametrize("script", ["build", "teacher"])
+def test_a_pin_one_digit_off_is_refused(ripple_trees: Path, tmp_path: Path, script: str, position: int) -> None:
+    """A pin that differs from the file's sha256 only in its first or its last hex digit: the whole digest is
+    compared."""
+    good = _sha((ripple_trees / "source" / "LICENSE").read_bytes())
+    bad = good[:position] + ("1" if good[position] == "0" else "0") + good[position + 1:]
+    assert len(bad) == 64 and sum(x != y for x, y in zip(good, bad)) == 1
+    res = _run_script(script, ripple_trees, tmp_path, pins={"LICENSE": bad})
+    assert f"/LICENSE: sha256 {good} is not the pin {bad}" in res["out"], res["out"]
+
+
+@pytest.mark.parametrize("script", ["build", "teacher"])
+def test_a_pinned_source_file_that_is_missing_is_refused(ripple_trees: Path, tmp_path: Path, script: str) -> None:
+    """A pinned file removed from the source is refused by name, never skipped."""
+    def drop(src: Path) -> None:
+        (src / "tokenizer_config.json").unlink()
+
+    res = _run_script(script, ripple_trees, tmp_path, drop)
+    assert "/tokenizer_config.json: missing" in res["out"], res["out"]
+
+
 # -- confinement helpers: one test per rule ---------------------------------------------------------------------------------------
 @pytest.mark.parametrize("bad", ["", ".", "..", "../x.safetensors", "a/b.safetensors", "/abs.safetensors",
                                  "a\\b.safetensors", "x\x00.safetensors", 7, None])
@@ -999,6 +1148,45 @@ def test_an_index_without_a_shard_mapping_is_refused(tmp_path: Path, body: str) 
         cf.weight_map(b'{"metadata": {}}', "x")
 
 
+def test_weight_map_checks_every_shard_name() -> None:
+    """Every entry's shard name is checked, not only the first."""
+    cf = _cf()
+    raw = json.dumps({"weight_map": {"a": "model.safetensors", "b": "../decoy/model.safetensors"}}).encode()
+    with pytest.raises(cf.ShardError, match=re.escape("b maps to '../decoy/model.safetensors', not a file name")):
+        cf.weight_map(raw, "x")
+
+
+def test_an_indexed_shard_that_is_missing_is_refused_by_name(tmp_path: Path) -> None:
+    """A shard the index names but the directory lacks is refused when the shards are opened, by its name."""
+    cf = _cf()
+    d = tmp_path / "ck"
+    d.mkdir()
+    header = b'{"__metadata__":{}}     '
+    (d / "model-00001-of-00002.safetensors").write_bytes(struct.pack("<Q", len(header)) + header)
+    _index(d, {"t1": "model-00001-of-00002.safetensors", "t2": "model-00002-of-00002.safetensors"})
+    with pytest.raises(cf.ShardError, match=re.escape("missing ['model-00002-of-00002.safetensors']")):
+        cf.Shards(d)
+
+
+def test_a_directory_at_a_file_name_is_refused(tmp_path: Path) -> None:
+    cf = _cf()
+    d = tmp_path / "d"
+    (d / "config.json").mkdir(parents=True)
+    with cf.Directory(d) as dd, pytest.raises(cf.ShardError, match="config.json: not a regular file"):
+        dd.read_optional("config.json")
+
+
+@pytest.mark.parametrize("header", [b"[]", b'"x"', b"1"])
+def test_a_safetensors_header_that_is_not_an_object_is_refused(tmp_path: Path, header: bytes) -> None:
+    cf = _cf()
+    d = tmp_path / "ck"
+    d.mkdir()
+    h = header + b" " * ((8 - len(header) % 8) % 8)
+    (d / "model.safetensors").write_bytes(struct.pack("<Q", len(h)) + h)
+    with cf.Shards(d) as s, pytest.raises(cf.ShardError, match="not a JSON object"):
+        s.tensors()
+
+
 def test_a_refused_file_never_reads_as_missing(tmp_path: Path) -> None:
     """read_optional returns None only for an absent name: a link there is refused, not taken for a missing file (the
     validator skips a sidecar the source lacks, so a linked source sidecar must not look absent)."""
@@ -1027,15 +1215,27 @@ def test_write_files_replaces_a_link_and_never_writes_through_it(tmp_path: Path)
 
 
 def test_refuse_links_walks_subdirectories(tmp_path: Path) -> None:
+    """Every entry is walked, dot-named ones included (real checkpoints carry .gitattributes and a .cache directory):
+    dot-named regular files count, and a link is refused at the top level, in a subdirectory and under a dot-named
+    directory."""
     cf = _cf()
     d = tmp_path / "tree"
     (d / "inference" / "server").mkdir(parents=True)
+    (d / ".cache" / "download").mkdir(parents=True)
     (d / "a.txt").write_text("a")
     (d / "inference" / "server" / "b.py").write_text("b")
-    assert cf.refuse_links(d) == 2
-    os.symlink(tmp_path / "elsewhere", d / "inference" / "server" / "c.py")
-    with pytest.raises(cf.ShardError, match="c.py"):
-        cf.refuse_links(d)
+    (d / ".gitattributes").write_text("*.safetensors filter=lfs\n")
+    (d / ".cache" / "download" / "c.lock").write_text("")
+    (d / "inference" / ".hidden-note").write_text("n")
+    assert cf.refuse_links(d) == 5
+    outside = tmp_path / "elsewhere"
+    outside.write_text("outside")
+    for where in ("inference/server/c.py", ".notice", "inference/.cache-note", ".cache/download/notice"):
+        os.symlink(outside, d / where)
+        with pytest.raises(cf.ShardError, match=re.escape(f"/{where}: cannot open it in its directory")):
+            cf.refuse_links(d)
+        (d / where).unlink()
+    assert cf.refuse_links(d) == 5
 
 
 def _in_subprocess(code: str, timeout: float = 30) -> subprocess.CompletedProcess:
@@ -1069,6 +1269,138 @@ def test_a_fifo_is_refused_without_blocking(tmp_path: Path, helper: str) -> None
                       "except cf.ShardError as err:", "    print('REFUSED', err)"])
     r = _in_subprocess(body)
     assert "REFUSED" in r.stdout and "pipe" in r.stdout, r.stdout + r.stderr
+
+
+# -- small files read whole are capped (review round 2) ----------------------------------------------------------------------
+SMALL_FILE_CAP = 64 * 2**20
+
+
+def test_small_file_reads_are_capped_at_64_mib() -> None:
+    """Configs, sidecars and the index are read whole, so their size is capped: 64 MiB, far above the largest file
+    the build reads whole (tokenizer.json, 7,137,177 bytes)."""
+    cf = _cf()
+    assert getattr(cf, "MAX_SMALL_FILE_BYTES", None) == SMALL_FILE_CAP and 8 * 7_137_177 < SMALL_FILE_CAP
+
+
+SMALL_FILE_READS = {
+    "Directory.read_optional": lambda cf, d: cf.Directory(d).read_optional("config.json"),
+    "Directory.read": lambda cf, d: cf.Directory(d).read("config.json"),
+    "read_file": lambda cf, d: cf.read_file(d, "config.json"),
+    "read_source": lambda cf, d: cf.read_source(d, {"config.json": "0" * 64}),
+    "Shards-index": lambda cf, d: cf.Shards(d),
+}
+
+
+@pytest.mark.parametrize("call", sorted(SMALL_FILE_READS))
+def test_a_small_file_over_the_cap_is_refused_before_it_is_read(tmp_path: Path, call: str) -> None:
+    """One byte over the cap (a sparse file: no disk blocks) is refused from its size, before any of it is read."""
+    cf = _cf()
+    d = tmp_path / "ck"
+    d.mkdir()
+    name = "model.safetensors.index.json" if call.startswith("Shards") else "config.json"
+    with open(d / name, "wb") as f:
+        f.truncate(SMALL_FILE_CAP + 1)
+    tracemalloc.start()
+    try:
+        with pytest.raises(cf.ShardError, match=f"{SMALL_FILE_CAP + 1:,} bytes exceeds the {SMALL_FILE_CAP:,}-byte"):
+            SMALL_FILE_READS[call](cf, d)
+        peak = tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+    assert peak < 8 * 2**20, f"allocated {peak:,} bytes before refusing"
+
+
+def test_a_small_file_at_the_cap_is_read_and_one_byte_more_is_refused(tmp_path: Path,
+                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """The cap is inclusive; each read takes it from the module when it runs (lowered here to 100 bytes)."""
+    cf = _cf()
+    monkeypatch.setattr(cf, "MAX_SMALL_FILE_BYTES", 100)
+    d = tmp_path / "d"
+    d.mkdir()
+    (d / "at").write_bytes(b"x" * 100)
+    (d / "over").write_bytes(b"x" * 101)
+    with cf.Directory(d) as dd:
+        assert dd.read("at") == b"x" * 100
+        with pytest.raises(cf.ShardError, match="101 bytes exceeds the 100-byte limit"):
+            dd.read("over")
+
+
+SMALL_FILES_READ = [  # (side, name): every small file the validator and the size report read whole
+    ("source", "config.json"), ("export", "config.json"), ("export", "hf_quant_config.json"),
+    ("export", "generation_config.json"), ("source", "LICENSE"), ("export", "LICENSE"),
+    ("source", "model.safetensors.index.json"), ("export", "model.safetensors.index.json")]
+
+
+@pytest.mark.parametrize(("side", "name"), SMALL_FILES_READ, ids=[f"{s}-{n}" for s, n in SMALL_FILES_READ])
+def test_validator_refuses_each_small_file_over_the_cap(ripple_trees: Path, tmp_path: Path, side: str,
+                                                        name: str) -> None:
+    """Each read the validator takes whole goes through the cap (a sparse file one byte over it); the size report
+    reads the index the same way."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    d = src if side == "source" else exp
+    if name == "model.safetensors.index.json":
+        _index(d, {n: "model.safetensors" for n in _tensor_names(d)})
+    (d / name).touch()
+    os.truncate(d / name, SMALL_FILE_CAP + 1)
+    res = _validate(exp, src)
+    _refused(res, f"/{name}: {SMALL_FILE_CAP + 1:,} bytes exceeds the {SMALL_FILE_CAP:,}-byte limit")
+    if name == "model.safetensors.index.json":
+        assert f"{SMALL_FILE_CAP + 1:,} bytes exceeds the {SMALL_FILE_CAP:,}-byte limit" in _sizes(d)
+
+
+@pytest.mark.parametrize("where", ["source/LICENSE", "source/config.json", "export/config.json",
+                                   "export/hf_quant_config.json"])
+def test_build_refuses_a_small_file_over_the_cap(ripple_trees: Path, tmp_path: Path, where: str) -> None:
+    """The build's own whole-file reads (the pinned source files, the exporter's config.json and hf_quant_config.json)
+    go through the cap; nothing is published."""
+    side, name = where.split("/")
+    big = SMALL_FILE_CAP + 1
+    if side == "source":
+        res, src, out = _build(ripple_trees, tmp_path, lambda s: os.truncate(s / name, big))
+        _not_built(res, out)
+    else:
+        res, src, out = _build(ripple_trees, tmp_path, export_sparse={name: big})
+        _not_built(res, out, before_export=False)
+    assert f"/{name}: {big:,} bytes exceeds the {SMALL_FILE_CAP:,}-byte limit" in res["out"], res["out"]
+
+
+def test_teacher_refuses_a_pinned_file_over_the_cap(ripple_trees: Path, tmp_path: Path) -> None:
+    res, _ = _teacher(ripple_trees, tmp_path, lambda s: os.truncate(s / "tokenizer_config.json", SMALL_FILE_CAP + 1))
+    assert res["exit"] != 0 and "TEACHER-STREAMER-OK" not in res["out"], res["out"]
+    assert f"/tokenizer_config.json: {SMALL_FILE_CAP + 1:,} bytes exceeds the" in res["out"], res["out"]
+
+
+def test_build_cpu_smoke_refuses_a_tiny_config_over_the_cap(ripple_trees: Path, tmp_path: Path) -> None:
+    """The CPU rehearsal reads its tiny checkpoint's config.json (left by an earlier run) through the cap too."""
+    calib = _calib(tmp_path)
+    run_key = hashlib.sha256(json.dumps(["A", lay.RECIPES["A"][1], _sha(calib.read_bytes()), 4, True]).encode())
+    tiny = tmp_path / "work" / f"A-4-{run_key.hexdigest()[:12]}" / "tiny-src"
+    tiny.mkdir(parents=True)
+    (tiny / "model.safetensors").write_bytes(b"\x02\x00\x00\x00\x00\x00\x00\x00{}")
+    (tiny / "config.json").write_text(json.dumps({"num_hidden_layers": 2}))
+    os.truncate(tiny / "config.json", SMALL_FILE_CAP + 1)
+    res, src, out = _build(ripple_trees, tmp_path, argv=("--cpu-smoke",))
+    _not_built(res, out)
+    assert "tiny checkpoint: " in res["out"], res["out"]
+    assert f"/config.json: {SMALL_FILE_CAP + 1:,} bytes exceeds the {SMALL_FILE_CAP:,}-byte limit" in res["out"], res["out"]
+
+
+def test_validator_refuses_a_sparse_small_file_without_allocating_it(ripple_trees: Path, tmp_path: Path) -> None:
+    """Review round 2's probe: a sparse 1.5 GB generation_config.json (a JSON prefix, then no disk blocks) made the
+    validator allocate about 2.8 GiB before it failed on the JSON. It is refused from its size now."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    p = exp / "generation_config.json"
+    p.write_bytes(b'{"bos_token_id": 100257}')
+    with open(p, "r+b") as f:
+        f.truncate(1_500_000_000)
+    tracemalloc.start()
+    try:
+        res = _validate(exp, src)
+        peak = tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+    _refused(res, f"1,500,000,000 bytes exceeds the {SMALL_FILE_CAP:,}-byte limit")
+    assert peak < 8 * 2**20, f"allocated {peak:,} bytes before refusing"
 
 
 # -- GPQA truncation wording (finding at the card's GPQA row) ---------------------------------------------------------------------
@@ -1386,3 +1718,110 @@ def test_the_receipt_records_the_card_commit_of_the_staged_card() -> None:
     assert cc["parent_card_commit"] == cc["history"][-1]["commit"]
     ledger = (FAMILY / "results" / "publication-readiness-ledger.json").read_text()
     assert f"card @ {cc['commit'][:12]}" in ledger and "891ff96ffb40" not in ledger
+
+
+# ---- review round 2: each self-check of the record's builders refuses on its own (suggestion) --------------------------
+def _edit_record_json(path: Path, fn) -> None:
+    data = json.loads(path.read_text())
+    fn(data)
+    path.write_text(json.dumps(data, indent=1) + "\n")
+
+
+def _bump(d: dict, key: str) -> None:
+    d[key] += 1
+
+
+GATE_SUMMARY_CHECKS = {  # check: (results file, edit)
+    "length-is-not-hit_max_tokens": ("gpqa-A-r1.json", lambda d: _bump(d["finish_reasons"], "length")),
+    "more-without-an-answer-than-capped": (
+        "gpqa-A-r2.json", lambda d: d["accuracy"].__setitem__("truncated_no_answer", d["accuracy"]["hit_max_tokens"] + 1)),
+    "gate-json-vendor-hit_max_tokens": ("gate.json", lambda d: _bump(d["vendor"]["gpqa_runs"][0], "hit_max_tokens")),
+    "gate-json-vendor-truncated_no_answer": (
+        "gate.json", lambda d: _bump(d["vendor"]["gpqa_runs"][1], "truncated_no_answer")),
+}
+
+
+@pytest.mark.parametrize("check", sorted(GATE_SUMMARY_CHECKS))
+def test_gate_summary_refuses_cap_counts_that_disagree(tmp_path: Path, check: str) -> None:
+    """build_gate_summary.py cross-checks each GPQA run's cap counts (finish_reasons.length, and no more items without
+    an answer than capped responses) and the vendor's against gate.json: each refuses alone, and nothing is written."""
+    t = _record_copy(tmp_path)
+    res = t / "models" / "ripple-65b" / "results"
+    name, edit = GATE_SUMMARY_CHECKS[check]
+    _edit_record_json(res / name, edit)
+    (res / "gate-summary.json").unlink()
+    r = _script("build_gate_summary.py", t)
+    assert r.returncode != 0 and "AssertionError" in r.stderr, r.stdout[-800:] + r.stderr[-800:]
+    assert not (res / "gate-summary.json").exists()
+
+
+@pytest.mark.parametrize("part", ["revision", "repository"])
+def test_ledger_refuses_a_gate_summary_naming_another_source(tmp_path: Path, part: str) -> None:
+    """build_ledger.py writes the provenance gates only for the pinned source repository and revision."""
+    t = _record_copy(tmp_path)
+    res = t / "models" / "ripple-65b" / "results"
+    old, new = (lay.SOURCE_REV, "0" * 40) if part == "revision" else (lay.SOURCE_REPO, lay.SOURCE_REPO + "-NVFP4")
+    _edit_record_json(res / "gate-summary.json", lambda g: g.__setitem__("source", g["source"].replace(old, new)))
+    ledger = res / "publication-readiness-ledger.json"
+    before = ledger.read_bytes()
+    r = _script("build_ledger.py", t)
+    assert r.returncode != 0 and "gate-summary.json source " in r.stderr and new in r.stderr, r.stderr[-800:]
+    assert ledger.read_bytes() == before
+
+
+def _card_readback(t: Path) -> tuple[dict, Path, Path]:
+    """A read-back of a new card-only commit that passes every check of eval/record_card_commit.py, for the record copy
+    ``t``; with the receipt and the staged card."""
+    receipt = t / "models" / "ripple-65b" / "results" / "staging-receipt.json"
+    card = t / "publication" / "huggingface" / lay.PRODUCT_IDS["A"] / "README.md"
+    prev = json.loads(receipt.read_text())["card_commit"]["commit"]
+    head, card_sha = "c" * 40, _sha(card.read_bytes())
+    rb = {"head": head, "private": True, "files": 19, "commits": [[head[:12], "card"], [prev[:12], "card"]],
+          "lfs_unchanged_vs_previous_card_commit": True, "lfs_unchanged_vs_uploaded_commit": True, "shards": 5,
+          "manifest_sha256": "a" * 64, "manifest_entries": 18, "entries_not_matching_hub": [],
+          "hub_readme_sha256": card_sha, "staged_card_sha256": card_sha, "readme_equals_staged_card": True}
+    return rb, receipt, card
+
+
+def _record_card(t: Path, rb: dict, card: Path) -> subprocess.CompletedProcess:
+    p = t / "readback.json"
+    p.write_text(json.dumps(rb))
+    return _script("record_card_commit.py", t, str(p), str(card))
+
+
+def test_record_card_commit_records_a_read_back_that_holds(tmp_path: Path) -> None:
+    t = _record_copy(tmp_path)
+    rb, receipt, card = _card_readback(t)
+    prev = json.loads(receipt.read_text())["card_commit"]
+    r = _record_card(t, rb, card)
+    assert r.returncode == 0 and "RECORD-CARD-OK" in r.stdout, r.stdout + r.stderr
+    st = json.loads(receipt.read_text())
+    cc = st["card_commit"]
+    assert cc["commit"] == rb["head"] and cc["parent_card_commit"] == prev["commit"]
+    assert cc["history"][-1] == {"commit": prev["commit"], "manifest_sha256": prev["manifest_sha256"]}
+    assert cc["readme_sha256"] == rb["staged_card_sha256"] and st["boot_smoke"]["covers_card_commit"] == rb["head"]
+
+
+CARD_COMMIT_CHECKS = [  # (the check's name in record_card_commit.py, the read-back field, a value that fails it)
+    ("private", "private", False),
+    ("weights unchanged against the previous card commit", "lfs_unchanged_vs_previous_card_commit", False),
+    ("weights unchanged against the uploaded commit", "lfs_unchanged_vs_uploaded_commit", False),
+    ("5 shards", "shards", 4),
+    ("every file equal to its manifest line", "entries_not_matching_hub", ["README.md"]),
+    ("hub README equals the staged card", "hub_readme_sha256", "0" * 64),
+    ("hub README equals the staged card", "staged_card_sha256", "0" * 64),
+    ("parent is the previous card commit", "commits", [["c" * 12, "card"], ["0" * 12, "card"]]),
+    ("parent is the previous card commit", "head", "d" * 40),
+]
+
+
+@pytest.mark.parametrize(("check", "field", "bad"), CARD_COMMIT_CHECKS, ids=[c[1] for c in CARD_COMMIT_CHECKS])
+def test_record_card_commit_refuses_each_failed_check(tmp_path: Path, check: str, field: str, bad: object) -> None:
+    """Every check of eval/record_card_commit.py refuses on its own, and the receipt is left as it was."""
+    t = _record_copy(tmp_path)
+    rb, receipt, card = _card_readback(t)
+    before = receipt.read_bytes()
+    rb[field] = bad
+    r = _record_card(t, rb, card)
+    assert r.returncode != 0 and f"RECORD-CARD-FAILED: ['{check}']" in r.stderr, r.stdout + r.stderr
+    assert receipt.read_bytes() == before
