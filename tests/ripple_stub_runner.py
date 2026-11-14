@@ -20,13 +20,24 @@ SPEC keys:
   export_links   {name: target} the stand-in exporter leaves as symbolic links (replacing any file it wrote); a name
                  may hold a subdirectory, created as needed (build)
   export_sparse  {name: size} files the stand-in exporter then extends (or creates) as sparse files of that size (build)
+  export_fifos   [name, ...] FIFOs the stand-in exporter leaves (a name may hold a subdirectory, created as needed) (build)
   swaps          [{"at": "load_recipe" | "config" | "export", "path": p, "target": t}]: at the first call of that
                  stand-in (ModelOpt's load_recipe, transformers' AutoConfig.from_pretrained, the exporter), replace the
                  file p with a symbolic link to t, as a source changed after the script first read it
-Prints one line: RUNNER-RESULT {"exit", "out" (the script's output tail), "opened", "safe_open"}. "opened" lists every
-file the script opened for reading by its path (open(), io.open(), or os.open() without dir_fd; directories excluded),
-both as given and as resolved (os.path.realpath: where a link at that path leads); "safe_open" every path the script
-gave to safetensors.safe_open.
+Prints one line: RUNNER-RESULT {"exit", "out" (the script's output tail), "opened", "safe_open", "lib", "checked"}.
+"opened" lists every file the script opened for reading by its path (open(), io.open(), or os.open() without dir_fd;
+directories excluded), both as given and as resolved (os.path.realpath: where a link at that path leads); "safe_open"
+every path the script gave to safetensors.safe_open.
+The library stand-ins read the source by path, as the real libraries do (review round 3): AutoConfig.from_pretrained
+reads config.json and, with trust_remote_code, the configuration module; AutoTokenizer.from_pretrained the tokenizer
+files, the chat template and config.json; AutoModelForCausalLM.from_pretrained config.json, both remote-code modules, the
+index and every .safetensors file; AutoModelForCausalLM.from_config, with trust_remote_code, the remote-code modules of
+the directory its config came from; safe_open the file at its path. Each call is one entry of "lib": {"call", "root",
+"root_resolved" (os.path.realpath of the root, taken in the run: a /proc/self/fd path names the run's own descriptor),
+"after_check" (whether checkpoint_files.read_source had returned before it), "paths" (the files it reads, as given),
+"resolved" (os.path.realpath of each)}. A call made before read_source returned is logged with after_check false and
+raises instead of reading: no library may read a source before the confined check. "checked" lists the roots
+read_source returned for (resolved). These reads are the libraries', so they are not in "opened".
 """
 
 from __future__ import annotations
@@ -40,6 +51,32 @@ import runpy
 import sys
 import types
 from pathlib import Path
+
+_REAL_OPEN = builtins.open  # taken at import, before main() hooks open(): the library stand-ins' own reads
+LIB: list[dict] = []  # one entry per library call (module docstring)
+CHECKED: list[str] = []  # roots checkpoint_files.read_source returned for, resolved
+TOKENIZER_FILES = ("tokenizer_config.json", "tokenizer.json", "special_tokens_map.json", "chat_template.jinja",
+                   "config.json")
+REMOTE_CODE = ("configuration_ricursive.py", "modeling_ricursive.py")
+
+
+def _lib_read(call: str, root: object, names: tuple[str, ...] | None = None) -> None:
+    """A library call reading ``names`` in the directory ``root`` by path (``names`` None: ``root`` is the file read),
+    following any link, as the real library does. Logged in LIB; before read_source has returned it raises instead."""
+    base = os.fspath(root)  # type: ignore[call-overload]
+    paths = [base] if names is None else [os.path.join(base, n) for n in names if os.path.lexists(os.path.join(base, n))]
+    LIB.append({"call": call, "root": base, "root_resolved": os.path.realpath(base) if base else "",
+                "after_check": bool(CHECKED), "paths": paths, "resolved": [os.path.realpath(x) for x in paths]})
+    if not CHECKED:
+        raise RuntimeError(f"stand-in {call} called before checkpoint_files.read_source returned ({base})")
+    for x in paths:
+        with _REAL_OPEN(x, "rb") as f:
+            f.read()
+
+
+def _shards(root: object) -> tuple[str, ...]:
+    base = os.fspath(root)  # type: ignore[call-overload]
+    return tuple(sorted(n for n in os.listdir(base) if n.endswith(".safetensors"))) if os.path.isdir(base) else ()
 
 
 class _Anything:
@@ -91,6 +128,13 @@ def _module(name: str) -> types.ModuleType:
         parent, _, child = name.rpartition(".")
         setattr(_module(parent), child, mod)
     return mod
+
+
+class _Config(_Anything):
+    """What AutoConfig.from_pretrained returns: from_config loads the remote code of the directory it came from."""
+
+    def __init__(self, path: object) -> None:
+        self._name_or_path = os.fspath(path)  # type: ignore[call-overload]
 
 
 class _Tok:
@@ -159,20 +203,36 @@ def _install(spec: dict, safe_open_log: list[str]) -> None:
 
     def safe_open(path: object, framework: str) -> _Anything:
         safe_open_log.append(str(path))
+        _lib_read("safe_open", path)
         return _Anything()
 
     _module("safetensors").safe_open = safe_open  # type: ignore[attr-defined]
 
-    def config_from_pretrained(*a: object, **k: object) -> _Anything:
+    def config_from_pretrained(path: object, *a: object, **k: object) -> _Config:
         swap("config")
-        return _Anything()
+        _lib_read("AutoConfig.from_pretrained", path, ("config.json", *REMOTE_CODE[:1 if k.get("trust_remote_code") else 0]))
+        return _Config(path)
+
+    def model_from_pretrained(path: object, *a: object, **k: object) -> _Model:
+        names = ("config.json", *(REMOTE_CODE if k.get("trust_remote_code") else ()), "model.safetensors.index.json")
+        _lib_read("AutoModelForCausalLM.from_pretrained", path, names + _shards(path))
+        return _Model()
+
+    def model_from_config(cfg: object, *a: object, **k: object) -> _Model:
+        root = cfg.__dict__.get("_name_or_path", "") if isinstance(cfg, _Config) else ""
+        _lib_read("AutoModelForCausalLM.from_config", root, REMOTE_CODE if k.get("trust_remote_code") else ())
+        return _Model()
+
+    def tokenizer_from_pretrained(path: object, *a: object, **k: object) -> _Tok:
+        _lib_read("AutoTokenizer.from_pretrained", path, TOKENIZER_FILES)
+        return _Tok()
 
     tf = _module("transformers")
     tf.__version__ = "stand-in"  # type: ignore[attr-defined]
     tf.AutoConfig = types.SimpleNamespace(from_pretrained=config_from_pretrained)  # type: ignore[attr-defined]
     tf.AutoModelForCausalLM = types.SimpleNamespace(  # type: ignore[attr-defined]
-        from_pretrained=lambda *a, **k: _Model(), from_config=lambda *a, **k: _Model())
-    tf.AutoTokenizer = types.SimpleNamespace(from_pretrained=lambda *a, **k: _Tok())  # type: ignore[attr-defined]
+        from_pretrained=model_from_pretrained, from_config=model_from_config)
+    tf.AutoTokenizer = types.SimpleNamespace(from_pretrained=tokenizer_from_pretrained)  # type: ignore[attr-defined]
 
     class _Recipe:
         def __init__(self, path: object) -> None:
@@ -224,6 +284,9 @@ def _install(spec: dict, safe_open_log: list[str]) -> None:
         for name, size in spec.get("export_sparse", {}).items():
             (d / name).touch(exist_ok=True)
             os.truncate(d / name, size)
+        for name in spec.get("export_fifos", []):
+            (d / name).parent.mkdir(parents=True, exist_ok=True)
+            os.mkfifo(d / name)
 
     _module("modelopt.torch.export").export_hf_checkpoint = export_hf_checkpoint  # type: ignore[attr-defined]
 
@@ -240,6 +303,16 @@ def main() -> int:
     if "calib_sha256" in spec:
         lay.CALIB_SHA256 = spec["calib_sha256"]
     lay.expected_quantizer_total = lambda *a, **k: 0  # the stand-in model enables no quantizer
+    import checkpoint_files as cf  # the module the scripts import (the same sys.modules entry)
+
+    real_read_source = cf.read_source
+
+    def read_source(root: object, pins: object) -> dict:
+        got = real_read_source(root, pins)  # type: ignore[arg-type]
+        CHECKED.append(os.path.realpath(os.fspath(root)))  # type: ignore[call-overload]
+        return got
+
+    cf.read_source = read_source  # type: ignore[assignment]
     opened: list[str] = []
     safe_open_log: list[str] = []
     _install(spec, safe_open_log)
@@ -291,7 +364,7 @@ def main() -> int:
         io.open = real_open  # type: ignore[assignment]
         os.open = real_os_open  # type: ignore[assignment]
     print("RUNNER-RESULT " + json.dumps({"exit": code, "out": out.getvalue()[-4000:], "opened": opened,
-                                         "safe_open": safe_open_log}))
+                                         "safe_open": safe_open_log, "lib": LIB, "checked": CHECKED}))
     return 0
 
 

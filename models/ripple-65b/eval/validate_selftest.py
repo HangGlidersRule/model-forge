@@ -5,7 +5,8 @@ Builds a tiny source checkpoint shaped like Ripple (2 layers, real config fields
 norms, q/k norms, value_res_lambda, untied lm_head) and, for each candidate A/B/C, a synthetic export in exactly the
 layout the plan declares. Each clean export must PASS; then every planted fault below must FAIL with its check named:
   no config.json block, config quant_algo NVFP4, hf_quant_config disagreeing, a quantized_layers entry missing,
-  embeddings not excluded, a mixed fused group, an architecture field changed, a NaN / zero / negative F8 block scale,
+  embeddings not excluded, a mixed fused group, an architecture field changed, config.json's dtype dropped, a NaN / zero
+  / negative F8 block scale,
   a zero / NaN / negative F32 scale, unshared q/k/g input scales, unshared gate/up global scales, a norm or
   value_res_lambda or embedding byte changed, an extra tensor, a missing tensor, a wrong dtype, a remote-code file
   changed, KV-cache quantization declared.
@@ -137,6 +138,7 @@ def make_export(d: Path, src_t: dict, letter: str, rng: random.Random) -> None:
     cfg["quantization_config"] = {"quant_method": "modelopt", "quant_algo": "MIXED_PRECISION",
                                   "producer": {"name": "modelopt", "version": "0.48.0"},
                                   "ignore": ["model.embed_tokens"], "quantized_layers": ql}
+    cfg["dtype"] = "bfloat16"  # the exporter's, restored by the build (the source config has none)
     (d / "config.json").write_text(json.dumps(cfg, indent=2))
     (d / "hf_quant_config.json").write_text(json.dumps({
         "producer": {"name": "modelopt", "version": "0.48.0"},
@@ -185,6 +187,8 @@ def faults(letter: str) -> list[tuple[str, str, object]]:
                     edit_json(d, "hf_quant_config.json", lambda j: j["quantization"].update(exclude_modules=[]))]),
         ("architecture field changed", "sliding_window",
          lambda d: edit_json(d, "config.json", lambda j: j.update(sliding_window=2048))),
+        ("config.json dtype dropped", "config.json dtype is 'None'",
+         lambda d: edit_json(d, "config.json", lambda j: j.pop("dtype"))),
         ("NaN block scale", "NaN/negative/zero",
          lambda d: edit_tensors(d, lambda t: set_byte(t, f"{a}.mlp.up_proj.weight_scale", 5, 0x7F))),
         ("zero block scale", "NaN/negative/zero",

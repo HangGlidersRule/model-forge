@@ -12,9 +12,13 @@ Every name that comes from a checkpoint is data, not a path:
     and a FIFO or a device is refused without blocking. The file is then read only through that descriptor (pread, or
     FD_DIR/<fd> for a reader that takes a path, such as safetensors' safe_open), never reopened by its name.
   - A safetensors header length above 100,000,000 bytes (the safetensors library's own MAX_HEADER_SIZE) or past the end
-    of its file is refused before the header is read, and every tensor's data_offsets must lie inside its file. The
-    largest header in this family's checkpoints is 70,208 bytes (the export's shards; BF16 9,816, the vendor NVFP4
-    39,232, the drafter 8,968).
+    of its file is refused before the header is read. The largest header in this family's checkpoints is 70,208 bytes
+    (the export's shards; BF16 9,816, the vendor NVFP4 39,232, the drafter 8,968).
+  - Every header entry (other than __metadata__) must be an object with a string dtype, a shape that is a list of
+    non-negative integers and two integer data_offsets; every tensor's data_offsets must lie inside its file. As the
+    safetensors library's own reader requires, a shard's tensors in offset order cover its data exactly: the first starts
+    at the data's first byte, each starts where the one before it ends, and the last ends at the file's last byte (a
+    gap, an overlap or a byte after the last tensor is refused). All four of this family's checkpoints are laid out so.
   - A small file read whole (a config, a sidecar, the index) is capped at MAX_SMALL_FILE_BYTES, 64 MiB: a larger one is
     refused from its size before any of it is read. The largest such file in this family is tokenizer.json, 7,137,177
     bytes.
@@ -255,20 +259,34 @@ class Shards:
         for shard in self.names:
             header, base = self.header(shard)
             size = os.fstat(self.fds[shard]).st_size
+            spans: list[tuple[int, int, str]] = []
             for name, meta in header.items():
                 if name == "__metadata__":
                     continue
                 try:
                     a, b = meta["data_offsets"]
-                    dtype, shape = str(meta["dtype"]), [int(x) for x in meta["shape"]]
+                    dtype, shape = meta["dtype"], meta["shape"]
                 except (KeyError, TypeError, ValueError):
                     raise ShardError(f"{self.root}/{shard}: {name}: malformed header entry") from None
+                if type(dtype) is not str or type(shape) is not list or not all(type(x) is int and x >= 0 for x in shape):
+                    raise ShardError(f"{self.root}/{shard}: {name}: malformed header entry (dtype {dtype!r}, shape "
+                                     f"{shape!r})")
                 if not (type(a) is int and type(b) is int and 0 <= a <= b and base + b <= size):
                     raise ShardError(f"{self.root}/{shard}: {name}: data_offsets {meta['data_offsets']} fall outside "
                                      f"the file ({size:,} bytes)")
                 if name in out:
                     raise ShardError(f"{name} appears in two shards")
                 out[name] = (shard, base + a, b - a, dtype, shape)
+                spans.append((a, b, name))
+            end = 0  # safetensors' own rule: in offset order the tensors cover the shard's data exactly
+            for a, b, name in sorted(spans):
+                if a != end:
+                    raise ShardError(f"{self.root}/{shard}: {name}: data_offsets [{a}, {b}] start at byte {a:,} of the "
+                                     f"data, not at byte {end:,} where the tensor before it ends (a gap or an overlap)")
+                end = b
+            if base + end != size:
+                raise ShardError(f"{self.root}/{shard}: the tensors end at byte {base + end:,} of the file, not at its "
+                                 f"end ({size:,} bytes)")
         if self.weight_map is not None:
             if set(self.weight_map) != set(out):
                 raise ShardError(f"{self.root}: index.json weight_map does not match the shard headers")

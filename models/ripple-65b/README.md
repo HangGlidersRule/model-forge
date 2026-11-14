@@ -133,6 +133,12 @@ Enabled quantizers after both stages: A 1,281, B 1,041, C 481.
     (`LICENSE`, `tokenizer_config.json`, `special_tokens_map.json`, `config.json`), made the build refuse a link
     anywhere in its export, and made the validator check `generation_config.json`'s token ids against `config.json`.
     Review round 2 capped the small files these reads take whole (configs, sidecars, the index) at 64 MiB.
+    Review round 3 made these reads refuse a malformed safetensors header entry (dtype not a string, shape not a list
+    of non-negative integers) and a shard whose tensors do not cover its data exactly (a gap, an overlap or a byte
+    after the last tensor; the safetensors library's own rule, which all four checkpoints meet), and made the
+    validator require `config.json`'s `dtype` to be `bfloat16` and refuse a `generation_config.json` that is present
+    but empty or `null`; the self-test plants the missing `dtype` as a 24th fault. The build and the teacher scripts
+    did not change.
   - None of this changes the computation: the build quantizes, and the teacher scores, as at `ca79435`.
 - `scripts/window_ripple39.sh`, `scripts/stage_ripple39.sh`, `scripts/clean_boot_smoke.sh` and `rehearsal/`: operator
   launchers for the GPU host and their offline rehearsal; not published. The measured window served every cell as

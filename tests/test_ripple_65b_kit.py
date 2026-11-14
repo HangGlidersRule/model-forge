@@ -7,20 +7,28 @@ Review round 1 of the record PR added the confinement tests: the export validato
 BF16 teacher read checkpoint files only inside their directories (eval/checkpoint_files.py), and the build publishes
 only the pinned source bytes as regular files. The build and the teacher run for real under stand-ins for torch,
 transformers, safetensors and ModelOpt (none is installed in CI), each in its own process.
-Review round 2 added dot-named links at every depth, tensor spans at the exact end of their file, a tensor held by two
-shards, the small-file cap (64 MiB), a pin one digit off and a pinned file removed, every pin's value, and one
-negative test per self-check of the record's builders."""
+Review round 2 added dot-named links one and two directories down, tensor spans at the exact end of a single-shard
+file, a tensor held by two shards, the small-file cap (64 MiB), a pin one digit off and a pinned file removed, every
+pin's value, and one negative test per self-check of the record's builders.
+Review round 3 replaced hand-picked cases with generated ones (the section at the end of this file): the link walk over
+depths 0 to 16 (0 to 9 through the build and the teacher) x directory names x entry name x entry kind, the per-shard span
+bound over 2, 3 and 5 shards x the short shard's position and size x the cut, every library load of the build and the
+teacher (found by parsing them) against stand-ins that read by path, and each suggestion over its own axis."""
 
 from __future__ import annotations
 
+import ast
+import contextlib
 import hashlib
 import importlib
 import importlib.util
+import itertools
 import json
 import os
 import random
 import re
 import shutil
+import signal
 import struct
 import subprocess
 import sys
@@ -141,7 +149,7 @@ def test_validator_selftest_catches_every_planted_fault(tmp_path: Path, capsys) 
     sys.argv = ["validate_selftest.py", str(tmp_path / "vs")]
     vst.main()
     out = capsys.readouterr().out
-    assert "VALIDATOR-SELFTEST-OK" in out and "A: clean PASS, 23 planted faults caught" in out
+    assert "VALIDATOR-SELFTEST-OK" in out and "A: clean PASS, 24 planted faults caught" in out
 
 
 # ---- gate -----------------------------------------------------------------------------------------------------------------------
@@ -569,19 +577,23 @@ def test_validator_refuses_a_tensor_span_outside_its_shard(ripple_trees: Path, t
 LAST_PACKED = "model.layers.1.mlp.down_proj.weight"  # a packed NVFP4 weight (U8) in candidate A's layout
 
 
-def _write_with_last(path: Path, tensors: dict[str, tuple[str, list[int], bytes]], last: str, cut: int = 0) -> None:
+def _write_with_last(path: Path, tensors: dict[str, tuple[str, list[int], bytes]], last: str, cut: int = 0,
+                     extra: int = 0, reverse_keys: bool = False) -> None:
     """Write a safetensors file the way an export lays one out (8-byte length, the header padded to 8 bytes, then the
-    data in header order) with ``last`` as the last tensor in the file, cut ``cut`` bytes short of its end."""
+    data in header order) with ``last`` as the last tensor in the file, cut ``cut`` bytes short of its end or ``extra``
+    bytes past it; ``reverse_keys`` writes the header's entries in the reverse of their data order (still valid)."""
     order = [n for n in sorted(tensors) if n != last] + [last]
     header, off = {}, 0
     for n in order:
         dt, shape, data = tensors[n]
         header[n] = {"dtype": dt, "shape": shape, "data_offsets": [off, off + len(data)]}
         off += len(data)
+    if reverse_keys:
+        header = dict(reversed(header.items()))
     h = json.dumps(header, separators=(",", ":")).encode()
     h += b" " * ((8 - len(h) % 8) % 8)
     raw = struct.pack("<Q", len(h)) + h + b"".join(tensors[n][2] for n in order)
-    path.write_bytes(raw[:len(raw) - cut])
+    path.write_bytes(raw[:len(raw) - cut] + b"\x00" * extra)
 
 
 def test_a_tensor_ending_exactly_at_the_end_of_its_file_passes(ripple_trees: Path, tmp_path: Path) -> None:
@@ -838,6 +850,7 @@ def test_control_build_publishes_the_pinned_sidecars_as_regular_files(ripple_tre
     assert {k: v for k, v in cfg.items() if k not in ("quantization_config", "dtype")} == \
         json.loads((src / "config.json").read_text())
     assert json.loads((out / "config.transformers5.json").read_text())["dtype"] == "bfloat16"
+    assert "dtype" not in json.loads((src / "config.json").read_text()) and cfg["dtype"] == "bfloat16"  # restored
 
 
 def test_build_refuses_a_sidecar_linked_outside_the_source(ripple_trees: Path, tmp_path: Path) -> None:
@@ -879,27 +892,6 @@ def test_build_refuses_a_config_linked_outside_the_source(ripple_trees: Path, tm
     assert str(outside) not in res["opened"], res["opened"]
 
 
-@pytest.mark.parametrize("name", ["model.safetensors", ".cache-note", "inference/.cache-note", ".cache/download/note"])
-def test_build_refuses_a_link_anywhere_in_the_source_tree(ripple_trees: Path, tmp_path: Path, name: str) -> None:
-    """transformers, accelerate and the exporter read the source by path: a link anywhere in it is refused before they
-    run, dot-named entries included, at the top level and in subdirectories (real checkpoints carry .gitattributes and
-    a .cache directory)."""
-    outside = tmp_path / "outside-file"
-
-    def link(src: Path) -> None:
-        if name == "model.safetensors":
-            os.rename(src / name, outside)
-        else:
-            outside.write_text("OUTSIDE THE SOURCE DIRECTORY\n")
-        (src / name).parent.mkdir(parents=True, exist_ok=True)
-        os.symlink(outside, src / name)
-
-    res, src, out = _build(ripple_trees, tmp_path, link)
-    _not_built(res, out)
-    assert f"/{name}: cannot open it in its directory" in res["out"], res["out"]
-    assert str(outside) not in res["opened"], res["opened"]
-
-
 def test_build_publishes_the_bytes_it_checked_when_a_sidecar_is_swapped_later(ripple_trees: Path,
                                                                               tmp_path: Path) -> None:
     """The source's LICENSE becomes a link to outside bytes after the build checked it: the export still carries the
@@ -931,15 +923,6 @@ def test_build_refuses_an_export_config_linked_outside(ripple_trees: Path, tmp_p
     res, src, out = _build(ripple_trees, tmp_path, export_links={name: str(outside)})
     _not_built(res, out, before_export=False)
     assert str(outside) not in res["opened"], res["opened"]
-
-
-@pytest.mark.parametrize("name", ["NOTICE", ".notice", "extra/.notice", ".cache/download/notice"])
-def test_build_refuses_a_link_left_anywhere_in_the_export(ripple_trees: Path, tmp_path: Path, name: str) -> None:
-    """No link may remain in the export, dot-named entries included, at the top level and in subdirectories."""
-    outside = _outside(tmp_path)
-    res, src, out = _build(ripple_trees, tmp_path, export_links={name: str(outside)})
-    _not_built(res, out, before_export=False)
-    assert f"/{name}: cannot open it in its directory" in res["out"], res["out"]
 
 
 @pytest.mark.parametrize("cfg", [{"dtype": "bfloat16"}, {"quantization_config": {}, "dtype": "bfloat16"},
@@ -987,7 +970,10 @@ def test_build_cpu_smoke_reads_its_tiny_config_confined(ripple_trees: Path, tmp_
     assert str(outside) not in res["opened"], res["opened"]
 
 
-def _teacher(trees: Path, tmp_path: Path, mutate=None, pins: dict | None = None) -> tuple[dict, Path]:
+def _teacher_source(trees: Path, tmp_path: Path, mutate=None,
+                    pins: dict | None = None) -> tuple[Path, dict, list[str]]:
+    """A fresh synthetic source laid out as the teacher reads it (one indexed shard), its pins taken before
+    ``mutate(src)`` runs."""
     src, _ = _fresh(trees, tmp_path)
     run_pins = {f: _sha((src / f).read_bytes()) for f in PINNED_SOURCE_FILES}
     run_pins.update(pins or {})
@@ -996,8 +982,24 @@ def _teacher(trees: Path, tmp_path: Path, mutate=None, pins: dict | None = None)
     _index(src, {n: "model-00001-of-00001.safetensors" for n in names})
     if mutate is not None:
         mutate(src)
+    return src, run_pins, names
+
+
+def _teacher(trees: Path, tmp_path: Path, mutate=None, pins: dict | None = None) -> tuple[dict, Path]:
+    src, run_pins, names = _teacher_source(trees, tmp_path, mutate, pins)
     res = _run({"mode": "teacher", "script": str(TEACHER), "src": str(src), "tensor": names[0], "pins": run_pins},
                tmp_path)
+    return res, src
+
+
+def _teacher_main(trees: Path, tmp_path: Path, mutate=None, pins: dict | None = None) -> tuple[dict, Path]:
+    """The teacher run as a script (its main()) on the same source, with an empty held-out file: past the source checks
+    it stops at the held-out count, so every library load of main() and Streamer has run."""
+    src, run_pins, _ = _teacher_source(trees, tmp_path, mutate, pins)
+    held = tmp_path / "heldout.jsonl"
+    held.write_text("")
+    res = _run({"mode": "build", "script": str(TEACHER), "pins": run_pins,
+                "argv": [str(src), str(held), str(tmp_path / "teacher.json"), str(tmp_path / "teacher-work")]}, tmp_path)
     return res, src
 
 
@@ -1051,19 +1053,6 @@ def test_teacher_refuses_a_tokenizer_file_linked_outside(ripple_trees: Path, tmp
     res, _ = _teacher(ripple_trees, tmp_path, link)
     assert res["exit"] != 0 and "TEACHER-STREAMER-OK" not in res["out"], res["out"]
     assert str(outside) not in res["opened"]
-
-
-@pytest.mark.parametrize("name", [".cache-note", "inference/.cache-note"])
-def test_teacher_refuses_a_dot_named_link_in_the_source(ripple_trees: Path, tmp_path: Path, name: str) -> None:
-    outside = _outside(tmp_path, "outside-note")
-
-    def link(src: Path) -> None:
-        (src / name).parent.mkdir(parents=True, exist_ok=True)
-        os.symlink(outside, src / name)
-
-    res, _ = _teacher(ripple_trees, tmp_path, link)
-    assert res["exit"] != 0 and "TEACHER-STREAMER-OK" not in res["out"], res["out"]
-    assert f"/{name}: cannot open it in its directory" in res["out"], res["out"]
 
 
 def _run_script(script: str, trees: Path, tmp_path: Path, mutate=None, pins: dict | None = None) -> dict:
@@ -1212,30 +1201,6 @@ def test_write_files_replaces_a_link_and_never_writes_through_it(tmp_path: Path)
     assert cf.write_files(d, {"LICENSE": b"pinned"}) == ["LICENSE"]
     assert (d / "LICENSE").read_bytes() == b"pinned" and not (d / "LICENSE").is_symlink()
     assert outside.read_text() == "keep" and sorted(os.listdir(d)) == ["LICENSE"]
-
-
-def test_refuse_links_walks_subdirectories(tmp_path: Path) -> None:
-    """Every entry is walked, dot-named ones included (real checkpoints carry .gitattributes and a .cache directory):
-    dot-named regular files count, and a link is refused at the top level, in a subdirectory and under a dot-named
-    directory."""
-    cf = _cf()
-    d = tmp_path / "tree"
-    (d / "inference" / "server").mkdir(parents=True)
-    (d / ".cache" / "download").mkdir(parents=True)
-    (d / "a.txt").write_text("a")
-    (d / "inference" / "server" / "b.py").write_text("b")
-    (d / ".gitattributes").write_text("*.safetensors filter=lfs\n")
-    (d / ".cache" / "download" / "c.lock").write_text("")
-    (d / "inference" / ".hidden-note").write_text("n")
-    assert cf.refuse_links(d) == 5
-    outside = tmp_path / "elsewhere"
-    outside.write_text("outside")
-    for where in ("inference/server/c.py", ".notice", "inference/.cache-note", ".cache/download/notice"):
-        os.symlink(outside, d / where)
-        with pytest.raises(cf.ShardError, match=re.escape(f"/{where}: cannot open it in its directory")):
-            cf.refuse_links(d)
-        (d / where).unlink()
-    assert cf.refuse_links(d) == 5
 
 
 def _in_subprocess(code: str, timeout: float = 30) -> subprocess.CompletedProcess:
@@ -1825,3 +1790,799 @@ def test_record_card_commit_refuses_each_failed_check(tmp_path: Path, check: str
     r = _record_card(t, rb, card)
     assert r.returncode != 0 and f"RECORD-CARD-FAILED: ['{check}']" in r.stderr, r.stdout + r.stderr
     assert receipt.read_bytes() == before
+
+
+# ---- review round 3: generated cases --------------------------------------------------------------------------------------
+# Rounds 2 and 3 each found the gap one step past the cases the round before had pinned. Here each rule's cases are
+# generated over every axis it has, and each axis runs past the deepest mutant the round's lists try (those stop at
+# depth 8 and at 5 shards).
+# - The link walk: depths 0 to 16 in-process and 0 to 9 through the build and the teacher, x which of the directories
+#   above the entry are dot-named, x a plain or dot-named entry, x a regular file (accepted, counted) or a link to an
+#   outside file, a link to an outside directory or a FIFO (each refused, naming the path); plus the model store's own
+#   layout (.cache/huggingface/..., six levels deep) entry by entry.
+# - The span bound: 2, 3 and 5 shards x the short shard first, in the middle or last x smaller or larger than every
+#   other shard x the file exact, one byte short or one byte long, on the export and on the source; gaps and overlaps.
+# - Library loads: every from_pretrained / from_config / safe_open call of the build and the teacher, found by parsing
+#   them, against stand-ins that read by path and fail when called before read_source returned.
+# - The suggestions: each header-entry field x look-alike values; each sidecar x a byte flipped at equal length; dot-named
+#   extra shards; generation_config.json bodies; config.json dtype look-alikes; the store metadata, every subset; the
+#   small-file read under a truncation, a replacement or a patched os.fstat between the open and the read.
+WALK_KINDS = ("file", "link-to-file", "link-to-dir", "fifo")
+WALK_NAMES = ("notice", ".notice")
+STORE_PATHS = (".cache/huggingface/.gitignore", ".cache/huggingface/download/inference/server/model.py.lock")
+
+
+def _dir_styles(depth: int) -> dict[str, tuple[bool, ...]]:
+    """Which of the ``depth`` directories above the entry are dot-named: every pattern up to depth 4; deeper, all plain,
+    all dot-named, alternating either way, only the first (the store's .cache/huggingface/download/...), only the last,
+    the first half or the second half."""
+    if depth <= 4:
+        return {"".join("d" if dot else "p" for dot in pat) or "top": pat
+                for pat in itertools.product((False, True), repeat=depth)}
+    half = depth // 2
+    return {"plain": (False,) * depth, "dot": (True,) * depth,
+            "alt-dot-first": tuple(i % 2 == 0 for i in range(depth)),
+            "alt-plain-first": tuple(i % 2 == 1 for i in range(depth)),
+            "dot-first": tuple(i == 0 for i in range(depth)), "dot-last": tuple(i == depth - 1 for i in range(depth)),
+            "dot-then-plain": tuple(i < half for i in range(depth)),
+            "plain-then-dot": tuple(i >= half for i in range(depth))}
+
+
+def _e2e_styles(depth: int) -> dict[str, tuple[bool, ...]]:
+    """Through the scripts: all plain, all dot-named, and (two levels down or more) only the first dot-named."""
+    styles = {"plain": (False,) * depth, "dot": (True,) * depth}
+    if depth >= 2:
+        styles["dot-first"] = tuple(i == 0 for i in range(depth))
+    return styles if depth else {"top": ()}
+
+
+def _walk_rel(pattern: tuple[bool, ...], name: str) -> str:
+    return "/".join([*(("." if dot else "") + f"d{i}" for i, dot in enumerate(pattern, 1)), name])
+
+
+def _walk_rels(depths: range, styles) -> list[str]:
+    return [_walk_rel(pat, name) for d in depths for pat in styles(d).values() for name in WALK_NAMES]
+
+
+WALK_GRID = [(rel, kind) for rel in _walk_rels(range(17), _dir_styles) for kind in WALK_KINDS]
+WALK_E2E = [(rel, kind) for rel in _walk_rels(range(10), _e2e_styles) + list(STORE_PATHS) for kind in WALK_KINDS]
+
+
+def _outside_targets(tmp_path: Path) -> Path:
+    o = tmp_path / "outside"
+    (o / "dir").mkdir(parents=True)
+    (o / "file").write_text("OUTSIDE THE TREE\n")
+    (o / "dir" / "inner").write_text("OUTSIDE THE TREE\n")
+    return o
+
+
+def _outside_paths(outside: Path) -> set[str]:
+    return {str(outside / "file"), str(outside / "dir"), str(outside / "dir" / "inner")}
+
+
+def _make_entry(base: Path, rel: str, kind: str, outside: Path) -> None:
+    """``rel`` under ``base`` (its directories made as needed) as ``kind``; links point outside."""
+    p = base / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if kind == "file":
+        p.write_text("regular\n")
+    elif kind == "fifo":
+        os.mkfifo(p)
+    else:
+        os.symlink(outside / ("file" if kind == "link-to-file" else "dir"), p)
+
+
+def _walk_refusal(rel: str, kind: str) -> str:
+    return f"/{rel}: " + ("not a regular file or a directory" if kind == "fifo" else "cannot open it in its directory")
+
+
+@contextlib.contextmanager
+def _no_block(seconds: int = 10):
+    """Fail instead of hanging when an open blocks (a FIFO opened for reading without O_NONBLOCK waits for a writer)."""
+    import threading
+
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def blocked(signum: int, frame: object) -> None:
+        raise TimeoutError("an open blocked")
+
+    old = signal.signal(signal.SIGALRM, blocked)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
+
+
+@pytest.mark.parametrize(("rel", "kind"), WALK_GRID, ids=[f"{k}-{r}" for r, k in WALK_GRID])
+def test_refuse_links_generated(tmp_path: Path, rel: str, kind: str) -> None:
+    """refuse_links itself, depths 0 to 16: a regular file is counted wherever it is, and a link (to a file or to a
+    directory) or a FIFO is refused with its own path, whatever the directories above it are named."""
+    cf = _cf()
+    root = tmp_path / "tree"
+    root.mkdir()
+    (root / "top.txt").write_text("t")
+    outside = _outside_targets(tmp_path)
+    _make_entry(root, rel, kind, outside)
+    with _no_block():
+        if kind == "file":
+            assert cf.refuse_links(root) == 2
+            return
+        with pytest.raises(cf.ShardError) as e:
+            cf.refuse_links(root)
+    assert _walk_refusal(rel, kind) in str(e.value), str(e.value)
+
+
+def _walk_outcome(res: dict, rel: str, kind: str, outside: Path, ok: str, out: Path | None = None) -> None:
+    if kind == "file":
+        assert res["exit"] == 0 and ok in res["out"], res["out"]
+    else:
+        assert res["exit"] != 0 and ok not in res["out"], res["out"]
+        assert _walk_refusal(rel, kind) in res["out"], res["out"]
+        if out is not None:
+            assert not out.exists()
+    assert not _outside_paths(outside) & set(res["opened"]), res["opened"]
+    assert not [e for e in res["lib"] if not e["after_check"]], res["lib"]
+    assert not [x for e in res["lib"] for x in e["resolved"] if x in _outside_paths(outside)], res["lib"]
+
+
+@pytest.mark.parametrize(("rel", "kind"), WALK_E2E, ids=[f"{k}-{r}" for r, k in WALK_E2E])
+def test_build_walks_its_source_generated(ripple_trees: Path, tmp_path: Path, rel: str, kind: str) -> None:
+    """The build's source read, depths 0 to 9 and the store's own paths: refused before any library reads the source."""
+    outside = _outside_targets(tmp_path)
+    res, src, out = _build(ripple_trees, tmp_path, lambda s: _make_entry(s, rel, kind, outside))
+    _walk_outcome(res, rel, kind, outside, "QUANT-OK", out)
+    if kind != "file":
+        assert res["lib"] == [] and not out.with_name(out.name + ".partial").exists(), res["lib"]
+
+
+@pytest.mark.parametrize(("rel", "kind"), WALK_E2E, ids=[f"{k}-{r}" for r, k in WALK_E2E])
+def test_build_walks_its_export_generated(ripple_trees: Path, tmp_path: Path, rel: str, kind: str) -> None:
+    """The build's export check, depths 0 to 9 and the store's own paths: nothing but regular files is published."""
+    outside = _outside_targets(tmp_path)
+    if kind == "file":
+        extra: dict = {"export_files": {rel: "regular\n"}}
+    elif kind == "fifo":
+        extra = {"export_fifos": [rel]}
+    else:
+        extra = {"export_links": {rel: str(outside / ("file" if kind == "link-to-file" else "dir"))}}
+    res, src, out = _build(ripple_trees, tmp_path, **extra)
+    _walk_outcome(res, rel, kind, outside, "QUANT-OK", out)
+    if kind == "file":
+        assert (out / rel).is_file() and not (out / rel).is_symlink()
+
+
+@pytest.mark.parametrize(("rel", "kind"), WALK_E2E, ids=[f"{k}-{r}" for r, k in WALK_E2E])
+def test_teacher_walks_its_source_generated(ripple_trees: Path, tmp_path: Path, rel: str, kind: str) -> None:
+    outside = _outside_targets(tmp_path)
+    res, src = _teacher(ripple_trees, tmp_path, lambda s: _make_entry(s, rel, kind, outside))
+    _walk_outcome(res, rel, kind, outside, "TEACHER-STREAMER-OK")
+    if kind != "file":
+        assert res["lib"] == [], res["lib"]
+
+
+STORE_SUBTREE = ("inference/server/README.md", "inference/server/model.py", "inference/server/ripple_format.py",
+                 "inference/server/serve.py")  # the upstream BF16 checkpoint's own subdirectory at the pinned revision
+
+
+def _store_layout(files: list[str]) -> list[str]:
+    """The paths huggingface_hub's local-dir download leaves in a store copy (both of the model store's copies carry
+    them): .cache/huggingface/{.gitignore, CACHEDIR.TAG}, the revision's tree listing, and a .lock and a .metadata file
+    per downloaded file under .cache/huggingface/download/, subdirectories mirrored."""
+    hf = ".cache/huggingface"
+    out = [f"{hf}/.gitignore", f"{hf}/CACHEDIR.TAG", f"{hf}/trees/{lay.SOURCE_REV}.json"]
+    for f in files:
+        out += [f"{hf}/download/{f}.lock", f"{hf}/download/{f}.metadata"]
+    return out
+
+
+def test_refuse_links_walks_the_store_layout(ripple_trees: Path, tmp_path: Path) -> None:
+    """The source as the model store holds it (.gitattributes, inference/server/, .cache/huggingface/ down to six
+    levels): every file is counted and the pinned files read; then each path in turn becomes a link to an outside file,
+    a link to an outside directory or a FIFO, and is refused by name."""
+    cf = _cf()
+    src, _ = _fresh(ripple_trees, tmp_path)
+    for rel in (".gitattributes", *STORE_SUBTREE):
+        (src / rel).parent.mkdir(parents=True, exist_ok=True)
+        (src / rel).write_text(f"{rel}\n")
+    files = sorted(x.relative_to(src).as_posix() for x in src.rglob("*") if x.is_file())
+    layout = _store_layout(files)
+    for rel in layout:
+        (src / rel).parent.mkdir(parents=True, exist_ok=True)
+        (src / rel).write_text("")
+    total = len(files) + len(layout)
+    assert {rel.count("/") + 1 for rel in layout} == {3, 4, 6} and total == sum(1 for x in src.rglob("*") if x.is_file())
+    assert cf.refuse_links(src) == total
+    pins = {f: _sha((src / f).read_bytes()) for f in PINNED_SOURCE_FILES}
+    assert set(cf.read_source(src, pins)) == set(pins)
+    outside = _outside_targets(tmp_path)
+    for rel in [*layout, ".gitattributes", *STORE_SUBTREE]:
+        keep = (src / rel).read_bytes()
+        for kind in WALK_KINDS[1:]:
+            (src / rel).unlink()
+            _make_entry(src, rel, kind, outside)
+            with _no_block(), pytest.raises(cf.ShardError) as e:
+                cf.refuse_links(src)
+            assert _walk_refusal(rel, kind) in str(e.value), str(e.value)
+            (src / rel).unlink()
+            (src / rel).write_bytes(keep)
+    assert cf.refuse_links(src) == total
+
+
+def test_build_refuses_its_shard_linked_outside(ripple_trees: Path, tmp_path: Path) -> None:
+    """The source's own shard as a link to that shard moved outside: refused by the walk, before any library reads."""
+    outside = tmp_path / "outside-model.safetensors"
+
+    def link(src: Path) -> None:
+        os.rename(src / "model.safetensors", outside)
+        os.symlink(outside, src / "model.safetensors")
+
+    res, src, out = _build(ripple_trees, tmp_path, link)
+    _not_built(res, out)
+    assert "/model.safetensors: cannot open it in its directory" in res["out"], res["out"]
+    assert str(outside) not in res["opened"] and res["lib"] == [], res
+
+
+# -- the span bound on multi-shard checkpoints --------------------------------------------------------------------------------
+SPAN_GRID = [(side, n, pos, rel, cut) for side in ("export", "source") for n in (2, 3, 5)
+             for pos in ("first", "middle", "last") if not (n == 2 and pos == "middle")
+             for rel in ("smaller", "larger") for cut in ("exact", "short", "long")]
+
+
+def _shard_parts(t: dict, n: int, short: int, rel: str) -> dict[int, list[str]]:
+    """Split the tensors over ``n`` shards; shard ``short`` holds LAST_PACKED, last. "smaller": LAST_PACKED alone there and
+    the rest dealt over the others, largest first; "larger": one of the smallest tensors in each other shard, the rest
+    there too."""
+    rest = sorted(x for x in t if x != LAST_PACKED)
+    others = [i for i in range(n) if i != short]
+    parts: dict[int, list[str]] = {i: [] for i in range(n)}
+    if rel == "smaller":  # largest first, dealt in turn: each other shard gets one of the largest tensors
+        for k, name in enumerate(sorted(rest, key=lambda x: (-len(t[x][2]), x))):
+            parts[others[k % len(others)]].append(name)
+    else:
+        small = sorted(rest, key=lambda x: (len(t[x][2]), x))[:len(others)]
+        for i, name in zip(others, small):
+            parts[i].append(name)
+        parts[short] = [x for x in rest if x not in small]
+    parts[short].append(LAST_PACKED)
+    return parts
+
+
+@pytest.mark.parametrize(("side", "n", "pos", "rel", "cut"), SPAN_GRID, ids=["-".join(map(str, c)) for c in SPAN_GRID])
+def test_multi_shard_span_bound_generated(ripple_trees: Path, tmp_path: Path, side: str, n: int, pos: str, rel: str,
+                                          cut: str) -> None:
+    """Every tensor of every shard is bounded by its own shard's size: the shard holding LAST_PACKED (the packed U8
+    weight in the export; its BF16 original in the source) last is first, in the middle or last, and smaller or larger
+    than every other shard. Exact: PASS. One byte short: refused by the span bound, naming the tensor and the shard's own
+    size. One byte long: refused, since a shard's tensors must cover its data exactly (safetensors' own reader refuses a
+    byte after the last tensor, MetadataIncompleteBuffer)."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    d = exp if side == "export" else src
+    t = _read_tensors(d / "model.safetensors")
+    assert t[LAST_PACKED][0] == ("U8" if side == "export" else "BF16")
+    idx = {"first": 0, "middle": n // 2, "last": n - 1}[pos]
+    names = [f"model-{i + 1:05d}-of-{n:05d}.safetensors" for i in range(n)]
+    parts = _shard_parts(t, n, idx, rel)
+    (d / "model.safetensors").unlink()
+    for i, members in parts.items():
+        if i == idx:
+            _write_with_last(d / names[i], {m: t[m] for m in members}, LAST_PACKED, cut=int(cut == "short"),
+                             extra=int(cut == "long"))
+        else:
+            vst.write_safetensors(d / names[i], {m: t[m] for m in members})
+    _index(d, {m: names[i] for i, members in parts.items() for m in members})
+    sizes = [(d / x).stat().st_size for x in names]
+    others = [x for i, x in enumerate(sizes) if i != idx]
+    assert sizes[idx] < min(others) if rel == "smaller" else sizes[idx] > max(others), sizes  # the case's premise
+    res = _validate(exp, src)
+    if cut == "exact":
+        assert res["verdict"] == "PASS", res
+    elif cut == "short":
+        _refused(res, f"/{names[idx]}: {LAST_PACKED}: data_offsets")
+        assert f"fall outside the file ({sizes[idx]:,} bytes)" in " | ".join(res["errors"]), res
+    else:
+        _refused(res, f"/{names[idx]}: the tensors end at byte {sizes[idx] - 1:,} of the file, not at its end "
+                      f"({sizes[idx]:,} bytes)")
+
+
+@pytest.mark.parametrize("shards", [1, 3])
+def test_header_entries_in_any_order_pass(ripple_trees: Path, tmp_path: Path, shards: int) -> None:
+    """A header lists its entries in any order (only the data must be laid out without gaps): entries written in the
+    reverse of their data order pass, in one shard and in each of three."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    t = _read_tensors(exp / "model.safetensors")
+    rest = sorted(x for x in t if x != LAST_PACKED)
+    (exp / "model.safetensors").unlink()
+    names = [f"model-{i + 1:05d}-of-{shards:05d}.safetensors" for i in range(shards)] if shards > 1 \
+        else ["model.safetensors"]
+    parts = {i: rest[i::shards] + [LAST_PACKED] * (i == shards - 1) for i in range(shards)}
+    for i, members in parts.items():
+        _write_with_last(exp / names[i], {m: t[m] for m in members}, members[-1], reverse_keys=True)
+    if shards > 1:
+        _index(exp, {m: names[i] for i, members in parts.items() for m in members})
+    raw = (exp / names[0]).read_bytes()
+    (n,) = struct.unpack("<Q", raw[:8])
+    first = next(iter(json.loads(raw[8:8 + n]).values()))
+    assert first["data_offsets"][0] > 0  # the first entry is not the first tensor in the data
+    res = ve.validate(exp, src, "A")
+    assert res["verdict"] == "PASS", res
+
+
+TILING_FAULTS = [("gap", "first"), ("gap", "middle"), ("gap", "last"), ("overlap", "second"), ("overlap", "middle"),
+                 ("overlap", "last")]
+
+
+@pytest.mark.parametrize(("fault", "where"), TILING_FAULTS, ids=[f"{f}-{w}" for f, w in TILING_FAULTS])
+def test_a_gap_or_an_overlap_between_tensors_is_refused(ripple_trees: Path, tmp_path: Path, fault: str,
+                                                        where: str) -> None:
+    """In offset order a shard's tensors must start where the one before them ends (safetensors' rule): one unused byte
+    before a tensor (the first, one in the middle, the last) or a tensor starting one byte early is refused by name."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    t = _read_tensors(exp / "model.safetensors")
+    order = sorted(t)
+    k = {"first": 0, "second": 1, "middle": len(order) // 2, "last": len(order) - 1}[where]
+    header, blobs, off = {}, [], 0
+    for i, name in enumerate(order):
+        dt, shape, data = t[name]
+        if i == k and fault == "gap":
+            blobs.append(b"\x00")
+            off += 1
+        elif i == k:
+            blobs[-1] = blobs[-1][:-1]
+            off -= 1
+        header[name] = {"dtype": dt, "shape": shape, "data_offsets": [off, off + len(data)]}
+        blobs.append(data)
+        off += len(data)
+    h = json.dumps(header, separators=(",", ":")).encode()
+    h += b" " * ((8 - len(h) % 8) % 8)
+    (exp / "model.safetensors").write_bytes(struct.pack("<Q", len(h)) + h + b"".join(blobs))
+    a, b = header[order[k]]["data_offsets"]
+    end = a - 1 if fault == "gap" else a + 1
+    _refused(_validate(exp, src), f"{order[k]}: data_offsets [{a}, {b}] start at byte {a:,} of the data, not at byte "
+                                  f"{end:,}")
+
+
+@pytest.mark.parametrize("change", ["larger", "smaller"])
+def test_shard_spans_are_bounded_by_the_opened_shard(ripple_trees: Path, tmp_path: Path, change: str) -> None:
+    """Each shard's size comes from its open descriptor: after the shards were opened, a file of another size takes
+    each one's name, and the spans are still checked against the opened files."""
+    cf = _cf()
+    src, exp = _fresh(ripple_trees, tmp_path)
+    t = _read_tensors(exp / "model.safetensors")
+    names = sorted(t)
+    parts = {"model-00001-of-00002.safetensors": names[:20], "model-00002-of-00002.safetensors": names[20:]}
+    (exp / "model.safetensors").unlink()
+    for shard, members in parts.items():
+        vst.write_safetensors(exp / shard, {n: t[n] for n in members})
+    _index(exp, {n: shard for shard, members in parts.items() for n in members})
+    with cf.Shards(exp) as s:
+        for shard in parts:
+            data = (exp / shard).read_bytes()
+            os.rename(exp / shard, tmp_path / f"opened-{shard}")
+            (exp / shard).write_bytes(data + b"\x00" * 8 if change == "larger" else data[:-8])
+        got = s.tensors()
+    assert sorted(got) == names and {got[n][0] for n in parts[shard]} == {shard}
+
+
+# -- header entries: each field of the safetensors grammar, with look-alike values -------------------------------------------
+ENTRY_FIELDS = ("dtype", "shape", "data_offsets")
+ENTRY_VALUES = {"null": None, "int": 8, "float": 8.0, "bool": True, "str": "08", "str-3": "008", "empty-list": [],
+                "list-of-str": ["0", "8"], "list-of-float": [0.0, 8.0], "list-of-bool": [False, True],
+                "negative": [-1, 8], "reversed": [8, 0], "one": [0], "three": [0, 4, 8], "nested": [[0], 8],
+                "dict": {}, "dict-2": {"a": 0, "b": 8}, "str-U8": "U8", "dims": [2, 4], "half": [0, 4], "empty-str": ""}
+GOOD_ENTRY = {"dtype": "U8", "shape": [2, 4], "data_offsets": [0, 8]}
+
+
+def _entry_outcome(entry: object) -> str:
+    """The safetensors grammar of one header entry, alone over an 8-byte data section: "malformed" (not an object, a
+    field missing, data_offsets not two values, dtype not a string, shape not a list of non-negative integers),
+    "outside" (data_offsets not two integers 0 <= a <= b <= 8), "gap" (inside, but not starting at the data's first
+    byte), "end" (starting there, ending before the file does) or "ok" (exactly [0, 8])."""
+    if not isinstance(entry, dict) or not set(ENTRY_FIELDS) <= set(entry):
+        return "malformed"
+    try:
+        a, b = entry["data_offsets"]
+    except (TypeError, ValueError):
+        return "malformed"
+    shape = entry["shape"]
+    if type(entry["dtype"]) is not str or type(shape) is not list or \
+            not all(type(x) is int and x >= 0 for x in shape):
+        return "malformed"
+    if not (type(a) is int and type(b) is int and 0 <= a <= b <= 8):
+        return "outside"
+    return "gap" if a != 0 else "end" if b != 8 else "ok"
+
+
+ENTRY_REFUSALS = {"malformed": "malformed header entry", "outside": "fall outside the file",
+                  "gap": "of the data, not at byte 0 where the tensor before it ends",
+                  "end": "of the file, not at its end"}
+
+
+ENTRY_CASES = {f"{f}-missing": {k: v for k, v in GOOD_ENTRY.items() if k != f} for f in ENTRY_FIELDS}
+ENTRY_CASES.update({f"{f}-{label}": {**GOOD_ENTRY, f: v} for f in ENTRY_FIELDS for label, v in ENTRY_VALUES.items()})
+ENTRY_CASES.update({f"entry-{label}": v for label, v in (("null", None), ("list", [1, 2]), ("str", "U8"), ("int", 8))})
+ENTRY_CASES.update({"shape-scalar": {**GOOD_ENTRY, "shape": []}, "shape-zero": {**GOOD_ENTRY, "shape": [0]},
+                    "dtype-empty": {**GOOD_ENTRY, "dtype": ""}})
+
+
+@pytest.mark.parametrize("case", sorted(ENTRY_CASES))
+def test_header_entries_follow_the_safetensors_grammar(tmp_path: Path, case: str) -> None:
+    cf = _cf()
+    d = tmp_path / "ck"
+    d.mkdir()
+    entry = ENTRY_CASES[case]
+    h = json.dumps({"t": entry}, separators=(",", ":")).encode()
+    h += b" " * ((8 - len(h) % 8) % 8)
+    (d / "model.safetensors").write_bytes(struct.pack("<Q", len(h)) + h + bytes(range(8)))
+    want = _entry_outcome(entry)
+    with cf.Shards(d) as s:
+        if want == "ok":
+            assert s.tensors() == {"t": ("model.safetensors", 8 + len(h), 8, entry["dtype"], entry["shape"])}
+            return
+        with pytest.raises(cf.ShardError) as e:
+            s.tensors()
+    assert ENTRY_REFUSALS[want] in str(e.value), str(e.value)
+
+
+@pytest.mark.parametrize("field", ENTRY_FIELDS)
+def test_validator_refuses_a_header_entry_without_a_field(ripple_trees: Path, tmp_path: Path, field: str) -> None:
+    """The review's repro: an export header entry without shape (or data_offsets, or dtype) is refused by name."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    raw = (exp / "model.safetensors").read_bytes()
+    (n,) = struct.unpack("<Q", raw[:8])
+    header = json.loads(raw[8:8 + n])
+    header["model.layers.1.extra"] = {k: v for k, v in {"dtype": "U8", "shape": [0], "data_offsets": [0, 0]}.items()
+                                      if k != field}
+    h = json.dumps(header, separators=(",", ":")).encode()
+    h += b" " * ((8 - len(h) % 8) % 8)
+    (exp / "model.safetensors").write_bytes(struct.pack("<Q", len(h)) + h + raw[8 + n:])
+    _refused(_validate(exp, src), "model.layers.1.extra: malformed header entry")
+
+
+# -- the sidecars: compared by digest ----------------------------------------------------------------------------------------
+SIDECAR_EDITS = ("first", "middle", "last", "swap", "case")
+SIDECAR_FLIPS = [(name, size, where, side) for name in lay.COPIED_FILES for size in ("small", "large")
+                 for where in SIDECAR_EDITS for side in ("export", "source")]
+LARGE_SIDECAR = "".join(chr(97 + (i * 7) % 26) for i in range(1 << 16)).encode()  # 64 KiB of letters, ends "...b"
+
+
+@pytest.mark.parametrize(("name", "size", "where", "side"), SIDECAR_FLIPS, ids=["-".join(c) for c in SIDECAR_FLIPS])
+def test_validator_refuses_a_sidecar_one_byte_off(ripple_trees: Path, tmp_path: Path, name: str, size: str, where: str,
+                                                  side: str) -> None:
+    """Every carried file (LICENSE, the remote code, the template, the tokenizer files), small (the synthetic text) or
+    64 KiB, with one bit flipped in its first, middle or last byte, its first and last bytes swapped, or its first
+    letter's case flipped, in the export or in the source: the same length (and for a swap the same bytes in another
+    order), refused, since each file is compared by its whole sha256 digest."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    if size == "large":
+        for d in (src, exp):
+            (d / name).write_bytes(LARGE_SIDECAR)
+    d = exp if side == "export" else src
+    b = bytearray((d / name).read_bytes())
+    if where == "swap":
+        assert b[0] != b[-1]
+        b[0], b[-1] = b[-1], b[0]
+    elif where == "case":
+        assert chr(b[0]).isalpha()
+        b[0] ^= 0x20
+    else:
+        b[{"first": 0, "middle": len(b) // 2, "last": len(b) - 1}[where]] ^= 1
+    (d / name).write_bytes(bytes(b))
+    assert (src / name).stat().st_size == (exp / name).stat().st_size
+    _refused(_validate(exp, src), f"{name} differs")
+
+
+def test_validator_compares_sidecars_on_the_whole_digest(ripple_trees: Path, tmp_path: Path) -> None:
+    """Two LICENSE texts of equal length whose sha256 digests agree in their first 8 hex digits (found by a birthday
+    search over a fixed sequence) are still told apart."""
+    seen: dict[str, bytes] = {}
+    for i in itertools.count():
+        text = b"LICENSE variant %08d\n" % i
+        head = hashlib.sha256(text).hexdigest()[:8]
+        if head in seen:
+            a, b = seen[head], text
+            break
+        seen[head] = text
+    assert len(a) == len(b) and a != b and _sha(a)[:8] == _sha(b)[:8]
+    src, exp = _fresh(ripple_trees, tmp_path)
+    (src / "LICENSE").write_bytes(a)
+    (exp / "LICENSE").write_bytes(b)
+    _refused(_validate(exp, src), "LICENSE differs")
+
+
+# -- the shard set: dot-named files are shards too ------------------------------------------------------------------------
+DOT_EXTRAS = [(extra, layout, side) for extra in (".extra.safetensors", ".safetensors", ".model.safetensors")
+              for layout in ("single", "indexed") for side in ("export", "source")]
+
+
+@pytest.mark.parametrize(("extra", "layout", "side"), DOT_EXTRAS, ids=["-".join(c) for c in DOT_EXTRAS])
+def test_validator_refuses_a_dot_named_extra_safetensors(ripple_trees: Path, tmp_path: Path, extra: str, layout: str,
+                                                         side: str) -> None:
+    src, exp = _fresh(ripple_trees, tmp_path)
+    d = exp if side == "export" else src
+    if layout == "indexed":
+        _index(d, {n: "model.safetensors" for n in _tensor_names(d)})
+    shutil.copyfile(d / "model.safetensors", d / extra)
+    _refused(_validate(exp, src), f"not exactly the indexed shards: unindexed [{extra!r}]")
+
+
+def test_dot_named_shards_the_index_names_are_read(ripple_trees: Path, tmp_path: Path) -> None:
+    """A dot-named file is a shard like any other: one the index names is read, and the export passes."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    names = _tensor_names(exp)
+    os.rename(exp / "model.safetensors", exp / ".model-00001-of-00001.safetensors")
+    _index(exp, {n: ".model-00001-of-00001.safetensors" for n in names})
+    assert ve.validate(exp, src, "A")["verdict"] == "PASS"
+
+
+# -- generation_config.json: a file that is there is checked -----------------------------------------------------------------
+GEN_BODIES = {"empty": (b"", "config files unreadable"), "whitespace": (b" \n", "config files unreadable"),
+              "null": (b"null", "not a JSON object"), "list": (b"[]", "not a JSON object"),
+              "number": (b"1", "not a JSON object"), "string": (b'"x"', "not a JSON object"),
+              "true": (b"true", "not a JSON object"), "object-without-ids": (b"{}", "token ids differ")}
+
+
+@pytest.mark.parametrize("body", sorted(GEN_BODIES))
+def test_validator_refuses_a_generation_config_that_is_not_a_token_id_object(ripple_trees: Path, tmp_path: Path,
+                                                                             body: str) -> None:
+    """generation_config.json that is present is checked, never taken for an absent one: empty, null, any JSON value
+    that is not an object, or an object without the token ids."""
+    src, exp = _fresh(ripple_trees, tmp_path)
+    raw, want = GEN_BODIES[body]
+    (exp / "generation_config.json").write_bytes(raw)
+    _refused(_validate(exp, src), want)
+
+
+# -- config.json dtype: bfloat16, restored by the build -------------------------------------------------------------------------
+DTYPE_VALUES = {"missing": None, "null": None, "float16": "float16", "float32": "float32", "bf16": "bf16",
+                "upper": "BFLOAT16", "padded": "bfloat16 ", "torch": "torch.bfloat16", "int": 16, "list": ["bfloat16"],
+                "torch_dtype-only": None}
+
+
+@pytest.mark.parametrize("value", sorted(DTYPE_VALUES))
+def test_validator_requires_config_dtype_bfloat16(ripple_trees: Path, tmp_path: Path, value: str) -> None:
+    src, exp = _fresh(ripple_trees, tmp_path)
+    cfg = json.loads((exp / "config.json").read_text())
+    assert cfg["dtype"] == "bfloat16" and "dtype" not in json.loads((src / "config.json").read_text())
+    if value in ("missing", "torch_dtype-only"):
+        del cfg["dtype"]
+        if value == "torch_dtype-only":  # transformers 4's key: not what this export's config carries
+            cfg["torch_dtype"] = "bfloat16"
+    else:
+        cfg["dtype"] = DTYPE_VALUES[value]
+    (exp / "config.json").write_text(json.dumps(cfg))
+    _refused(_validate(exp, src), f"config.json dtype is {str(DTYPE_VALUES[value])[:60]!r}, not 'bfloat16'")
+
+
+def test_build_keeps_a_source_config_dtype(ripple_trees: Path, tmp_path: Path) -> None:
+    """config.json is the source's plus the export's quantization_config, and the export's dtype only where the source
+    has none: a source config.json carrying its own dtype keeps it (the pinned source has none, so the build publishes
+    the export's bfloat16, as the control test checks)."""
+    def with_dtype(src: Path) -> None:
+        cfg = json.loads((src / "config.json").read_text())
+        (src / "config.json").write_text(json.dumps({**cfg, "dtype": "float32"}))
+
+    src, _ = _fresh(ripple_trees, tmp_path / "pins")
+    with_dtype(src)
+    res, src, out = _build(ripple_trees, tmp_path, with_dtype, pins={"config.json": _sha((src / "config.json").read_bytes())})
+    assert res["exit"] == 0 and "QUANT-OK" in res["out"], res["out"]
+    assert json.loads((out / "config.json").read_text())["dtype"] == "float32"
+
+
+# -- the store's own metadata is never published ------------------------------------------------------------------------------
+STORE_METADATA = ("SHA256SUMS.upstream", "SOURCE_REVISION", "SUBSET")
+STORE_SUBSETS = [c for r in (1, 2, 3) for c in itertools.combinations(STORE_METADATA, r)]
+
+
+@pytest.mark.parametrize("names", STORE_SUBSETS, ids=["+".join(c) for c in STORE_SUBSETS])
+def test_build_never_publishes_the_store_metadata(ripple_trees: Path, tmp_path: Path, names: tuple[str, ...]) -> None:
+    """The model store's SHA256SUMS.upstream, SOURCE_REVISION and SUBSET describe the BF16 source: whichever of them the
+    exporter leaves (each alone, every pair, all three) is dropped before OUT is published."""
+    res, src, out = _build(ripple_trees, tmp_path, export_files={n: "store metadata\n" for n in names})
+    assert res["exit"] == 0 and "QUANT-OK" in res["out"], res["out"]
+    assert not [n for n in STORE_METADATA if (out / n).exists() or (out / n).is_symlink()], sorted(os.listdir(out))
+    assert f"store metadata not carried: {[n for n in STORE_METADATA if n in names]}" in res["out"], res["out"]
+
+
+@pytest.mark.parametrize("name", STORE_METADATA)
+def test_build_drops_store_metadata_left_as_a_link(ripple_trees: Path, tmp_path: Path, name: str) -> None:
+    outside = _outside(tmp_path)
+    res, src, out = _build(ripple_trees, tmp_path, export_links={name: str(outside)})
+    assert res["exit"] == 0 and "QUANT-OK" in res["out"], res["out"]
+    assert not (out / name).exists() and not (out / name).is_symlink() and outside.read_text().startswith("OUTSIDE")
+
+
+# -- the small-file read under a race between the open and the read ---------------------------------------------------------
+def _race_read(cf, d: Path, helper: str, pin: str) -> object:
+    if helper == "Directory.read_optional":
+        with cf.Directory(d) as dd:
+            return dd.read_optional("config.json")
+    if helper == "Directory.read":
+        with cf.Directory(d) as dd:
+            return dd.read("config.json")
+    if helper == "read_file":
+        return cf.read_file(d, "config.json")
+    if helper == "read_source":
+        return cf.read_source(d, {"config.json": pin})["config.json"]
+    with cf.Shards(d) as s:
+        return s.weight_map
+
+
+RACE_HELPERS = ("Directory.read_optional", "Directory.read", "read_file", "read_source", "Shards-index", "validate")
+RACES = ("truncated-to-0", "truncated-one-short", "grown", "replaced-larger", "replaced-smaller", "replaced-over-cap",
+         "fstat-over-cap")
+RACE_GRID = [(h, r) for h in RACE_HELPERS for r in RACES]
+
+
+@pytest.mark.parametrize(("helper", "race"), RACE_GRID, ids=[f"{h}-{r}" for h, r in RACE_GRID])
+def test_a_small_file_read_takes_its_size_from_the_open_descriptor(ripple_trees: Path, tmp_path: Path,
+                                                                   monkeypatch: pytest.MonkeyPatch, helper: str,
+                                                                   race: str) -> None:
+    """A whole-file read races a change to its file, through each helper that reads a file whole and the validator:
+    - right after the size is taken from the descriptor (os.fstat patched to change the file once it has answered),
+      the file is truncated (to nothing, or one byte short): a short read, refused; or it grows: the read still
+      returns exactly the opened file's bytes as they were;
+    - right after the open (os.open patched to rename another file over the name), the name is replaced by a larger,
+      a smaller or an over-the-cap file: the read still returns the opened file's bytes;
+    - the descriptor reports a size over the cap (os.fstat patched): refused from that size."""
+    cf = _cf()
+    src, exp = _fresh(ripple_trees, tmp_path)
+    d = exp if helper == "validate" else src
+    name = "config.json"
+    if helper == "Shards-index":
+        _index(d, {n: "model.safetensors" for n in _tensor_names(d)})
+        name = "model.safetensors.index.json"
+    target = d / name
+    before = target.read_bytes()
+    pin = _sha(before)
+    ino, dir_ino = target.stat().st_ino, d.stat().st_ino
+    real_open, real_fstat = os.open, os.fstat
+    nth = 2 if helper == "read_source" else 1  # read_source walks the tree (one open, one fstat) before it reads
+    state = {"opens": 0, "fstats": 0}
+    repl = tmp_path / "replacement"
+    if race == "replaced-larger":
+        repl.write_bytes(before + b" " * 64)
+    elif race == "replaced-smaller":
+        repl.write_bytes(before[:len(before) // 2])
+    elif race == "replaced-over-cap":
+        repl.touch()
+        os.truncate(repl, SMALL_FILE_CAP + 1)
+
+    def open_(path, flags, mode=0o777, *, dir_fd=None):  # noqa: ANN001 - mirrors os.open()
+        fd = real_open(path, flags, mode, dir_fd=dir_fd)
+        if dir_fd is not None and path == name and real_fstat(dir_fd).st_ino == dir_ino:
+            state["opens"] += 1
+            if state["opens"] == nth:
+                os.rename(repl, target)
+        return fd
+
+    def fstat(fd: int) -> os.stat_result:
+        st = real_fstat(fd)
+        if st.st_ino != ino:
+            return st
+        if race == "fstat-over-cap":
+            return os.stat_result((st.st_mode, st.st_ino, st.st_dev, st.st_nlink, st.st_uid, st.st_gid,
+                                   SMALL_FILE_CAP + 1, int(st.st_atime), int(st.st_mtime), int(st.st_ctime)))
+        state["fstats"] += 1
+        if state["fstats"] == nth + 1:  # the open's type check, then the size: change the file after answering
+            if race == "grown":
+                with open(target, "ab") as f:
+                    f.write(b" " * 64)
+            else:
+                os.truncate(target, 0 if race == "truncated-to-0" else len(before) - 1)
+        return st
+
+    with monkeypatch.context() as m:
+        if race.startswith("replaced"):
+            m.setattr(os, "open", open_)
+        else:
+            m.setattr(os, "fstat", fstat)
+        try:
+            got: object = _validate(exp, src) if helper == "validate" else _race_read(cf, d, helper, pin)
+        except cf.ShardError as e:
+            got = e
+    refused = {"truncated-to-0": "short read", "truncated-one-short": "short read",
+               "fstat-over-cap": f"{SMALL_FILE_CAP + 1:,} bytes exceeds the {SMALL_FILE_CAP:,}-byte limit"}.get(race)
+    if race.startswith("replaced"):
+        assert target.stat().st_ino != ino, "the replacement did not happen"
+    elif race != "fstat-over-cap":
+        assert target.stat().st_size != len(before), "the file did not change"
+    if helper == "validate":
+        if refused is None:
+            assert got["verdict"] == "PASS", got  # type: ignore[index]
+        else:
+            _refused(got, refused)  # type: ignore[arg-type]
+    elif refused is not None:
+        assert isinstance(got, cf.ShardError) and refused in str(got), got
+    else:
+        want = json.loads(before)["weight_map"] if helper == "Shards-index" else before
+        assert got == want, got
+
+
+# -- no library reads the source before its check -------------------------------------------------------------------------------
+LIBRARY_LOADS = ("from_pretrained", "from_config")
+STOOD_IN = {"AutoConfig.from_pretrained", "AutoTokenizer.from_pretrained", "AutoModelForCausalLM.from_pretrained",
+            "AutoModelForCausalLM.from_config", "safe_open"}
+
+
+def _library_calls(script: Path) -> list[tuple[int, str]]:
+    """Every library load ``script`` makes, found by parsing it: each call of a from_pretrained or from_config attribute
+    (named by its owner: AutoConfig.from_pretrained, transformers.AutoTokenizer.from_pretrained as
+    AutoTokenizer.from_pretrained) and each safe_open call (the generated list, never a hand-kept one)."""
+    calls = []
+    for node in ast.walk(ast.parse(script.read_text())):
+        if not isinstance(node, ast.Call):
+            continue
+        f = node.func
+        if isinstance(f, ast.Attribute) and f.attr in LIBRARY_LOADS:
+            owner = f.value.attr if isinstance(f.value, ast.Attribute) else getattr(f.value, "id", "?")
+            calls.append((node.lineno, f"{owner}.{f.attr}"))
+        elif (isinstance(f, ast.Name) and f.id == "safe_open") or (isinstance(f, ast.Attribute) and f.attr == "safe_open"):
+            calls.append((node.lineno, "safe_open"))
+    return sorted(calls)
+
+
+LIBRARY_SCRIPTS = {"build": BUILD, "teacher": TEACHER}
+LIBRARY_CALLS = [(s, line, call) for s, path in LIBRARY_SCRIPTS.items() for line, call in _library_calls(path)]
+LIBRARY_MODES = {"build": ("gpu", "cpu-smoke"), "teacher": ("streamer", "main")}
+
+
+def test_every_library_load_is_stood_in() -> None:
+    """Each load the parse finds has a stand-in that reads by path and records the call; each script has some."""
+    assert {c for _, _, c in LIBRARY_CALLS} <= STOOD_IN, LIBRARY_CALLS
+    assert {s for s, _, _ in LIBRARY_CALLS} == set(LIBRARY_SCRIPTS), LIBRARY_CALLS
+
+
+def _library_run(script: str, mode: str, trees: Path, base: Path, linked: bool) -> tuple[dict, Path, str, set[str]]:
+    """``script`` in ``mode`` on a fresh source. ``linked``: config.json and tokenizer_config.json are links to outside
+    copies whose bytes equal the pins, so only the link refusal can stop the run."""
+    base.mkdir()
+    outs: set[str] = set()
+
+    def link(src: Path) -> None:
+        for name in ("config.json", "tokenizer_config.json"):
+            o = base / f"outside-{name}"
+            shutil.copyfile(src / name, o)
+            _link_into(src, name, o)
+            outs.add(str(o))
+
+    mutate = link if linked else None
+    if script == "build":
+        res, src, _ = _build(trees, base, mutate, argv=("--cpu-smoke",) if mode == "cpu-smoke" else ())
+        return res, src, "QUANT-OK", outs
+    if mode == "streamer":
+        res, src = _teacher(trees, base, mutate)
+        return res, src, "TEACHER-STREAMER-OK", outs
+    res, src = _teacher_main(trees, base, mutate)
+    return res, src, "TEACHER-FAILED: 0 held-out prompts, expected 64", outs
+
+
+@pytest.mark.parametrize(("script", "line", "call"), LIBRARY_CALLS, ids=[f"{s}-{c}-line{n}" for s, n, c in LIBRARY_CALLS])
+def test_no_library_reads_the_source_before_its_check(ripple_trees: Path, tmp_path: Path, script: str, line: int,
+                                                      call: str) -> None:
+    """One case per library load of the build and the teacher (its main() and Streamer). On a clean source the load is
+    made, after read_source returned, on the checked source (or on the CPU rehearsal's tiny checkpoint, written from the
+    checked bytes). With config.json and tokenizer_config.json linked to outside copies matching the pins, the run is
+    refused at config.json and no library call is recorded at all: none ran before the refusal, and no outside file was
+    opened."""
+    made = []
+    for mode in LIBRARY_MODES[script]:
+        res, src, ok, _ = _library_run(script, mode, ripple_trees, tmp_path / f"{mode}-clean", False)
+        assert ok in res["out"], res["out"]
+        root = os.path.realpath(src)
+        assert res["checked"] == [root] and res["lib"], res
+        assert all(e["after_check"] for e in res["lib"]), res["lib"]
+        for e in res["lib"]:  # the checked source (a shard of it, for safe_open) or the tiny checkpoint written from it
+            where = e["root_resolved"]
+            assert root in (where, os.path.dirname(where)) or where.endswith("/tiny-src") \
+                or where.startswith("/dev/fd/"), e  # macOS: a /dev/fd path does not resolve to the file
+        made += [e for e in res["lib"] if e["call"] == call]
+        res, src, ok, outs = _library_run(script, mode, ripple_trees, tmp_path / f"{mode}-linked", True)
+        assert res["exit"] != 0 and ok not in res["out"], res["out"]
+        assert "/config.json: cannot open it in its directory" in res["out"], res["out"]
+        assert res["lib"] == [] and res["checked"] == [], res["lib"]
+        assert not outs & set(res["opened"]), res["opened"]
+    assert made, f"{call} (line {line}) never ran on a clean source"

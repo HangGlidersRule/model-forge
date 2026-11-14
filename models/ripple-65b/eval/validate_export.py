@@ -9,7 +9,9 @@ Checks (each failure is listed; any failure -> verdict FAIL, exit 1):
      same exclusions, kv_cache_quant_algo null). Every vLLM runtime prefix resolves to the planned algorithm under the
      modelopt_mixed rules of the nightly (eval/ripple_layout.py vllm_resolve: exact, packed-shard, exclusions).
   2. config.json architecture fields equal the source's (layer_types, sliding_window, embed_scale, use_valres,
-     ffn_clamp_threshold, gate flags and the rest of ripple_layout.ARCH_FIELDS).
+     ffn_clamp_threshold, gate flags and the rest of ripple_layout.ARCH_FIELDS), and its dtype is bfloat16: the dtype of
+     every tensor the export keeps unquantized, which the build restores from the exporter's config.json (the source's
+     config.json has none) and the staged product carries.
   3. Tensor inventory: every source tensor is accounted for; a quantized linear carries exactly its format's tensors
      with the right dtypes and shapes (NVFP4: U8 weight [out, in/2], F8_E4M3 weight_scale [out, in/16], F32 scalar
      weight_scale_2, plus F32 scalar input_scale for W4A4 only; FP8: F8_E4M3 weight [out, in], F32 scalar weight_scale
@@ -21,12 +23,14 @@ Checks (each failure is listed; any failure -> verdict FAIL, exit 1):
   6. Every tensor left in BF16 (embeddings, norms, value_res_lambda, and in C the attention linears) is byte-identical
      to the source; the remote code, chat template and tokenizer files are byte-identical to the source.
   7. generation_config.json, when the export ships one (the upstream has none at the pinned revision; transformers
-     writes it from the model config at export), carries config.json's bos, eos and pad token ids.
+     writes it from the model config at export), is a JSON object carrying config.json's bos, eos and pad token ids. A
+     file that is there is checked: an empty one, or one holding null, is refused, never taken for an absent one.
 Reads stay inside the two directories (eval/checkpoint_files.py): each directory is opened once and every file in it is
 opened relative to it with O_NOFOLLOW as a regular file, so a link is refused rather than followed. The index's shard
 names are plain .safetensors file names, the directory's .safetensors files are exactly the indexed shards, a header
-length above 100,000,000 bytes or past the end of its shard is refused before it is read, every tensor lies inside its
-shard, and tensor bytes are read through the shard's open descriptor, never by reopening its name. config.json,
+length above 100,000,000 bytes or past the end of its shard is refused before it is read, every header entry is
+well-formed, every tensor lies inside its shard and a shard's tensors cover its data exactly (the safetensors library's
+own rule), and tensor bytes are read through the shard's open descriptor, never by reopening its name. config.json,
 hf_quant_config.json, generation_config.json and the sidecars are read the same way in the export and the source.
 Usage: validate_export.py EXPORT_DIR SOURCE_DIR LETTER OUT_JSON [--num-layers N]
 Prints VALIDATE-OK <summary> or VALIDATE-FAILED <first errors>; writes OUT_JSON {"verdict": "PASS"|"FAIL", ...}."""
@@ -51,6 +55,7 @@ except ImportError:  # pragma: no cover - numpy is in both images
 
 DTYPE_BYTES = {"BF16": 2, "F16": 2, "F32": 4, "F64": 8, "U8": 1, "I8": 1, "F8_E4M3": 1, "I32": 4, "I64": 8}
 TOKEN_IDS = ("bos_token_id", "eos_token_id", "pad_token_id")
+EXPORT_DTYPE = "bfloat16"  # config.json's dtype: the unquantized tensors' (BF16 source); the staged product's
 
 
 class Checkpoint:
@@ -183,9 +188,11 @@ def _validate(ex_dir: cf.Directory, src_dir: cf.Directory, letter: str, num_laye
     for f in lay.ARCH_FIELDS:
         if f in src_cfg and cfg.get(f) != src_cfg[f]:
             errors.append(f"config.json {f} differs from the source ({str(cfg.get(f))[:60]} vs {str(src_cfg[f])[:60]})")
+    if cfg.get("dtype") != EXPORT_DTYPE:
+        errors.append(f"config.json dtype is {str(cfg.get('dtype'))[:60]!r}, not {EXPORT_DTYPE!r}")
 
     # ---- 7. generation_config.json token ids ---------------------------------------------------------------------------
-    if gen is not None:
+    if gen_raw is not None:
         if isinstance(gen, dict):
             gen_bad = [f"{k} {gen.get(k)!r} (config.json {cfg.get(k)!r})" for k in TOKEN_IDS if gen.get(k) != cfg.get(k)]
             notes["generation_config_token_ids"] = {k: gen.get(k) for k in TOKEN_IDS}
