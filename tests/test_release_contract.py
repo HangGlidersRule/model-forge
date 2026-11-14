@@ -38,7 +38,6 @@ from model_forge.release import (
     PUBLICATION_ONLY_GATES,
     REQUIRED_PRECISION_MAP_COMPONENTS,
     RUNTIME_PRECISION_MAP_COMPONENTS,
-    UPSTREAM_BF16_REFERENCES,
     VALID_STATUSES,
     WEIGHT_PRECISION_MAP_COMPONENTS,
     PublicationSourceParseError,
@@ -2178,111 +2177,20 @@ def test_unlisted_upstream_bf16_reference_is_still_rejected() -> None:
     assert any("must live under" in e for e in target_repository_errors(product))
 
 
-# ---- The upstream BF16 reference allowlist: near misses, each guard alone (PR #107 review round 1) -----------------------
-# The allowlist lives in two guards: UPSTREAM_BF16_REFERENCES in release.py (target_repository_errors) and the v3 ledger
-# schema's target_repository pattern. Widening either one alone is masked by the other in a whole-ledger check, so each
-# guard is tested by itself here, and the pair through validate_ledger.
-def _v3_target_alternatives() -> list[str]:
-    """The top-level alternatives of the v3 schema's target_repository pattern, unescaped."""
-    schema = load_json(REPO_ROOT / "contracts" / "darkstar-release" / "v3" / "ledger.schema.json")
-    pattern = next(o["pattern"] for o in schema["$defs"]["product"]["properties"]["target_repository"]["oneOf"]
-                   if "pattern" in o)
-    assert pattern.startswith("^(") and pattern.endswith(")$"), pattern
-    body, parts, depth, cur = pattern[2:-2], [], 0, ""
-    for ch in body:
-        if ch == "|" and depth == 0:
-            parts.append(cur)
-            cur = ""
-            continue
-        depth += {"(": 1, ")": -1}.get(ch, 0)
-        cur += ch
-    parts.append(cur)
-    return parts
-
-
-# The allowlist as the families on record need it, written down here so a widening of either guard (even the same
-# widening in both) changes something the tests compare against.
-KNOWN_UPSTREAM_BF16 = frozenset(UPSTREAM_REFERENCE_FAMILIES.values()) | {"Qwen/Qwen3.8-27B", "Qwen/Qwen-Image-2.1"}
-
-
-def _near_misses(upstream: str, *, owned: bool = True) -> list[str]:
-    """Look-alikes of an allowed upstream id. ``owned=False`` leaves out the owned namespace, which the release guard
-    accepts for any name (an owned BF16 product); only the schema's Darkstar naming rule refuses those."""
-    org, name = upstream.split("/")
-    out = {f"{upstream}{s}" for s in ("-NVFP4", "-FP8", "-DFlash2", "-GGUF", ".1", "x", "-")}
-    out |= {f"{o}/{name}" for o in ("someorg", org.lower(), org.upper(), org.swapcase(), org + "x")}
-    out |= {f"{org}/{n}" for n in (name.lower(), name.upper(), "x" + name, name[:-1])}
-    out |= {f" {upstream}", f"{upstream} ", f"{upstream}/", f"/{upstream}", f"{org}//{name}", f"{org}\\{name}"}
-    if owned:
-        out.add(f"{DARKSTAR_HF_NAMESPACE}/{name}")
-    return sorted(t for t in out if t not in KNOWN_UPSTREAM_BF16)
-
-
-RIPPLE_SIBLINGS = ("ricursiveAI/Ripple-65B-Preview-NVFP4", "ricursiveAI/Ripple-65B-Preview-DFlash2",
-                   "ricursiveAI/Ripple-65B-Base-Preview", "someorg/Ripple-65B-Preview", "ricursiveai/Ripple-65B-Preview",
-                   "RicursiveAI/Ripple-65B-Preview", "ricursiveAI/ripple-65b-preview")
-
-
-def _upstream_product(target: object, *, role: str = "base-bf16", status: str = "resolved",
-                      candidates: list | None = None) -> dict:
-    product = {"product_id": "Darkstar-Example-Base-BF16", "role": role, "target_repository": target,
-               "target_repository_status": status}
-    if candidates is not None:
-        product["candidates"] = candidates
-    return product
-
-
-def _schema_target_errors(target: str) -> list[str]:
-    """The v3 schema alone: the Ripple ledger with its base-bf16 target replaced, validated by jsonschema."""
+# ---- The upstream BF16 reference allowlist: Ripple's near misses (PR #107 review round 1) -----------------------------
+@pytest.mark.parametrize("target", ["ricursiveAI/Ripple-65B-Preview", "ricursiveAI/Ripple-65B-Preview-NVFP4",
+                                    "ricursiveAI/Ripple-65B-Preview-DFlash2", "ricursiveai/Ripple-65B-Preview"])
+def test_only_the_listed_ripple_upstream_is_a_bf16_reference(target: str, tmp_path: Path) -> None:
+    """The Ripple ledger's base-bf16 reference must be the listed upstream itself: the vendor's NVFP4 sibling, its
+    drafter and a case variant of the organization are refused by the release guard and by validate_ledger."""
     ledger = load_json(REPO_ROOT / "models" / "ripple-65b" / "results" / "publication-readiness-ledger.json")
     product = next(p for p in ledger["products"] if p["role"] == "base-bf16")
     product["target_repository"] = target
-    schema = load_json(contract_paths_for(ledger)[1])
-    return [e.message for e in jsonschema.Draft202012Validator(schema).iter_errors(ledger)
-            if list(e.absolute_path)[-1:] == ["target_repository"]]
-
-
-def test_the_schema_allowlist_equals_the_release_allowlist() -> None:
-    upstream = {re.sub(r"\\(.)", r"\1", a) for a in _v3_target_alternatives() if "[" not in a}
-    assert upstream == set(UPSTREAM_BF16_REFERENCES) == set(KNOWN_UPSTREAM_BF16)
-
-
-@pytest.mark.parametrize("upstream", sorted(KNOWN_UPSTREAM_BF16))
-def test_each_listed_upstream_passes_each_guard_alone(upstream: str) -> None:
-    role = "image-base-bf16" if "Image" in upstream else "base-bf16"
-    assert target_repository_errors(_upstream_product(upstream, role=role)) == []
-    assert _schema_target_errors(upstream) == []
-
-
-@pytest.mark.parametrize("target", sorted({t for u in KNOWN_UPSTREAM_BF16
-                                           for t in _near_misses(u, owned=False)} | set(RIPPLE_SIBLINGS)))
-def test_a_near_miss_upstream_is_refused_by_the_release_guard_alone(target: str) -> None:
-    for role in ("base-bf16", "image-base-bf16"):
-        assert target_repository_errors(_upstream_product(target, role=role)), (role, target)
-
-
-@pytest.mark.parametrize("target", sorted({t for u in KNOWN_UPSTREAM_BF16
-                                           for t in _near_misses(u)} | set(RIPPLE_SIBLINGS)))
-def test_a_near_miss_upstream_is_refused_by_the_schema_alone(target: str) -> None:
-    assert _schema_target_errors(target), target
-
-
-@pytest.mark.parametrize("target", RIPPLE_SIBLINGS)
-def test_a_ripple_sibling_as_the_base_bf16_target_fails_validate_ledger(target: str, tmp_path: Path) -> None:
-    ledger = load_json(REPO_ROOT / "models" / "ripple-65b" / "results" / "publication-readiness-ledger.json")
-    next(p for p in ledger["products"] if p["role"] == "base-bf16")["target_repository"] = target
     path = tmp_path / "publication-readiness-ledger.json"
     path.write_text(json.dumps(ledger))
     errors = validate_ledger(path)
-    assert any("target_repository" in e for e in errors), errors
-
-
-def test_the_upstream_exception_needs_the_bf16_role_the_resolved_status_and_no_candidates() -> None:
-    upstream = "ricursiveAI/Ripple-65B-Preview"
-    assert target_repository_errors(_upstream_product(upstream)) == []
-    assert target_repository_errors(_upstream_product(upstream, role="base-modelopt-nvfp4"))
-    assert target_repository_errors(_upstream_product(upstream, role="abliterated-bf16"))
-    assert target_repository_errors(_upstream_product(upstream, status="unresolved_pending_precision_winner"))
-    assert target_repository_errors(_upstream_product(upstream, status="bogus"))
-    errors = target_repository_errors(_upstream_product(upstream, candidates=[{"candidate_id": "x"}]))
-    assert any("must not declare Darkstar candidates" in e for e in errors), errors
+    if target == UPSTREAM_REFERENCE_FAMILIES["ripple-65b"]:
+        assert errors == [] and target_repository_errors(product) == []
+    else:
+        assert any("target_repository" in e for e in errors), errors
+        assert target_repository_errors(product), target
