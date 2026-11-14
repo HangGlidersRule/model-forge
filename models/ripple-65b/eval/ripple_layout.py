@@ -32,16 +32,24 @@ RECIPES = {
 }
 LM_HEAD_RECIPE = ("lm_head_w4a16_nvfp4_mse.yaml", "123e4e99af9634a16d5b6c467e8341ad6c0e72b93038f94fc2181b79f61e74f6")
 
-# Remote code, chat template and vocabulary files pinned on the issue (byte-identical in the vendor NVFP4 repo), in
-# sha256sum format.
+# Every file the build and the BF16 teacher read from the source by name, in sha256sum format. The remote code, chat
+# template and tokenizer.json were pinned on the issue (byte-identical in the vendor NVFP4 repo). tokenizer_config.json,
+# special_tokens_map.json, LICENSE and config.json were pinned in review round 1 of the record PR: each sha256 computed
+# from the model store's copy of SOURCE_REV and equal to that copy's SHA256SUMS.upstream line and to the bytes the
+# Hugging Face API serves at SOURCE_REV.
 SOURCE_FILE_SUMS = """\
 f83865ef643e273a6c9aecf1575e85c95ad01fd995b1e43c3c7a892765006bb3  modeling_ricursive.py
 002cb3915be9685eb962d617623bec14d45b5d6b5d46e689fac98a3b38cb6cf6  configuration_ricursive.py
 877c2dbf365243dda14738ca250b31398059b35ffd91d4ed0ec68be45ca6ebd3  chat_template.jinja
 73fd5254624f39a88e3faac6a8e11300fc3c735ed37880d4f4f08db898eaecca  tokenizer.json
+dbd4722605382159a16f2cf5779f4a8b29c51d8b397d2a05c099c90eeacfe771  tokenizer_config.json
+3f7cd7d0cfb20f9faa47c75fd4df91b1c9a78aef0be27ded12cb705b23951341  special_tokens_map.json
+58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd  LICENSE
+9a5654b256ead01855f0d74cf7a70fa65294267e6b7b754b5e5737457a45e14a  config.json
 """
 SOURCE_FILE_PINS = {line.split()[1]: line.split()[0] for line in SOURCE_FILE_SUMS.splitlines()}
 # Files the export must carry byte-identical from the source (the exporter writes config.json and the quant config).
+# Each is pinned above.
 COPIED_FILES = ("modeling_ricursive.py", "configuration_ricursive.py", "chat_template.jinja", "tokenizer.json",
                 "tokenizer_config.json", "special_tokens_map.json", "LICENSE")
 

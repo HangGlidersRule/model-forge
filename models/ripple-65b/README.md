@@ -24,6 +24,7 @@ same window, same image and flags, one RTX PRO 6000 Blackwell at 450 W.
 | Measure | A | Basis |
 |---|---|---|
 | GPQA Diamond | 138 and 139 of 198 (mean 138.5) against 142 and 139 of 198 (mean 140.5) | two runs each, 65,536-token cap, full denominator; bar: the vendor's mean − 11.88: PASS |
+| GPQA items without an answer at the cap | 42 and 48 of A's, 42 and 38 of the vendor's (59 and 57 / 50 and 49 responses hit the cap) | counted as wrong; a response that hit the cap with an answer is scored |
 | Tool-call parse rate | 0.996 (vendor 0.998) | 500 items (BFCL v3 AST 400, synthetic terminal and file-edit 100); bar: − 2 points: PASS |
 | Tool-call task success | 0.922 (vendor 0.920) | bar: 0.98 × the vendor's: PASS |
 | Next-token KL to the BF16 teacher | 0.0371 (vendor 0.0290; 1.28x, 95% CI of the difference +0.0064 to +0.0099) | tracked, not gated |
@@ -61,16 +62,18 @@ Every number above and on the cards is generated from these files by
 - `results/proxy-<cell>.json`: the tool-call proxy summaries; [`results/proxy-record.json`](results/proxy-record.json)
   pins its inputs.
 - `results/speed/*.json`: the speed grid, eight serves ([`eval/speed_grid.py`](eval/speed_grid.py)).
-- [`results/serve-runs.json`](results/serve-runs.json): per serve, the engine settings, memory, kernels and GPU power
-  read from its log ([`eval/curate_window.py`](eval/curate_window.py)).
+- [`results/serve-runs.json`](results/serve-runs.json): per serve, the engine settings, memory, kernels, GPU power and
+  the serve's own arguments (context, sequences, memory fraction, parsers, auto tool choice, speculative config) read
+  from its log ([`eval/curate_window.py`](eval/curate_window.py)).
 - [`results/build-A.json`](results/build-A.json), [`results/validation-A.json`](results/validation-A.json): the build and
   the export validator; `results/build-A-smoke.json`, `results/validation-A-smoke.json` and `results/smoke-A*.json`: the
   8-row smoke.
 - [`results/checkpoint-sizes.json`](results/checkpoint-sizes.json): bytes per tensor category of A, the vendor NVFP4, BF16
   and the drafter, from the safetensors headers ([`eval/checkpoint_sizes.py`](eval/checkpoint_sizes.py)).
 - [`results/calibration-record.json`](results/calibration-record.json): the calibration and held-out row lists.
-- [`results/staging-receipt.json`](results/staging-receipt.json): the private upload, its clean download and the boot
-  smoke of that download ([`eval/curate_clean_boot.py`](eval/curate_clean_boot.py));
+- [`results/staging-receipt.json`](results/staging-receipt.json): the private upload, its card commits
+  ([`eval/record_card_commit.py`](eval/record_card_commit.py)), its clean download and the boot smoke of that download
+  ([`eval/curate_clean_boot.py`](eval/curate_clean_boot.py));
   `results/clean-boot-<mode>.json`: the boot smoke's checks, plain and with DFlash2.
 - [`results/publication-readiness-ledger.json`](results/publication-readiness-ledger.json): the release ledger
   (contract 3.1.0), written by [`eval/build_ledger.py`](eval/build_ledger.py).
@@ -104,12 +107,16 @@ Enabled quantizers after both stages: A 1,281, B 1,041, C 481.
   data-free `lm_head` stage 2 packed inside the streaming export, quantizer census, `MIXED_PRECISION` quant config).
 - `eval/validate_export.py` and `eval/validate_selftest.py`: the fail-closed export validator and its planted-fault
   self-test; `eval/vllm_offline_probe.py`: the runtime resolution check with the config classes of vLLM itself.
+- `eval/checkpoint_files.py`: how the build, the validator, the size report and the BF16 teacher read a checkpoint
+  directory: one plain file name per indexed shard, exactly the indexed `.safetensors` files, every file opened inside
+  its directory without following a link and read through that open file, safetensors headers capped at 100,000,000
+  bytes and at the file's size, and every file the build reads by name checked against its sha256 pin.
 - `eval/bf16_teacher_cpu.py`: the BF16 teacher (FP32 on CPU, layer by layer) for KL and top-1.
 - `eval/serve_checks.py`, `eval/speed_grid.py`, `eval/gate_ripple39.py`: serve smoke and KL collection, the speed grid,
   and the bars and selection rule.
-- `eval/curate_gpqa_ripple.py`, `eval/curate_window.py`, `eval/curate_clean_boot.py`, `eval/checkpoint_sizes.py`,
-  `eval/runtime_check.py`, `eval/build_gate_summary.py`, `eval/check_card_numbers.py`, `eval/build_ledger.py`: the
-  record's curation, evidence, card-number and ledger builders.
+- `eval/curate_gpqa_ripple.py`, `eval/curate_window.py`, `eval/curate_clean_boot.py`, `eval/record_card_commit.py`,
+  `eval/checkpoint_sizes.py`, `eval/runtime_check.py`, `eval/build_gate_summary.py`, `eval/check_card_numbers.py`,
+  `eval/build_ledger.py`: the record's curation, evidence, card-number and ledger builders.
 - `eval/ripple_layout.py`: candidate layouts and pins shared by every script, tested in
   `tests/test_ripple_65b_kit.py`.
 - The window ran these scripts at kit commit `ca79435`. Since then `eval/tasks_synthetic.py` and

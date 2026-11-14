@@ -20,13 +20,18 @@ token count and span_start per prompt, and "heldout_sha256".
 Resume: the hidden states after every 4th layer go to WORK/state.pt (atomic rename) with the layer index; a restart
 with the same inputs continues from there. Progress: WORK/progress.json after every layer (layer, seconds per layer,
 ETA). Usage (PTQ image, CPU): bf16_teacher_cpu.py SOURCE_DIR HELDOUT_JSONL OUT_JSON WORK_DIR [THREADS]
-Prints TEACHER-KNOWN-ANSWER-OK, then TEACHER-OK when OUT_JSON is written."""
+Prints TEACHER-KNOWN-ANSWER-OK, then TEACHER-OK when OUT_JSON is written.
+Source reads (eval/checkpoint_files.py, review round 1 of the record PR; the computation is unchanged): before any
+library reads SOURCE_DIR, a link or a special file anywhere in it is refused, every file read by name (config, remote
+code, tokenizer files) must equal its sha256 pin (eval/ripple_layout.py SOURCE_FILE_PINS), and the index's shards are
+opened once inside the directory (plain shard names, exactly the indexed .safetensors files, header lengths bounded);
+safe_open then reads each shard through its open descriptor. The KL run's teacher output came from this file at sha256
+1dd863a7..., before that change."""
 
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -34,8 +39,10 @@ from pathlib import Path
 import torch
 from safetensors import safe_open
 
-MODELING_SHA256 = "f83865ef643e273a6c9aecf1575e85c95ad01fd995b1e43c3c7a892765006bb3"
-CONFIGURATION_SHA256 = "002cb3915be9685eb962d617623bec14d45b5d6b5d46e689fac98a3b38cb6cf6"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import checkpoint_files as cf  # noqa: E402
+import ripple_layout as lay  # noqa: E402
+
 KNOWN = [("The capital of France is", " Paris"), ("The chemical symbol for gold is", " Au")]
 TOP_K = 20
 SAVE_EVERY = 4
@@ -52,25 +59,28 @@ def sha(path: Path) -> str:
 
 class Streamer:
     def __init__(self, src: Path):
-        from transformers import AutoConfig, AutoModelForCausalLM
+        from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
-        for name, want in (("modeling_ricursive.py", MODELING_SHA256), ("configuration_ricursive.py",
-                                                                        CONFIGURATION_SHA256)):
-            if sha(src / name) != want:
-                raise SystemExit(f"TEACHER-FAILED: {name} is not the pinned remote code")
+        # Confined, pinned reads before any library reads the source by path (module docstring).
+        try:
+            cf.read_source(src, lay.SOURCE_FILE_PINS)
+            self.shards = cf.Shards(src)
+            self.idx = {name: t[0] for name, t in self.shards.tensors().items()}
+        except cf.ShardError as e:
+            raise SystemExit(f"TEACHER-FAILED: {e}") from None
         self.src = src
+        self.tok = AutoTokenizer.from_pretrained(src)
         self.cfg = AutoConfig.from_pretrained(src, trust_remote_code=True)
         with torch.device("meta"):
             shell = AutoModelForCausalLM.from_config(self.cfg, trust_remote_code=True, dtype=torch.float32)
         self.mod = sys.modules[type(shell).__module__]
         del shell
-        self.idx = json.loads((src / "model.safetensors.index.json").read_text())["weight_map"]
         self.handles: dict = {}
 
     def get(self, key: str) -> torch.Tensor:
         f = self.idx[key]
         if f not in self.handles:
-            self.handles[f] = safe_open(str(self.src / f), "pt")
+            self.handles[f] = safe_open(self.shards.path(f), "pt")
         return self.handles[f].get_tensor(key).float()
 
     def layer(self, i: int):
@@ -128,13 +138,12 @@ def main() -> None:
     threads = int(sys.argv[5]) if len(sys.argv) > 5 else 32
     torch.set_num_threads(threads)
     work.mkdir(parents=True, exist_ok=True)
-    from transformers import AutoTokenizer
 
     import transformers
 
     t0 = time.time()
-    tok = AutoTokenizer.from_pretrained(src)
     s = Streamer(src)
+    tok = s.tok
     held_bytes = held_path.read_bytes()
     held_sha = hashlib.sha256(held_bytes).hexdigest()
     prompts = [json.loads(line) for line in held_bytes.split(b"\n") if line.strip()]

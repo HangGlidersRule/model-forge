@@ -2,11 +2,12 @@
 """Check every number on the Ripple-65B Preview cards and family README against the committed results (fails closed).
 
 Every number is built from results/gate-summary.json (its card_strings and figures, themselves computed by
-eval/build_gate_summary.py from the window's result files), results/runtime-check.json and results/checkpoint-sizes.json;
-none is typed here. The README's boot-smoke sentence is required, and accepted, only while results/staging-receipt.json
-records the passed smoke it states (both modes, the measured image, no fatal log line). Each document must
-contain each of its strings verbatim after whitespace runs (line wraps included)
-are collapsed to one space. The staged Hugging Face card must equal the source card apart from its absolute links.
+eval/build_gate_summary.py from the window's result files), results/runtime-check.json, results/checkpoint-sizes.json
+and results/serve-runs.json (the serve block's flags, as every measured serve of A logged them); none is typed here.
+The README's boot-smoke sentence is required, and accepted, only while results/staging-receipt.json records the passed
+smoke it states (both modes, the measured image, no fatal log line). Each document must contain each of its strings
+verbatim after whitespace runs (line wraps included) are collapsed to one space. The staged Hugging Face card must equal
+the source card apart from its absolute links.
 Run from the repository root. Usage: check_card_numbers.py
 """
 
@@ -37,7 +38,10 @@ def x(v: float) -> str:
 
 
 kv = g["memory"]["kv_cache_tokens"]
-card_expect = [cs[k] for k in cs if k not in ("power", "vllm", "size_vendor")] + [
+card_expect = [cs[k] for k in cs if k not in ("power", "vllm", "size_vendor", "gpqa_trunc", "gpqa_trunc_row",
+                                               "gpqa_scoring")] + [
+    f"| {cs['gpqa_trunc_row']} | {cs['gpqa_trunc']} | counted as wrong;",
+    f"two runs per cell. {cs['gpqa_scoring']}.",
     f"power limit {cs['power']}",
     f"vLLM nightly `{cs['vllm']}`",
     f"batch-1 decode runs {x(sp['decode_b1']['ratio_of_means'])}, batch-8 decode {x(sp['decode_b8']['ratio_of_means'])}, "
@@ -59,6 +63,21 @@ card_expect = [cs[k] for k in cs if k not in ("power", "vllm", "size_vendor")] +
 runs = json.loads((R / "serve-runs.json").read_text())
 a_runs = [v for k, v in runs["speed"].items() if k.startswith("A-")] + [runs["quality"]["A"]]
 assert all(r["quantization"] == "modelopt_mixed" and r["kv_cache_dtype"] == "auto" for r in a_runs)
+# The card's serve flags are the ones every measured serve of A ran with, as each serve's log records them
+# (serve-runs.json serve_args, written by eval/curate_window.py from the logs).
+flags = {"max_model_len": "--max-model-len {}", "max_num_seqs": "--max-num-seqs {}",
+         "gpu_memory_utilization": "--gpu-memory-utilization {}", "reasoning_parser": "--reasoning-parser {}",
+         "tool_call_parser": "--tool-call-parser {}"}
+for key, flag in flags.items():
+    values = {json.dumps(r["serve_args"][key]) for r in a_runs}
+    assert len(values) == 1, (key, values)
+    card_expect.append(flag.format(a_runs[0]["serve_args"][key]))
+assert all(r["serve_args"]["enable_auto_tool_choice"] is True for r in a_runs)
+card_expect.append("--enable-auto-tool-choice")
+spec = {json.dumps(r["serve_args"]["speculative_config"]["num_speculative_tokens"]) for r in a_runs
+        if r["serve_args"]["speculative_config"]}
+assert len(spec) == 1
+card_expect.append(f'"num_speculative_tokens":{spec.pop()}')
 if all(r["enable_prefix_caching"] for r in a_runs):
     card_expect.append("Prefix caching is on (vLLM's default for this model)")
 kernels = set().union(*(set(r["kernels"]) for r in a_runs))
@@ -74,6 +93,8 @@ if not rt["release_docker_image_exists"]:
     card_expect.append("but no Docker image has been published for that tag yet")
 readme_expect = [cs[k] for k in ("gpqa_a", "gpqa_vendor", "proxy_parse", "proxy_success", "kl", "decode_b1", "decode_b8",
                                  "ttft_16k", "dflash_b1", "dflash_accept", "size", "kv_pool", "validation")] + [
+    f"| GPQA items without an answer at the cap | {cs['gpqa_trunc']} | counted as wrong; a response that hit the cap "
+    "with an answer is scored |",
     f"vLLM nightly `{cs['vllm']}`",
     f"The `{rt['release_tag']}` git tag (`{rt['release_tag_commit'][:7]}`) contains it",
     f"The vendor reports GPQA Diamond {g['vendor_reported_bf16_gpqa_diamond']['value']} for BF16 (vendor-reported",

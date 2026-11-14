@@ -147,8 +147,8 @@ def make_export(d: Path, src_t: dict, letter: str, rng: random.Random) -> None:
 
 
 def edit_tensors(d: Path, fn) -> None:
-    ck = ve.Checkpoint(d)
-    t = {n: (meta[3], meta[4], ck.raw(n)) for n, meta in ck.tensors.items()}
+    with ve.Checkpoint(d) as ck:
+        t = {n: (meta[3], meta[4], ck.raw(n)) for n, meta in ck.tensors.items()}
     fn(t)
     write_safetensors(d / "model.safetensors", t)
 

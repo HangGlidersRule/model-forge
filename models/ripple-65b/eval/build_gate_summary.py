@@ -24,6 +24,15 @@ SOURCE = "ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303c
 DRAFTER = "ricursiveAI/Ripple-65B-Preview-DFlash2@35609b3be3dd08a822b3ba1257c1ea5dd6f87632"
 IMAGE = "vllm/vllm-openai@sha256:902b49de0568ba5a5c951b0243bc06ef8541f46bc3eb80832961fefb22a19034"
 VENDOR_BF16_GPQA = 85.2  # vendor-reported (their harness, BF16), quoted from the upstream card; not measured here
+# The upstream license at SOURCE's revision, as its card declares it: HfApi().model_info("ricursiveAI/Ripple-65B-Preview",
+# revision="240d5966cbe00f0627c699e59ef58560b60303cf").card_data gives license "apache-2.0" with no license_name or
+# license_link; the LICENSE file at that revision (sha256 58d1e17f..., pinned in eval/ripple_layout.py) is the Apache
+# License 2.0 text, and the product ships it byte-identical (the export validator checks it).
+SOURCE_LICENSE = {"license": "apache-2.0", "license_name": None, "license_link": None,
+                  "license_file": "LICENSE", "license_file_sha256":
+                      "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+                  "read_from": "the upstream card's front matter at the pinned revision (HfApi().model_info(repo, "
+                               "revision=sha).card_data)"}
 
 
 def load(name: str) -> dict:
@@ -53,6 +62,15 @@ def main() -> int:
     mean = {c: sum(v) / 2 for c, v in corr.items()}
     assert mean["A"] == ga["gpqa"]["candidate_mean"] and mean["vendor"] == ga["gpqa"]["vendor_mean"]
     trunc = {c: [g["accuracy"]["truncated_no_answer"] for g in gpqa[c]] for c in gpqa}
+    # Responses that hit the 65,536-token cap: the bench's hit_max_tokens, which equals finish_reasons.length. Of those,
+    # truncated_no_answer have no extractable answer (scored wrong); the rest still carry an answer and are scored.
+    capped = {c: [g["accuracy"]["hit_max_tokens"] for g in gpqa[c]] for c in gpqa}
+    for c in gpqa:
+        for g, n_capped, n_none in zip(gpqa[c], capped[c], trunc[c]):
+            assert g["finish_reasons"]["length"] == n_capped and 0 <= n_none <= n_capped, (c, g["run"])
+    # gate.json keeps per-run counts for the vendor's runs; they must be the curated runs' own
+    assert capped["vendor"] == [r["hit_max_tokens"] for r in gate["vendor"]["gpqa_runs"]]
+    assert trunc["vendor"] == [r["truncated_no_answer"] for r in gate["vendor"]["gpqa_runs"]]
     reasoning = {c: [g["items_with_reasoning_block"] for g in gpqa[c]] for c in gpqa}
 
     # proxy
@@ -97,8 +115,12 @@ def main() -> int:
         "gpqa_bar": f"bar: at least the vendor's mean − {0.06 * 198:.2f}",
         "gpqa_boot": f"paired bootstrap 95% CI of (A − vendor) {ga['gpqa']['bootstrap95_questions'][0]:+.1f} to "
                      f"{ga['gpqa']['bootstrap95_questions'][1]:+.1f} questions",
-        "gpqa_trunc": f"{trunc['A'][0]} and {trunc['A'][1]} of A's items, {trunc['vendor'][0]} and {trunc['vendor'][1]} "
-                      "of the vendor's",
+        "gpqa_trunc": f"{trunc['A'][0]} and {trunc['A'][1]} of A's, {trunc['vendor'][0]} and {trunc['vendor'][1]} of "
+                      f"the vendor's ({capped['A'][0]} and {capped['A'][1]} / {capped['vendor'][0]} and "
+                      f"{capped['vendor'][1]} responses hit the cap)",
+        "gpqa_trunc_row": "Items without an answer at the 65,536-token cap",
+        "gpqa_scoring": "Unparseable items and items without an answer at the token cap count as wrong; a response "
+                        "that hit the cap with an answer is scored",
         "gpqa_reasoning": (f"a reasoning block on {min(reasoning['A'] + reasoning['vendor'])} of 198 items in every run of "
                            "both checkpoints"),
         "proxy_parse": f"{proxy['A']['overall']['parse_rate']:.3f} (vendor {proxy['vendor']['overall']['parse_rate']:.3f})",
@@ -155,7 +177,8 @@ def main() -> int:
     out = {
         "family": F,
         "product": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
-        "source": SOURCE, "vendor_reference": VENDOR, "drafter": DRAFTER, "image": IMAGE,
+        "source": SOURCE, "source_license": SOURCE_LICENSE, "vendor_reference": VENDOR, "drafter": DRAFTER,
+        "image": IMAGE,
         "vllm_version": versions[0],
         "vendor_reported_bf16_gpqa_diamond": {"value": VENDOR_BF16_GPQA,
                                               "note": "vendor-reported on the upstream card (BF16, the vendor's own "
@@ -163,7 +186,7 @@ def main() -> int:
         "gate": {"bars_pass": ga["passes_bars"], "speed_win": ga["speed_win"], "quality_win": ga["quality_win"],
                  "eligible": ga["eligible"], "ships": gate["ships"]},
         "gpqa": {"runs": corr, "means": mean, "bootstrap95_questions": ga["gpqa"]["bootstrap95_questions"],
-                 "bar_questions": round(0.06 * 198, 2), "truncated_no_answer": trunc,
+                 "bar_questions": round(0.06 * 198, 2), "truncated_no_answer": trunc, "hit_max_tokens": capped,
                  "items_with_reasoning_block": reasoning, "pass": ga["gpqa"]["pass"]},
         "proxy": {"A": proxy["A"]["overall"], "vendor": proxy["vendor"]["overall"], "bfcl_success": bfcl,
                   "synthetic_success": syn, "pass": ga["proxy"]["pass"]},

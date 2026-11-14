@@ -25,8 +25,8 @@
     {
      "id": "provenance_ownership",
      "status": "verified",
-     "evidence": "Source pinned to ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf (Apache-2.0)",
-     "evidence_path": "models/ripple-65b/results/calibration-record.json",
+     "evidence": "Source pinned to ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf (Apache-2.0: the license its card declares at that revision); unchanged upstream reference, not owned or republished",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
      "next_missing_proof": "none - gate satisfied"
     },
     {
@@ -126,8 +126,8 @@
     {
      "id": "provenance_ownership",
      "status": "verified",
-     "evidence": "Built from ricursiveAI/Ripple-65B-Preview@240d5966 BF16 (Apache-2.0); the vendor NVFP4 scored as the reference only, never a build input",
-     "evidence_path": "models/ripple-65b/results/calibration-record.json",
+     "evidence": "Built from ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf BF16 (Apache-2.0: the license its card declares at that revision; the product ships its LICENSE byte-identical); the vendor NVFP4 scored as the reference only, never a build input",
+     "evidence_path": "models/ripple-65b/results/gate-summary.json",
      "next_missing_proof": "none - gate satisfied"
     },
     {
@@ -140,7 +140,7 @@
     {
      "id": "recipe_edit_manifest",
      "status": "verified",
-     "evidence": "Schema-2 recipe; operator recipes sha256 624185c8... (decoder) and 123e4e99... (lm_head); ModelOpt 0.48.0 pin (wheel sha256 bfcfd425...)",
+     "evidence": "Schema-2 recipe; operator recipes sha256 624185c8... (decoder) and 123e4e99... (lm_head); ModelOpt 0.48.0 pinned at commit e2f328a1...",
      "evidence_path": "recipes/ripple-65b/darkstar-ripple-65b-preview-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
      "next_missing_proof": "none - gate satisfied"
     },
@@ -189,7 +189,7 @@
     {
      "id": "gpqa_matched_full_denominator",
      "status": "verified",
-     "evidence": "GPQA Diamond (198, 65,536-token cap; a reasoning block on 198 of 198 items in every run of both checkpoints), two runs: 138 and 139 of 198 (mean 138.5) against the vendor NVFP4's 142 and 139 of 198 (mean 140.5); bar: at least the vendor's mean \u2212 11.88: PASS; paired bootstrap 95% CI of (A \u2212 vendor) -11.5 to +7.5 questions. Full denominator; truncations 42 and 48 of A's items, 42 and 38 of the vendor's count as wrong. BF16 not servable on the 96 GB GPU; vendor-reported BF16 85.2 quoted only",
+     "evidence": "GPQA Diamond (198, 65,536-token cap; a reasoning block on 198 of 198 items in every run of both checkpoints), two runs: 138 and 139 of 198 (mean 138.5) against the vendor NVFP4's 142 and 139 of 198 (mean 140.5); bar: at least the vendor's mean \u2212 11.88: PASS; paired bootstrap 95% CI of (A \u2212 vendor) -11.5 to +7.5 questions. Full denominator; items without an answer at the cap, 42 and 48 of A's, 42 and 38 of the vendor's (59 and 57 / 50 and 49 responses hit the cap), count as wrong; a response that hit the cap with an answer is scored. BF16 not servable on the 96 GB GPU; vendor-reported BF16 85.2 quoted only",
      "evidence_path": "models/ripple-65b/results/gate-summary.json",
      "next_missing_proof": "none - gate satisfied"
     },
@@ -210,14 +210,14 @@
     {
      "id": "publication_targets_hf_ghcr",
      "status": "in_progress",
-     "evidence": "Private staging at HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8: weights @ 2de54e807ee5 (18 files, every LFS sha256 equal to the export's manifest), card @ 891ff96ffb40 (weights unchanged, all 18 manifest entries verified on the hub); public flip after the export PR merges and the tag exists",
+     "evidence": "Private staging at HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8: weights @ 2de54e807ee5 (18 files, every LFS sha256 equal to the export's manifest), card @ 0cce2e6148d0 (weights unchanged, all 18 manifest entries verified on the hub); public flip after the export PR merges and the tag exists",
      "evidence_path": "models/ripple-65b/results/staging-receipt.json",
      "next_missing_proof": "merge the export PR, tag, flip public"
     },
     {
      "id": "clean_download_boot_smoke",
      "status": "in_progress",
-     "evidence": "Clean download of the private repository @ 2de54e807ee5 verified (17/17 manifest entries byte-identical to the export, the validator passes on the downloaded bytes) and booted with the card's serve command on the measured image (2026-11-13): plain up in 318 s (KV pool 419,096 tokens), with DFlash2 in 316 s (272,872 tokens); in both, the known answers, a parsed tool call and the chat request (finish stop), 0 fatal log markers. The card commit 891ff96ffb40 has the same weights. Open until the public repository is downloaded after the flip: the gate attests the published artifact",
+     "evidence": "Clean download of the private repository @ 2de54e807ee5 verified (17/17 manifest entries byte-identical to the export, the validator passes on the downloaded bytes) and booted with the card's serve command on the measured image (2026-11-13): plain up in 318 s (KV pool 419,096 tokens), with DFlash2 in 316 s (272,872 tokens); in both, the known answers, a parsed tool call and the chat request (finish stop), 0 fatal log markers. The card commit 0cce2e6148d0 has the same weights. Open until the public repository is downloaded after the flip: the gate attests the published artifact",
      "evidence_path": "models/ripple-65b/results/staging-receipt.json",
      "next_missing_proof": "the clean download of the public repository after the flip"
     },

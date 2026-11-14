@@ -20,6 +20,14 @@ Checks (each failure is listed; any failure -> verdict FAIL, exit 1):
      identical.
   6. Every tensor left in BF16 (embeddings, norms, value_res_lambda, and in C the attention linears) is byte-identical
      to the source; the remote code, chat template and tokenizer files are byte-identical to the source.
+  7. generation_config.json, when the export ships one (the upstream has none at the pinned revision; transformers
+     writes it from the model config at export), carries config.json's bos, eos and pad token ids.
+Reads stay inside the two directories (eval/checkpoint_files.py): each directory is opened once and every file in it is
+opened relative to it with O_NOFOLLOW as a regular file, so a link is refused rather than followed. The index's shard
+names are plain .safetensors file names, the directory's .safetensors files are exactly the indexed shards, a header
+length above 100,000,000 bytes or past the end of its shard is refused before it is read, every tensor lies inside its
+shard, and tensor bytes are read through the shard's open descriptor, never by reopening its name. config.json,
+hf_quant_config.json, generation_config.json and the sidecars are read the same way in the export and the source.
 Usage: validate_export.py EXPORT_DIR SOURCE_DIR LETTER OUT_JSON [--num-layers N]
 Prints VALIDATE-OK <summary> or VALIDATE-FAILED <first errors>; writes OUT_JSON {"verdict": "PASS"|"FAIL", ...}."""
 
@@ -33,6 +41,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import checkpoint_files as cf  # noqa: E402
 import ripple_layout as lay  # noqa: E402
 
 try:
@@ -41,58 +50,41 @@ except ImportError:  # pragma: no cover - numpy is in both images
     np = None
 
 DTYPE_BYTES = {"BF16": 2, "F16": 2, "F32": 4, "F64": 8, "U8": 1, "I8": 1, "F8_E4M3": 1, "I32": 4, "I64": 8}
+TOKEN_IDS = ("bos_token_id", "eos_token_id", "pad_token_id")
 
 
 class Checkpoint:
-    """Tensor index of a safetensors checkpoint (single file or index.json shards)."""
+    """Tensor index of a safetensors checkpoint (single file or index.json shards): every shard opened once inside the
+    directory (checkpoint_files.Shards), every tensor read through its shard's open descriptor."""
 
-    def __init__(self, root: Path):
-        self.root = root
-        idx = root / "model.safetensors.index.json"
-        if idx.exists():
-            files = sorted(set(json.loads(idx.read_text())["weight_map"].values()))
-        elif (root / "model.safetensors").exists():
-            files = ["model.safetensors"]
-        else:
-            raise FileNotFoundError(f"{root}: no model.safetensors(.index.json)")
-        self.tensors: dict[str, tuple[Path, int, int, str, list[int]]] = {}
-        for f in files:
-            p = root / f
-            with open(p, "rb") as fh:
-                n = struct.unpack("<Q", fh.read(8))[0]
-                header = json.loads(fh.read(n))
-            base = 8 + n
-            for name, meta in header.items():
-                if name == "__metadata__":
-                    continue
-                if name in self.tensors:
-                    raise ValueError(f"{name} appears in two shards")
-                a, b = meta["data_offsets"]
-                self.tensors[name] = (p, base + a, b - a, meta["dtype"], list(meta["shape"]))
-        if idx.exists():
-            wm = json.loads(idx.read_text())["weight_map"]
-            if set(wm) != set(self.tensors):
-                raise ValueError("index.json weight_map does not match the shard headers")
+    def __init__(self, root: Path | cf.Directory):
+        self.shards = cf.Shards(root)
+        self.root = self.shards.root
+        try:
+            self.tensors: dict[str, tuple[str, int, int, str, list[int]]] = self.shards.tensors()
+        except BaseException:
+            self.shards.close()
+            raise
 
     def raw(self, name: str) -> bytes:
-        p, off, size, _, _ = self.tensors[name]
-        with open(p, "rb") as fh:
-            fh.seek(off)
-            return fh.read(size)
+        shard, off, size, _, _ = self.tensors[name]
+        return self.shards.pread(shard, off, size)
 
     def digest(self, name: str) -> str:
-        p, off, size, _, _ = self.tensors[name]
+        shard, off, size, _, _ = self.tensors[name]
         h = hashlib.sha256()
-        with open(p, "rb") as fh:
-            fh.seek(off)
-            left = size
-            while left:
-                b = fh.read(min(left, 1 << 24))
-                if not b:
-                    raise ValueError(f"{name}: short read")
-                h.update(b)
-                left -= len(b)
+        for start in range(0, size, cf.CHUNK):
+            h.update(self.shards.pread(shard, off + start, min(cf.CHUNK, size - start)))
         return h.hexdigest()
+
+    def close(self) -> None:
+        self.shards.close()
+
+    def __enter__(self) -> Checkpoint:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
 
 
 def f8_bad_counts(buf: bytes) -> tuple[int, int, int]:
@@ -107,21 +99,45 @@ def f8_bad_counts(buf: bytes) -> tuple[int, int, int]:
     return nan, neg, zero
 
 
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
 def validate(export: Path, source: Path, letter: str, num_layers: int | None = None) -> dict:
+    """Validate EXPORT against SOURCE as candidate LETTER. Both directories are opened once and read confined
+    (eval/checkpoint_files.py); a directory that cannot be opened fails the verdict."""
     lay.check_letter(letter)
+    try:
+        ex_dir = cf.Directory(export)
+    except cf.ShardError as e:
+        return {"verdict": "FAIL", "errors": [f"export directory: {e}"], "letter": letter}
+    try:
+        src_dir = cf.Directory(source)
+    except cf.ShardError as e:
+        ex_dir.close()
+        return {"verdict": "FAIL", "errors": [f"source directory: {e}"], "letter": letter}
+    try:
+        return _validate(ex_dir, src_dir, letter, num_layers)
+    finally:
+        ex_dir.close()
+        src_dir.close()
+
+
+def _validate(ex_dir: cf.Directory, src_dir: cf.Directory, letter: str, num_layers: int | None) -> dict:
     errors: list[str] = []
     notes: dict = {}
-    src_cfg = json.loads((source / "config.json").read_text())
+    # ---- 1. quantization config ---------------------------------------------------------------------------------------
+    try:
+        src_cfg = json.loads(src_dir.read("config.json"))
+        cfg = json.loads(ex_dir.read("config.json"))
+        hq = json.loads(ex_dir.read("hf_quant_config.json"))
+        gen_raw = ex_dir.read_optional("generation_config.json")
+        gen = json.loads(gen_raw) if gen_raw is not None else None
+    except (OSError, ValueError) as e:
+        return {"verdict": "FAIL", "errors": [f"config files unreadable: {e}"], "letter": letter}
     n_layers = num_layers or int(src_cfg["num_hidden_layers"])
     plan = lay.PLANS[letter]
     want_ql = lay.quantized_layers(letter, n_layers)
-
-    # ---- 1. quantization config ---------------------------------------------------------------------------------------
-    try:
-        cfg = json.loads((export / "config.json").read_text())
-        hq = json.loads((export / "hf_quant_config.json").read_text())
-    except (OSError, ValueError) as e:
-        return {"verdict": "FAIL", "errors": [f"config files unreadable: {e}"], "letter": letter}
     qc = cfg.get("quantization_config") or {}
     if qc.get("quant_method") != "modelopt":
         errors.append(f"config.json quantization_config.quant_method is {qc.get('quant_method')!r}, not 'modelopt'")
@@ -168,13 +184,37 @@ def validate(export: Path, source: Path, letter: str, num_layers: int | None = N
         if f in src_cfg and cfg.get(f) != src_cfg[f]:
             errors.append(f"config.json {f} differs from the source ({str(cfg.get(f))[:60]} vs {str(src_cfg[f])[:60]})")
 
+    # ---- 7. generation_config.json token ids ---------------------------------------------------------------------------
+    if gen is not None:
+        if isinstance(gen, dict):
+            gen_bad = [f"{k} {gen.get(k)!r} (config.json {cfg.get(k)!r})" for k in TOKEN_IDS if gen.get(k) != cfg.get(k)]
+            notes["generation_config_token_ids"] = {k: gen.get(k) for k in TOKEN_IDS}
+        else:
+            gen_bad = [f"not a JSON object: {str(gen)[:60]}"]
+        if gen_bad:
+            errors.append(f"generation_config.json token ids differ from config.json: {gen_bad}")
+
     # ---- 3-6. tensors ---------------------------------------------------------------------------------------------------
     try:
-        ex = Checkpoint(export)
-        sc = Checkpoint(source)
+        ex = Checkpoint(ex_dir)
     except (OSError, ValueError) as e:
         errors.append(f"checkpoint unreadable: {e}")
         return {"verdict": "FAIL", "errors": errors, "letter": letter}
+    try:
+        sc = Checkpoint(src_dir)
+    except (OSError, ValueError) as e:
+        ex.close()
+        errors.append(f"checkpoint unreadable: {e}")
+        return {"verdict": "FAIL", "errors": errors, "letter": letter}
+    try:
+        return _tensor_checks(ex, sc, ex_dir, src_dir, letter, n_layers, plan, want_ql, got_ql, errors, notes)
+    finally:
+        ex.close()
+        sc.close()
+
+
+def _tensor_checks(ex: Checkpoint, sc: Checkpoint, ex_dir: cf.Directory, src_dir: cf.Directory, letter: str,
+                   n_layers: int, plan: dict, want_ql: dict, got_ql: dict, errors: list[str], notes: dict) -> dict:
     quantized = set(want_ql)
     expected: dict[str, tuple[str, list[int]]] = {}
     bf16_same: list[str] = []
@@ -263,12 +303,18 @@ def validate(export: Path, source: Path, letter: str, num_layers: int | None = N
     notes["bf16_tensors_byte_identical"] = len(bf16_same) - len(diff_bf16)
     file_bad = []
     for f in lay.COPIED_FILES:
-        if (source / f).exists():
-            if not (export / f).exists():
-                file_bad.append(f"{f} missing")
-            elif hashlib.sha256((export / f).read_bytes()).hexdigest() != \
-                    hashlib.sha256((source / f).read_bytes()).hexdigest():
-                file_bad.append(f"{f} differs")
+        try:
+            src_bytes = src_dir.read_optional(f)
+            if src_bytes is None:
+                continue
+            ex_bytes = ex_dir.read_optional(f)
+        except cf.ShardError as e:
+            file_bad.append(str(e))
+            continue
+        if ex_bytes is None:
+            file_bad.append(f"{f} missing")
+        elif sha256(ex_bytes) != sha256(src_bytes):
+            file_bad.append(f"{f} differs")
     if file_bad:
         errors.append(f"source files not carried byte-identical: {file_bad}")
 

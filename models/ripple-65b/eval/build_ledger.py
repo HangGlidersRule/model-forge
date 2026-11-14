@@ -14,6 +14,7 @@ Usage: build_ledger.py [--published]
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -52,6 +53,26 @@ def precision(mlp: str, attn: str) -> dict:
 
 va = g["artifact_validation"]
 q = va["quantized_layers"]
+# Provenance: the source security@hangglidersrule.com and its license, read from gate-summary.json (build_gate_summary.py records the
+# license the upstream card declares at that revision), so the gates' text is recomputable from the file they cite.
+src_repo, _, src_rev = g["source"].partition("@")
+if (src_repo, src_rev) != (SRC_REPO, SRC_REV):
+    raise SystemExit(f"gate-summary.json source {g['source']} is not {SRC_REPO}@{SRC_REV}")
+src_license = g["source_license"]["license"]
+LICENSE_NAMES = {"apache-2.0": "Apache-2.0"}
+if src_license not in LICENSE_NAMES:
+    raise SystemExit(f"gate-summary.json: no display name for the source license {src_license!r}")
+lic = LICENSE_NAMES[src_license]
+# The schema-2 recipe the recipe_edit_manifest gate cites: every value its text quotes is read from it.
+recipe_text = Path(RECIPE).read_text()
+recipe_pins = {k: re.search(rf"^\s*{k}: (\S+)$", recipe_text, re.M) for k in
+               ("schema_version", "operator_recipe_sha256", "framework_version", "framework_pin_commit")}
+if not all(recipe_pins.values()):
+    raise SystemExit(f"{RECIPE}: missing {[k for k, m in recipe_pins.items() if not m]}")
+rp = {k: m.group(1).strip('"') for k, m in recipe_pins.items() if m}
+lm_pin = re.search(r"lm_head_w4a16_nvfp4_mse\.yaml \(sha256\s+#?\s*([0-9a-f]{64})\)", recipe_text.replace("\n#", ""))
+if not lm_pin:
+    raise SystemExit(f"{RECIPE}: no lm_head recipe sha256")
 up, cd, bs = st["upload"], st["clean_download"], st["boot_smoke"]
 if bs["status"] != "passed":
     raise SystemExit(f"staging-receipt.json: the boot smoke is {bs['status']!r}, not passed")
@@ -86,8 +107,9 @@ pub_gates = [
          f"models/{F}/README.md" if published else None, next="tag the merge commit"),
 ]
 quality = (f"GPQA Diamond (198, 65,536-token cap; {cs['gpqa_reasoning']}), two runs: {cs['gpqa_a']} against the vendor "
-           f"NVFP4's {cs['gpqa_vendor']}; {cs['gpqa_bar']}: PASS; {cs['gpqa_boot']}. Full denominator; truncations "
-           f"{cs['gpqa_trunc']} count as wrong. BF16 not servable on the 96 GB GPU; vendor-reported BF16 85.2 quoted only")
+           f"NVFP4's {cs['gpqa_vendor']}; {cs['gpqa_bar']}: PASS; {cs['gpqa_boot']}. Full denominator; items without an "
+           f"answer at the cap, {cs['gpqa_trunc']}, count as wrong; a response that hit the cap with an answer is scored. "
+           "BF16 not servable on the 96 GB GPU; vendor-reported BF16 85.2 quoted only")
 products = [
     {
         "product_id": "Darkstar-Ripple-65B-Preview-Base-BF16", "role": "base-bf16", "task": "chat",
@@ -98,7 +120,9 @@ products = [
         "served_model_alias": "darkstar-ripple65b-base-bf16", "runtime_container_name": "vllm-darkstar-ripple65b-base-bf16",
         "model_card": f"models/{F}/model-card/base-bf16.md", "recipe": None, "publication_claim": False,
         "gates": [
-            gate("provenance_ownership", "verified", f"Source pinned to {SRC_REPO}@{SRC_REV} (Apache-2.0)", CAL),
+            gate("provenance_ownership", "verified",
+                 f"Source pinned to {g['source']} ({lic}: the license its card declares at that revision); unchanged "
+                 "upstream reference, not owned or republished", GS),
             gate("performance_profile", "missing",
                  f"Not measured: BF16 ({cs['size_bf16']}) does not fit the single 96 GB GPU the family is measured on",
                  None, next="a BF16 serve on a larger GPU"),
@@ -143,14 +167,16 @@ products = [
         ],
         "gates": [
             gate("provenance_ownership", "verified",
-                 f"Built from {SRC_REPO}@{SRC_REV[:8]} BF16 (Apache-2.0); the vendor NVFP4 scored as the reference only, "
-                 "never a build input", CAL),
+                 f"Built from {g['source']} BF16 ({lic}: the license its card declares at that revision; the product "
+                 "ships its LICENSE byte-identical); the vendor NVFP4 scored as the reference only, never a build input",
+                 GS),
             gate("artifact_manifest", "verified",
                  f"manifest.sha256 over {up['manifest_entries']} files (sha256 {up['manifest_sha256'][:12]}...), written at "
                  "upload; every LFS sha256 on the hub equal to it", STG),
             gate("recipe_edit_manifest", "verified",
-                 "Schema-2 recipe; operator recipes sha256 624185c8... (decoder) and 123e4e99... (lm_head); ModelOpt 0.48.0 "
-                 "pin (wheel sha256 bfcfd425...)", RECIPE),
+                 f"Schema-{rp['schema_version'].split('.')[0]} recipe; operator recipes sha256 "
+                 f"{rp['operator_recipe_sha256'][:8]}... (decoder) and {lm_pin.group(1)[:8]}... (lm_head); ModelOpt "
+                 f"{rp['framework_version']} pinned at commit {rp['framework_pin_commit'][:8]}...", RECIPE),
             gate("artifact_validation", "verified",
                  f"Fail-closed validator PASS: {va['tensors']:,} tensors; {cs['validation_bf16']}; quant config "
                  "MIXED_PRECISION with one entry per linear in config.json and hf_quant_config.json; architecture fields "

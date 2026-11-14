@@ -451,11 +451,13 @@ build/
 !/models/ripple-65b/eval/build_gate_summary.py
 !/models/ripple-65b/eval/build_ledger.py
 !/models/ripple-65b/eval/check_card_numbers.py
+!/models/ripple-65b/eval/checkpoint_files.py
 !/models/ripple-65b/eval/checkpoint_sizes.py
 !/models/ripple-65b/eval/curate_clean_boot.py
 !/models/ripple-65b/eval/curate_gpqa_ripple.py
 !/models/ripple-65b/eval/curate_window.py
 !/models/ripple-65b/eval/gate_ripple39.py
+!/models/ripple-65b/eval/record_card_commit.py
 !/models/ripple-65b/eval/ripple_layout.py
 !/models/ripple-65b/eval/runtime_check.py
 !/models/ripple-65b/eval/serve_checks.py
@@ -704,6 +706,7 @@ build/
 !/tests/public_export/test_wheelhouse_bootstrap.py
 !/tests/relayout_symlink_race/
 !/tests/relayout_symlink_race/sitecustomize.py
+!/tests/ripple_stub_runner.py
 !/tests/support/
 !/tests/support/calib_cache_sitecustomize.py
 !/tests/support/shard_toctou_launch.py

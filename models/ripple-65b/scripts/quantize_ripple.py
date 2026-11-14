@@ -23,8 +23,14 @@ Path (posted pre-registration):
   census    enabled quantizers by kind/role/format must equal the candidate's plan (A 1,281, B 1,041, C 481).
   export    export_hf_checkpoint (ModelOpt's streaming writer for an offloaded model) into OUT.partial; then the
             source config.json is restored with the export's quantization_config (MIXED_PRECISION, one entry per
-            quantized linear) added, the remote code, template and tokenizer files are copied byte for byte, and
-            OUT.partial is renamed to OUT. eval/validate_export.py then checks it (the window runs it).
+            quantized linear) added, the remote code, template, tokenizer files and LICENSE are written from the bytes
+            read at the start, no link is left anywhere in OUT.partial, and it is renamed to OUT.
+            eval/validate_export.py then checks it (the window runs it).
+Source reads (eval/checkpoint_files.py): before anything reads the source, the build refuses a link or a special file
+anywhere in SOURCE_DIR (transformers, accelerate and ModelOpt read it by path), then reads config.json and every sidecar
+the export carries once, inside the directory with O_NOFOLLOW as regular files, each equal to its sha256 pin
+(eval/ripple_layout.py SOURCE_FILE_PINS). The export gets those bytes, written as new regular files (a link at a name is
+replaced, never followed); nothing is copied from the source by path.
 Writes OUT.build.json (pins, rows, token stats, per-layer seconds, peak GPU memory, quantizer census, timings).
 Usage (PTQ image, GPU): quantize_ripple.py LETTER SOURCE_DIR CALIB_JSONL OUT_DIR WORK_DIR [--rows N] [--gpu-gib G]
        [--cpu-gib C] [--save-every K]
@@ -43,9 +49,11 @@ import shutil
 import sys
 import time
 from pathlib import Path
+from typing import NoReturn
 
 FAMILY = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(FAMILY / "eval"))
+import checkpoint_files as cf  # noqa: E402
 import ripple_layout as lay  # noqa: E402
 
 ap = argparse.ArgumentParser()
@@ -71,7 +79,7 @@ def log(msg: str) -> None:
     print(f"[{time.time() - t0:7.0f}s] {msg}", flush=True)
 
 
-def fail(msg: str) -> None:
+def fail(msg: str) -> NoReturn:
     print(f"QUANT-FAILED: {msg}", flush=True)
     sys.exit(1)
 
@@ -106,6 +114,15 @@ lm_path = args.recipe_dir / lay.LM_HEAD_RECIPE[0]
 for p, want in ((recipe_path, recipe_pin), (lm_path, lay.LM_HEAD_RECIPE[1])):
     if sha(p) != want:
         fail(f"{p.name} sha256 {sha(p)} is not the pin {want}")
+# Source files: confined, pinned, read once, before anything is created or reads the source. No link or special file
+# anywhere in the source (the libraries below read it by path), and config.json plus every sidecar the export carries
+# read here, inside the directory without following a link, each equal to its pin. The export and the CPU rehearsal's
+# tiny checkpoint get these bytes; nothing is copied from the source by path.
+try:
+    src_files = cf.read_source(args.source, lay.SOURCE_FILE_PINS)
+except cf.ShardError as e:
+    fail(f"source checkpoint: {e}")
+sidecars = {f: src_files[f] for f in lay.COPIED_FILES}
 calib_bytes = args.calib.read_bytes()
 calib_sha = hashlib.sha256(calib_bytes).hexdigest()
 if not args.cpu_smoke and calib_sha != lay.CALIB_SHA256:
@@ -156,18 +173,16 @@ if args.cpu_smoke:
                 else:
                     p.normal_(0.0, 0.02)
         m0.to(torch.bfloat16).save_pretrained(tiny, safe_serialization=True)
-        for f in lay.COPIED_FILES:
-            if (src / f).exists():
-                shutil.copyfile(src / f, tiny / f)
+        cf.write_files(tiny, sidecars)
         del m0
     src = tiny
-
-cfg_src = json.loads((src / "config.json").read_text())
+    try:  # the tiny checkpoint's own config.json (2 layers), written above or by an earlier run
+        cfg_src = json.loads(cf.read_file(src, "config.json"))
+    except cf.ShardError as e:
+        fail(f"tiny checkpoint: {e}")
+else:
+    cfg_src = json.loads(src_files["config.json"])
 n_layers = int(cfg_src["num_hidden_layers"])
-if not args.cpu_smoke:
-    for f, want in lay.SOURCE_FILE_PINS.items():
-        if sha(src / f) != want:
-            fail(f"source {f} is not the pinned file")
 tok = AutoTokenizer.from_pretrained(src)
 DEV = "cpu" if args.cpu_smoke else "cuda"
 # Explicit device map (deterministic, and the same shape the CPU rehearsal runs): embeddings, final norm and lm_head
@@ -376,29 +391,24 @@ log(f"resident quantized linears outside the decoder layers packed inside the ex
 if lay.PLANS[letter]["lm_head"] and "lm_head" not in pre_packed:
     fail(f"lm_head is quantized in the plan ({lay.PLANS[letter]['lm_head']}) but was not packed: {pre_packed}")
 log(f"exported to {partial.name} in {time.time() - t_ex:.0f}s")
-qc = json.loads((partial / "config.json").read_text()).get("quantization_config")
-if not qc:
-    fail("the export's config.json has no quantization_config")
-shutil.copyfile(partial / "config.json", partial / "config.transformers5.json")
-exp_cfg = json.loads((partial / "config.json").read_text())
-new_cfg = {**cfg_src, "quantization_config": qc}
-if "dtype" in exp_cfg and "dtype" not in new_cfg:
-    new_cfg["dtype"] = exp_cfg["dtype"]
-(partial / "config.json").write_text(json.dumps(new_cfg, indent=2) + "\n")
-copied = []
-for f in lay.COPIED_FILES:
-    if (src / f).exists() and (not (partial / f).exists() or sha(partial / f) != sha(src / f)):
-        shutil.copyfile(src / f, partial / f)
-        copied.append(f)
+# The exporter's config.json is kept as config.transformers5.json; config.json becomes the source's plus the export's
+# quantization_config (and dtype); the sidecars are written from the pinned source bytes (eval/checkpoint_files.py).
+try:
+    copied, qc, hq = cf.restore_export_files(partial, cfg_src, sidecars)
+except cf.ShardError as e:
+    fail(f"export directory: {e}")
 # The NAS store's own metadata describes the BF16 source, not this export: drop it if the exporter copied it.
 dropped = [f for f in ("SHA256SUMS.upstream", "SOURCE_REVISION", "SUBSET") if (partial / f).exists()]
 for f in dropped:
     (partial / f).unlink()
-hq = json.loads((partial / "hf_quant_config.json").read_text())
+try:  # every file published is a regular file: no link left by the exporter or anything else
+    cf.refuse_links(partial)
+except cf.ShardError as e:
+    fail(f"export directory: {e}")
 log(f"store metadata not carried: {dropped}")
 log(f"config.json restored from the source + quantization_config ({qc.get('quant_algo')}, "
     f"{len(qc.get('quantized_layers') or {})} layers); hf_quant_config {hq['quantization'].get('quant_algo')}; "
-    f"copied from source: {copied}")
+    f"written from the pinned source bytes: {copied}")
 shutil.rmtree(args.out, ignore_errors=True)
 partial.rename(args.out)
 shutil.rmtree(ckpt_dir, ignore_errors=True)  # the export is complete; the calibration checkpoint is no longer needed

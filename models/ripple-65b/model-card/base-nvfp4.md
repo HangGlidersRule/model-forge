@@ -82,15 +82,16 @@ checkpoint's own modules run in FP32 on CPU, one layer at a time, over 64 held-o
 rows.
 
 GPQA Diamond: `llm-inference-bench` 0.4.29 `gpqa-diamond`, all 198 items, temperature 0, max 65,536 tokens,
-concurrency 30, two runs per cell. Unparseable and truncated items count as wrong. The bar was fixed before any
-candidate ran: the candidate's mean of two runs at least the vendor NVFP4's mean minus 11.88 questions (6% of 198).
+concurrency 30, two runs per cell. Unparseable items and items without an answer at the token cap count as wrong; a
+response that hit the cap with an answer is scored. The bar was fixed before any candidate ran: the candidate's mean of
+two runs at least the vendor NVFP4's mean minus 11.88 questions (6% of 198).
 
 | Metric | Value | Basis |
 |---|---|---|
 | GPQA Diamond | 138 and 139 of 198 (mean 138.5) | two runs; bar: at least the vendor's mean − 11.88: PASS |
 | GPQA Diamond, vendor NVFP4 | 142 and 139 of 198 (mean 140.5) | same harness, same window |
 | GPQA, A minus the vendor NVFP4 | paired bootstrap 95% CI of (A − vendor) -11.5 to +7.5 questions | items averaged over the two runs, 10,000 resamples |
-| GPQA truncations at 65,536 tokens | 42 and 48 of A's items, 42 and 38 of the vendor's | counted as wrong; a reasoning block on 198 of 198 items in every run of both checkpoints |
+| Items without an answer at the 65,536-token cap | 42 and 48 of A's, 42 and 38 of the vendor's (59 and 57 / 50 and 49 responses hit the cap) | counted as wrong; a reasoning block on 198 of 198 items in every run of both checkpoints |
 | Tool-call parse rate | 0.996 (vendor 0.998) | 500 items; bar: at least the vendor's − 2 points: PASS |
 | Tool-call task success | 0.922 (vendor 0.920) | bar: at least 0.98 × the vendor's: PASS |
 | Tool-call items | BFCL v3 AST 362/400 (vendor 360/400); terminal and file-edit tasks 99/100 (vendor 100/100) | BFCL's AST checker; synthetic tasks run in a sandbox |

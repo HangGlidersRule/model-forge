@@ -73,7 +73,7 @@
  "boot_smoke": {
   "status": "passed",
   "commit_booted": "2de54e807ee5881489f29be6a6807e56d77f247f",
-  "covers_card_commit": "891ff96ffb402210c20bef38a93ac2632635dcdd",
+  "covers_card_commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
   "booted_from": "the clean download above (the store copy fetched at the uploaded commit), read through a network mount",
   "run_utc": {
    "launched": "2026-11-13T12:35:49Z",
@@ -173,16 +173,25 @@
   "curated_by": "eval/curate_clean_boot.py"
  },
  "card_commit": {
-  "commit": "891ff96ffb402210c20bef38a93ac2632635dcdd",
+  "commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+  "parent_card_commit": "891ff96ffb402210c20bef38a93ac2632635dcdd",
   "parent_weights_commit": "2de54e807ee5881489f29be6a6807e56d77f247f",
   "changed_files": [
    "README.md",
    "manifest.sha256"
   ],
   "files_on_hub": 19,
-  "manifest_sha256": "2848804af9c85b16b297e5ac331a8ab097091ed28a92868fad59a8e9982b5542",
+  "manifest_sha256": "939f9c3f2e538ada71c349f30e78f5fd34a78278447c1b3515dedf1718878d9b",
   "manifest_entries_verified_on_hub": 18,
+  "readme_sha256": "44dd0bb01079bbff513d4e50ac96d14718be38d581990068affdf085c5aaa76f",
   "weights_identical_to_uploaded_commit": true,
-  "method": "hf_publish.py card (README.md and manifest.sha256 read back); then every hub file at the head checked against its manifest.sha256: the 5 shards by LFS sha256, the 13 small files by their downloaded bytes; shard LFS oids identical at both commits (hf_publish.py same-weights)"
+  "reason": "the card's GPQA row and protocol sentence (items without an answer at the token cap; review round 1)",
+  "method": "hf_publish.py card (README.md and manifest.sha256 read back); then every hub file at the head checked against its manifest.sha256 (the 5 shards by LFS sha256, the small files by their downloaded bytes), the shard LFS oids identical to the previous card commit and to the uploaded commit (hf_publish.py same-weights), and the hub README.md equal to the staged card",
+  "history": [
+   {
+    "commit": "891ff96ffb402210c20bef38a93ac2632635dcdd",
+    "manifest_sha256": "2848804af9c85b16b297e5ac331a8ab097091ed28a92868fad59a8e9982b5542"
+   }
+  ]
  }
 }

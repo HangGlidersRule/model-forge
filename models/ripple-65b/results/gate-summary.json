@@ -2,6 +2,14 @@
  "family": "ripple-65b",
  "product": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
  "source": "ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf",
+ "source_license": {
+  "license": "apache-2.0",
+  "license_name": null,
+  "license_link": null,
+  "license_file": "LICENSE",
+  "license_file_sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+  "read_from": "the upstream card's front matter at the pinned revision (HfApi().model_info(repo, revision=sha).card_data)"
+ },
  "vendor_reference": "ricursiveAI/Ripple-65B-Preview-NVFP4@99eea4477a001a41b86914e41feb4b2ed86105e5",
  "drafter": "ricursiveAI/Ripple-65B-Preview-DFlash2@35609b3be3dd08a822b3ba1257c1ea5dd6f87632",
  "image": "vllm/vllm-openai@sha256:902b49de0568ba5a5c951b0243bc06ef8541f46bc3eb80832961fefb22a19034",
@@ -45,6 +53,16 @@
    "A": [
     42,
     48
+   ]
+  },
+  "hit_max_tokens": {
+   "vendor": [
+    50,
+    49
+   ],
+   "A": [
+    59,
+    57
    ]
   },
   "items_with_reasoning_block": {
@@ -306,7 +324,9 @@
   "gpqa_vendor": "142 and 139 of 198 (mean 140.5)",
   "gpqa_bar": "bar: at least the vendor's mean \u2212 11.88",
   "gpqa_boot": "paired bootstrap 95% CI of (A \u2212 vendor) -11.5 to +7.5 questions",
-  "gpqa_trunc": "42 and 48 of A's items, 42 and 38 of the vendor's",
+  "gpqa_trunc": "42 and 48 of A's, 42 and 38 of the vendor's (59 and 57 / 50 and 49 responses hit the cap)",
+  "gpqa_trunc_row": "Items without an answer at the 65,536-token cap",
+  "gpqa_scoring": "Unparseable items and items without an answer at the token cap count as wrong; a response that hit the cap with an answer is scored",
   "gpqa_reasoning": "a reasoning block on 198 of 198 items in every run of both checkpoints",
   "proxy_parse": "0.996 (vendor 0.998)",
   "proxy_success": "0.922 (vendor 0.920)",
