@@ -80,6 +80,11 @@ candidate ids or `null` with status `unresolved_pending_precision_winner`.
   ModelOpt W4A16 NVFP4, every text-tower linear, weight-only; both W4A4 candidates failed the memory-retrieval bar),
   published. Abliterated cells do not apply to an embedding model.
 
+- [`ripple-65b/`](ripple-65b/) — dense 65B chat family: unchanged upstream `ricursiveAI/Ripple-65B-Preview` BF16 as
+  the external reference (too large for the 96 GB GPU; measured as a CPU teacher), plus one HangGlidersRule-owned
+  artifact (Base ModelOpt W4A4 NVFP4 MLP, FP8 attention, W4A16 NVFP4 `lm_head`), released after its export PR.
+  Abliterated cells are not planned.
+
 - [`qwen3-embedding-8b/`](qwen3-embedding-8b/) — embedding family: unchanged upstream
   `Qwen/Qwen3-Embedding-8B` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base
   ModelOpt W4A4 NVFP4, every decoder linear), published with its compatibility record against stored BF16

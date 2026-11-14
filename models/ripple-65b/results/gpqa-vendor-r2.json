@@ -1,0 +1,46 @@
+{
+ "cell": "vendor",
+ "run": 2,
+ "protocol": "llm-inference-bench 0.4.29 gpqa-diamond: 198 items, chat template, temperature 0, max_tokens 65,536, concurrency 30, deterministic letter shuffle; serve flags --reasoning-parser ripple --max-model-len 131072",
+ "bench_version": "0.4.29",
+ "dataset_sha256": "a8472c5a82ea2df8f209c17713aba1a6d409120c609ec0582dae0cb940c7e28c",
+ "max_tokens": 65536,
+ "concurrency": 30,
+ "raw_sha256": "dc5ca9a7518ef902c52a566193d95d83391a6472e1207cafc7b7aec1cf876f46",
+ "accuracy": {
+  "items_total": 198,
+  "attempted": 198,
+  "scored": 198,
+  "correct": 139,
+  "accuracy": 0.702020202020202,
+  "wilson95_low": 0.63496095552392,
+  "wilson95_high": 0.7613897270533816,
+  "unparseable": 0,
+  "truncated_no_answer": 38,
+  "hit_max_tokens": 49,
+  "errors": 0
+ },
+ "items_with_reasoning_block": 198,
+ "finish_reasons": {
+  "length": 49,
+  "stop": 149
+ },
+ "completion_tokens": {
+  "p50": 6352,
+  "p90": 65536,
+  "max": 65536,
+  "mean": 21082.3
+ },
+ "categories": {
+  "Biology": 9,
+  "Chemistry": 58,
+  "Physics": 72
+ },
+ "methodology": {
+  "name": "GPQA Diamond accuracy benchmark",
+  "prefill": "Dataset accuracy profiles send a different pinned item prompt per measured request, so a shared prefix-cache scout is disabled by default; prompts are short and prefill cost is negligible.",
+  "adaptive_concurrency": "If --profile-concurrency is set, the benchmark sends exactly the configured number of measured profile requests with that many concurrent workers. Otherwise it probes increasing concurrency levels and keeps the fastest aggregate generation-token throughput, then collects additional runs at the selected concurrency until min_results is reached.",
+  "token_need": "completion_tokens is taken from OpenAI stream usage. If usage is missing, streamed content chunks are used as an estimated fallback and the run is marked estimated_tokens=true.",
+  "correctness": "Each request is scored against its own pinned dataset item. The chosen option letter is extracted from an 'Answer: X' tag on the final line (falling back to a bare final-line letter, then the last answer tag in the visible text) and must match the reference letter. Headline metric is accuracy over scored items with a Wilson 95% interval, plus per-category accuracy. Runs are paired per item across configurations via --compare-baseline."
+ }
+}

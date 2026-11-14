@@ -2145,6 +2145,7 @@ UPSTREAM_REFERENCE_FAMILIES = {
     "nemotron-3-nano-omni-r1": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
     "nemotron-3.5-rerank-8b": "nvidia/Nemotron-3.5-Rerank-8B-BF16",
     "nemotron-3.5-embed-8b": "nvidia/Nemotron-3.5-Embed-8B-BF16",
+    "ripple-65b": "ricursiveAI/Ripple-65B-Preview",
 }
 
 
@@ -2174,3 +2175,22 @@ def test_unlisted_upstream_bf16_reference_is_still_rejected() -> None:
         "target_repository_status": "resolved",
     }
     assert any("must live under" in e for e in target_repository_errors(product))
+
+
+# ---- The upstream BF16 reference allowlist: Ripple's near misses (PR #107 review round 1) -----------------------------
+@pytest.mark.parametrize("target", ["ricursiveAI/Ripple-65B-Preview", "ricursiveAI/Ripple-65B-Preview-NVFP4",
+                                    "ricursiveAI/Ripple-65B-Preview-DFlash2", "ricursiveai/Ripple-65B-Preview"])
+def test_only_the_listed_ripple_upstream_is_a_bf16_reference(target: str, tmp_path: Path) -> None:
+    """The Ripple ledger's base-bf16 reference must be the listed upstream itself: the vendor's NVFP4 sibling, its
+    drafter and a case variant of the organization are refused by the release guard and by validate_ledger."""
+    ledger = load_json(REPO_ROOT / "models" / "ripple-65b" / "results" / "publication-readiness-ledger.json")
+    product = next(p for p in ledger["products"] if p["role"] == "base-bf16")
+    product["target_repository"] = target
+    path = tmp_path / "publication-readiness-ledger.json"
+    path.write_text(json.dumps(ledger))
+    errors = validate_ledger(path)
+    if target == UPSTREAM_REFERENCE_FAMILIES["ripple-65b"]:
+        assert errors == [] and target_repository_errors(product) == []
+    else:
+        assert any("target_repository" in e for e in errors), errors
+        assert target_repository_errors(product), target

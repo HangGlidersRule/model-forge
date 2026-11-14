@@ -485,6 +485,103 @@ rules:
     generated: false
     precedence: 100
 
+  - id: ripple-65b-campaign-runners
+    source: "models/ripple-65b/scripts/*.sh"
+    disposition: exclude
+    public_destination: null
+    reason: Operator launchers for one GPU host (staging, the parked GPU window, lane-tool park and unpark, host-local mounts). The build, calibration and eval scripts ship beside them.
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 100
+
+  - id: ripple-65b-window-rehearsal
+    source: "models/ripple-65b/rehearsal/**"
+    disposition: exclude
+    public_destination: null
+    reason: Offline rehearsal of the operator window (stubs of the GPU host's docker, lane tool and store paths).
+    transformation: null
+    owner: private-operations
+    max_size_bytes: 1048576
+    generated: false
+    precedence: 100
+
+  - id: ripple-65b-build-scripts
+    source: "models/ripple-65b/scripts/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The quantization build (known-answer gate, layerwise calibration with disk offload and resume, data-free lm_head stage, export and the MIXED_PRECISION quant config), so the candidates are reproducible.
+    transformation: sanitize_python_script
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: ripple-65b-calibration-builder
+    source: "models/ripple-65b/calibration/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: Deterministic calibration-set builder (pinned files, hash-ranked rows, the checkpoint's own chat template) and the held-out KL prompts.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: ripple-65b-eval-harnesses
+    source: "models/ripple-65b/eval/*.py"
+    disposition: transform
+    public_destination: "{source}"
+    reason: The campaign layout module, the export validator and its self-test, the vLLM offline probe, the BF16 CPU teacher, the tool-call proxy and its synthetic tasks, the serve clients, the speed grid and the gate behind the verdict.
+    transformation: sanitize_python_script
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
+  - id: curated-ripple-65b-evidence
+    source: "models/ripple-65b/results/*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Curated aggregate gate evidence for the Ripple-65B Preview product (aggregates only; no eval text, model output or per-item rows).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 262144
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+      - curated-readiness-ledger
+      - curated-gpqa-matrix
+      - curated-capacity-profiles
+
+  - id: curated-ripple-65b-speed
+    source: "models/ripple-65b/results/speed/*.json"
+    disposition: copy
+    public_destination: "{source}"
+    reason: The speed grid of the Ripple-65B Preview window (per-cell medians and bands for eight serves; no prompts or outputs).
+    transformation: null
+    owner: evaluation
+    max_size_bytes: 65536
+    generated: true
+    regeneration_check: validate_private_result_provenance
+    precedence: 200
+    resolves:
+      - model-results-default-private
+
+  - id: hf-card-ripple-65b-base-nvfp4
+    source: "publication/huggingface/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8/README.md"
+    disposition: copy
+    public_destination: "{source}"
+    reason: Publish the staged Hugging Face card for the Ripple-65B Preview Base ModelOpt W4A4 NVFP4 Mixed-FP8 artifact.
+    transformation: null
+    owner: model-release
+    max_size_bytes: 65536
+    generated: false
+    precedence: 100
+
   - id: models-index
     source: "models/README.md"
     disposition: transform

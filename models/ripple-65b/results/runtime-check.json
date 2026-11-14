@@ -1,0 +1,15 @@
+{
+ "checked_utc": "2026-11-13",
+ "pr": 65745,
+ "pr_merged_at": "2026-11-05T17:36:43Z",
+ "pr_merge_commit": "03bd3c68487fe2b957058ab2ce4bc5212a91aa89",
+ "nightly_commit": "f5d93296c8ec82b7e7dabdb308d24d43cb1907bf",
+ "nightly_contains_merge": true,
+ "nightly_commits_after_merge": 390,
+ "nightly_tag_index_digest": "sha256:902b49de0568ba5a5c951b0243bc06ef8541f46bc3eb80832961fefb22a19034",
+ "nightly_digest_matches_measured": true,
+ "release_tag": "v0.34.0rc1",
+ "release_tag_commit": "52aeb580658571613f8ab28a075a06fa30279beb",
+ "release_tag_contains_merge": true,
+ "release_docker_image_exists": false
+}

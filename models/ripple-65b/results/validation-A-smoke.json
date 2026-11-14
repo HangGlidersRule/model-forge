@@ -1,0 +1,19 @@
+{
+ "verdict": "PASS",
+ "letter": "A",
+ "errors": [],
+ "scales_checked": {
+  "f32_scalars": 1281,
+  "f8_block_scales": 3177840640
+ },
+ "bf16_tensors_byte_identical": 562,
+ "quantized_layers": {
+  "FP8": 400,
+  "NVFP4": 240,
+  "W4A16_NVFP4": 1
+ },
+ "tensors": 2725,
+ "tensor_bytes": 43053276324,
+ "tensor_gb": 43.053,
+ "num_layers": 80
+}

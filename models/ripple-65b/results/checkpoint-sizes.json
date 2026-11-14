@@ -1,0 +1,74 @@
+{
+ "A": {
+  "tensor_bytes": 43053276324,
+  "tensors": 2725,
+  "files": 5,
+  "bytes": {
+   "attention": 13421776000,
+   "embeddings": 1027604480,
+   "lm_head": 289013764,
+   "mlp": 28311553920,
+   "other": 3328160
+  },
+  "gib": {
+   "attention": 12.5,
+   "embeddings": 0.96,
+   "lm_head": 0.27,
+   "mlp": 26.37,
+   "other": 0.0
+  }
+ },
+ "vendor": {
+  "tensor_bytes": 57213636640,
+  "tensors": 1923,
+  "files": 6,
+  "bytes": {
+   "attention": 26843545600,
+   "embeddings": 1027604480,
+   "lm_head": 1027604480,
+   "mlp": 28311553920,
+   "other": 3328160
+  },
+  "gib": {
+   "attention": 25.0,
+   "embeddings": 0.96,
+   "lm_head": 0.96,
+   "mlp": 26.37,
+   "other": 0.0
+  }
+ },
+ "bf16": {
+  "tensor_bytes": 129565378720,
+  "tensors": 1203,
+  "files": 16,
+  "bytes": {
+   "attention": 26843545600,
+   "embeddings": 1027604480,
+   "lm_head": 1027604480,
+   "mlp": 100663296000,
+   "other": 3328160
+  },
+  "gib": {
+   "attention": 25.0,
+   "embeddings": 0.96,
+   "lm_head": 0.96,
+   "mlp": 93.75,
+   "other": 0.0
+  }
+ },
+ "drafter": {
+  "tensor_bytes": 8075504128,
+  "tensors": 81,
+  "files": 1,
+  "bytes": {
+   "attention": 1153433600,
+   "mlp": 6291456000,
+   "other": 630614528
+  },
+  "gib": {
+   "attention": 1.07,
+   "mlp": 5.86,
+   "other": 0.59
+  }
+ }
+}

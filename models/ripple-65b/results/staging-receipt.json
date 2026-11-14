@@ -1,0 +1,197 @@
+{
+ "stage": "private staging (not public)",
+ "repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+ "visibility": "private",
+ "uploaded_commit": "2de54e807ee5881489f29be6a6807e56d77f247f",
+ "upload": {
+  "tool": "hf_publish.py upload (HF_HUB_DISABLE_XET=1), from the store copy of the export",
+  "files_on_hub": 18,
+  "files": [
+   ".gitattributes",
+   "LICENSE",
+   "chat_template.jinja",
+   "config.json",
+   "configuration_ricursive.py",
+   "generation_config.json",
+   "hf_quant_config.json",
+   "manifest.sha256",
+   "model-00001-of-00005.safetensors",
+   "model-00002-of-00005.safetensors",
+   "model-00003-of-00005.safetensors",
+   "model-00004-of-00005.safetensors",
+   "model-00005-of-00005.safetensors",
+   "model.safetensors.index.json",
+   "modeling_ricursive.py",
+   "special_tokens_map.json",
+   "tokenizer.json",
+   "tokenizer_config.json"
+  ],
+  "manifest_entries": 17,
+  "manifest_sha256": "6ffc77fa8d2fbca2804cfae04c21bf27a988f310fae8197f3dadebdb6d888fd7",
+  "lfs_sha256_matches_local": true,
+  "export_copy_check": "all 23 files of the window's export hashed on the GPU host and again in the store: 0 mismatches; the upload drops README.md (the card is a separate card-only commit), config.transformers5.json (the exporter's own config, kept for the record) and the vendor's inference/server SGLang launcher (BF16 two-GPU, not this checkpoint's runtime)"
+ },
+ "clean_download": {
+  "commit": "2de54e807ee5881489f29be6a6807e56d77f247f",
+  "files_downloaded": 18,
+  "manifest_entries": 17,
+  "manifest_sha256": "6ffc77fa8d2fbca2804cfae04c21bf27a988f310fae8197f3dadebdb6d888fd7",
+  "manifest_identical_to_export": true,
+  "entries_matching_export": 17,
+  "mismatches": [],
+  "missing": [],
+  "extra": [],
+  "hub_manifest_vs_export_differences": [],
+  "bytes": 43061141736,
+  "verdict": "PASS",
+  "method": "fetch_to_store.py of the private repository at the uploaded commit into a fresh store directory with an empty HF_HOME (token from a mode-600 file mounted read-only, HF_TOKEN_PATH); every LFS file checked against the hub's sha256 during the fetch, then every manifest.sha256 entry re-hashed and compared with the export's manifest",
+  "safetensors_sha256": {
+   "model-00001-of-00005.safetensors": "7fdc78103415bf65d2e81963d0f0ce66cd35d775b750b5c63721c524c1a40a14",
+   "model-00002-of-00005.safetensors": "5ff99c813eadd9c9fc627fa31b625094633f8d112807ccd414ae4b1cfd0e686f",
+   "model-00003-of-00005.safetensors": "fd920c204bc78e5439631a5f620a295e2d8255bfef0271686b33c0b1aa3ef8bc",
+   "model-00004-of-00005.safetensors": "433cd7d2360177e50a81c5f6c5fa64bf3abdf3b1c19a84c6f5add16c15f4c5b3",
+   "model-00005-of-00005.safetensors": "b1b664fc14d3122e53d4ef1dfe1db9befddc7fe43767b85c82c6fed7795e487b"
+  }
+ },
+ "revalidation_of_download": {
+  "tool": "eval/validate_export.py on the downloaded bytes against the BF16 source",
+  "verdict": "PASS",
+  "errors": [],
+  "quantized_layers": {
+   "FP8": 400,
+   "NVFP4": 240,
+   "W4A16_NVFP4": 1
+  },
+  "scales_checked": {
+   "f32_scalars": 1281,
+   "f8_block_scales": 3177840640
+  },
+  "bf16_tensors_byte_identical": 562,
+  "tensors": 2725,
+  "tensor_bytes": 43053276324
+ },
+ "boot_smoke": {
+  "status": "passed",
+  "commit_booted": "2de54e807ee5881489f29be6a6807e56d77f247f",
+  "covers_card_commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+  "booted_from": "the clean download above (the store copy fetched at the uploaded commit), read through a network mount",
+  "run_utc": {
+   "launched": "2026-11-13T12:35:49Z",
+   "preflight_ok": "2026-11-13T12:35:51Z",
+   "checks_passed": "2026-11-13T12:46:43Z",
+   "ended": "2026-11-13T12:50:50Z"
+  },
+  "image": "vllm/vllm-openai@sha256:902b49de0568ba5a5c951b0243bc06ef8541f46bc3eb80832961fefb22a19034",
+  "serve": "the card's serve command, flags unchanged, with the downloaded directory as the model; DFlash2 adds the card's speculative config with the drafter at its pinned revision as a local copy",
+  "drafter": "ricursiveAI/Ripple-65B-Preview-DFlash2@35609b3be3dd08a822b3ba1257c1ea5dd6f87632",
+  "chat_request": {
+   "user_turn": "Write a bash one-liner that counts the lines of every .py file under src/.",
+   "max_tokens": 1024
+  },
+  "fatal_markers": [
+   "CUDA error",
+   "EngineDeadError",
+   "Traceback"
+  ],
+  "client": "eval/serve_checks.py smoke (top-1 known answers, one parsed tool call)",
+  "launcher": {
+   "path": "models/ripple-65b/scripts/clean_boot_smoke.sh",
+   "published": false,
+   "sha256": "7e5867ed69a35fa5fbf90e8f5b6d221b5a2e17c086aa7c216449fbc933ba8b34"
+  },
+  "modes": {
+   "plain": {
+    "boot_seconds": 318,
+    "boot_seconds_basis": "container start to the first healthy /health poll (polled every 10 s)",
+    "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+    "quantization": "modelopt_mixed",
+    "kv_cache_dtype": "auto",
+    "enable_prefix_caching": true,
+    "max_seq_len": 131072,
+    "weights_gib": 40.76,
+    "kv_cache_gib": 44.08,
+    "kv_cache_tokens": 419096,
+    "kernels": [
+     "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+     "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+     "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+    ],
+    "speculative_config": "none",
+    "window_serve": "serve-runs.json quality.A",
+    "differs_from_window_serve": [],
+    "known_answers": {
+     "The capital of France is": " Paris",
+     "The chemical symbol for gold is": " Au"
+    },
+    "tool_call": {
+     "name": "get_weather",
+     "arguments": "{\"city\": \"Paris\"}"
+    },
+    "chat_request_finish_reason": "stop",
+    "fatal_log_markers": 0,
+    "result_file": "models/ripple-65b/results/clean-boot-plain.json",
+    "result_sha256": "e18b7aa06af1b2f866a5d749b714aeec565c1762c4bc28a1c798275d3773b558"
+   },
+   "dflash2": {
+    "boot_seconds": 316,
+    "boot_seconds_basis": "container start to the first healthy /health poll (polled every 10 s)",
+    "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+    "quantization": "modelopt_mixed",
+    "kv_cache_dtype": "auto",
+    "enable_prefix_caching": true,
+    "max_seq_len": 131072,
+    "weights_gib": 48.44,
+    "kv_cache_gib": 35.89,
+    "kv_cache_tokens": 272872,
+    "kernels": [
+     "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+     "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+     "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+    ],
+    "speculative_config": "dflash",
+    "draft_tokens": 7,
+    "window_serve": "serve-runs.json speed.A-s1-dflash2",
+    "differs_from_window_serve": [],
+    "known_answers": {
+     "The capital of France is": " Paris",
+     "The chemical symbol for gold is": " Au"
+    },
+    "tool_call": {
+     "name": "get_weather",
+     "arguments": "{\"city\": \"Paris\"}"
+    },
+    "chat_request_finish_reason": "stop",
+    "fatal_log_markers": 0,
+    "result_file": "models/ripple-65b/results/clean-boot-dflash2.json",
+    "result_sha256": "4c1c76e13bc0452fec1eabe1d4cf876ffcde48e3f8754bdb77563f2e75967d56"
+   }
+  },
+  "curated_by": "eval/curate_clean_boot.py"
+ },
+ "card_commit": {
+  "commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+  "parent_card_commit": "891ff96ffb402210c20bef38a93ac2632635dcdd",
+  "parent_weights_commit": "2de54e807ee5881489f29be6a6807e56d77f247f",
+  "changed_files": [
+   "README.md",
+   "manifest.sha256"
+  ],
+  "files_on_hub": 19,
+  "manifest_sha256": "939f9c3f2e538ada71c349f30e78f5fd34a78278447c1b3515dedf1718878d9b",
+  "manifest_entries_verified_on_hub": 18,
+  "readme_sha256": "44dd0bb01079bbff513d4e50ac96d14718be38d581990068affdf085c5aaa76f",
+  "weights_identical_to_uploaded_commit": true,
+  "reason": "the card's GPQA row and protocol sentence (items without an answer at the token cap; review round 1)",
+  "method": "hf_publish.py card (README.md and manifest.sha256 read back); then every hub file at the head checked against its manifest.sha256 (the 5 shards by LFS sha256, the small files by their downloaded bytes), the shard LFS oids identical to the previous card commit and to the uploaded commit (hf_publish.py same-weights), and the hub README.md equal to the staged card",
+  "history": [
+   {
+    "commit": "891ff96ffb402210c20bef38a93ac2632635dcdd",
+    "manifest_sha256": "2848804af9c85b16b297e5ac331a8ab097091ed28a92868fad59a8e9982b5542"
+   }
+  ]
+ }
+}

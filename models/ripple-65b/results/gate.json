@@ -1,0 +1,141 @@
+{
+ "vendor": {
+  "gpqa_mean": 140.5,
+  "gpqa_runs": [
+   {
+    "correct": 142,
+    "hit_max_tokens": 50,
+    "unparseable": 0,
+    "errors": 0,
+    "truncated_no_answer": 42
+   },
+   {
+    "correct": 139,
+    "hit_max_tokens": 49,
+    "unparseable": 0,
+    "errors": 0,
+    "truncated_no_answer": 38
+   }
+  ],
+  "gpqa_run_disagreement_items": 31,
+  "proxy": {
+   "serves": 1,
+   "parse_rate": 0.998,
+   "success_rate": 0.92,
+   "items": 500,
+   "errors": 0
+  },
+  "kl": {
+   "positions": 116600,
+   "mean_kl": 0.02897538120068112,
+   "top1_agreement": 0.9497684391080617,
+   "toolcall_span_kl": 0.0030654998815177023,
+   "toolcall_span_positions": 1139
+  },
+  "speed": {
+   "serves": 2,
+   "decode_b1": [
+    27.410686502870597,
+    29.145631748134726
+   ],
+   "decode_b1_mean": 28.27815912550266,
+   "decode_b1_p50_ranges": [
+    [
+     27.387616628902677,
+     27.446501246994785
+    ],
+    [
+     29.024690649546823,
+     29.16692162089699
+    ]
+   ]
+  }
+ },
+ "candidates": {
+  "A": {
+   "missing": [],
+   "gpqa": {
+    "candidate_mean": 138.5,
+    "vendor_mean": 140.5,
+    "diff_questions": -2.0,
+    "bar": ">= vendor - 11.88",
+    "pass": true,
+    "bootstrap95_questions": [
+     -11.5,
+     7.5
+    ],
+    "candidate_runs": [
+     138,
+     139
+    ],
+    "vendor_runs": [
+     142,
+     139
+    ]
+   },
+   "proxy": {
+    "candidate": {
+     "serves": 1,
+     "parse_rate": 0.996,
+     "success_rate": 0.922,
+     "items": 500,
+     "errors": 0
+    },
+    "vendor": {
+     "serves": 1,
+     "parse_rate": 0.998,
+     "success_rate": 0.92,
+     "items": 500,
+     "errors": 0
+    },
+    "parse_bar": ">= 0.9780",
+    "success_bar": ">= 0.9016",
+    "parse_pass": true,
+    "success_pass": true,
+    "pass": true
+   },
+   "kl": {
+    "positions": 116600,
+    "mean_kl": 0.037084309271527255,
+    "top1_agreement": 0.9431389365351629,
+    "toolcall_span_kl": 0.004323857883468762,
+    "toolcall_span_positions": 1139,
+    "candidate_kl": 0.037084309271527255,
+    "vendor_kl": 0.02897538120068112,
+    "ratio": 1.2798557856645392,
+    "bootstrap95_diff": [
+     0.006353467810111468,
+     0.00993370527350094
+    ],
+    "quality_win": false
+   },
+   "speed": {
+    "candidate_b1": [
+     37.1077503902746,
+     36.84575599393838
+    ],
+    "vendor_b1": [
+     27.410686502870597,
+     29.145631748134726
+    ],
+    "ratio": 1.3076082155135411,
+    "vendor_band": [
+     27.410686502870597,
+     29.145631748134726
+    ],
+    "speed_win": true
+   },
+   "artifact_pass": true,
+   "bars_complete": true,
+   "passes_bars": true,
+   "speed_win": true,
+   "quality_win": false,
+   "eligible": true
+  }
+ },
+ "eligible": [
+  "A"
+ ],
+ "ships": "A",
+ "recommendation": "A"
+}

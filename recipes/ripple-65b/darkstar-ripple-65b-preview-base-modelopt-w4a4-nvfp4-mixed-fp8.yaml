@@ -1,0 +1,102 @@
+schema_version: "2.0"
+name: darkstar-ripple-65b-preview-base-modelopt-w4a4-nvfp4-mixed-fp8
+family: ripple-65b
+
+# Issue #39, candidate A (the posted plan's proposal; it passed every bar and won on speed): MLP gate/up/down W4A4 NVFP4
+# (static scales, group 16), attention q/k/v/o and the sigmoid output gate g_proj FP8 W8A8 (static per-tensor),
+# lm_head NVFP4 weight-only (W4A16). Embeddings, norms and value_res_lambda stay BF16 and byte-identical to upstream;
+# BF16 KV cache. Built from the upstream BF16 weights with ModelOpt 0.48.0 (torch 2.15.0, transformers 5.18.0) by
+# models/ripple-65b/scripts/quantize_ripple.py in two stages: the operator recipe below (Local-Hessian weight scales,
+# FP8-scale sweep, layerwise calibration with the BF16 weights offloaded to disk), then the data-free lm_head stage
+# configs/modelopt/recipes/ripple-65b/lm_head_w4a16_nvfp4_mse.yaml (sha256
+# 123e4e99af9634a16d5b6c467e8341ad6c0e72b93038f94fc2181b79f61e74f6), packed inside the streaming export (R39-A8).
+# The calibration file is built by models/ripple-65b/calibration/build_ripple_calib.py from one pinned file of each
+# dataset below (the file sha256s are in models/ripple-65b/results/calibration-record.json).
+
+source:
+  model_id: ricursiveAI/Ripple-65B-Preview
+  revision: 240d5966cbe00f0627c699e59ef58560b60303cf
+
+transforms: []
+
+datasets:
+  cnn_dailymail:
+    source: abisee/cnn_dailymail
+    revision: 96df5e686bee6baa90b8bee7c28b81fa3fa6223d
+    sha256: a56093836f6283ceac48128515f6c87ade70abb11aec31d23a176c4d90ae1736
+  nemotron_if_chat_v2:
+    source: nvidia/Nemotron-SFT-Instruction-Following-Chat-v2
+    revision: 1a9454ed054b8544503ab8d8c0a519d141a44c5b
+    sha256: 2ab423660dd2bfd6b219f1745821ac5d5fb13643755ef77b56765fca524cbb4e
+  swe_smith_trajectories:
+    source: SWE-bench/SWE-smith-trajectories
+    revision: 08e109b4a59eaeebf80e4675cd125d42e7ac99a4
+    sha256: ac76e9efe75978f83d4daec98a55604587dd58b0f1509364893b8778cbf5b487
+  hermes_function_calling:
+    source: NousResearch/hermes-function-calling-v1
+    revision: dae3e1d28cfbcf4b915c04ea1e072030529b4bda
+    sha256: 769478035a886678d525d057ea66e3fd1e247f43e35c8d6d7cc866e080b6742b
+
+quantization:
+  scheme: NVFP4
+  targets: Linear
+  group_size: 16
+  framework: nvidia-modelopt
+  framework_version: 0.48.0
+  framework_pin_commit: e2f328a19de789e73b91aca2908042388cf6d496
+  algorithm: local_hessian
+  weight_scale_algorithm: local_hessian
+  fp8_scale_sweep: true
+  operator_recipe: configs/modelopt/recipes/ripple-65b/a_nvfp4_w4a4_mlp-fp8_attn-kv_bf16_local_hessian_layerwise.yaml
+  operator_recipe_sha256: 624185c8df017e0130979905a36885bd761131baae6d6535472fa9d3515f9e4e
+  quant_grp:
+    mlp_gate_up_down: W4A4_NVFP4
+    self_attn_qkvog: FP8_W8A8
+    lm_head: W4A16_NVFP4
+  protected_tensors:
+    - embed_tokens
+    - norm.weight
+    - value_res_lambda
+  keep_bf16:
+    - embed_tokens
+    - norm.weight
+    - value_res_lambda
+  ignore:
+    - "re:.*embed_tokens.*"
+    - "re:.*norm\\.weight$"
+    - "re:.*value_res_lambda.*"
+  calibration:
+    dataset: "512 rows (128 cnn_dailymail summaries, 128 Nemotron IF-Chat-v2 reasoning-on, 192 SWE-smith tool trajectories, 64 hermes function-calling), rendered with the checkpoint's chat template, 927,103 tokens; file sha256 403730e417b94a5e412144ee72b47975c3996c61abf8a32ac7580cf0c73ca508"
+    config: ripple39_calib_512
+    samples: 512
+    max_sequence_length: 4096
+    batch_size: 1
+    kv_cache_qformat: none
+    pipeline: modelopt_layerwise_disk_offload
+    shard_size: 10GB
+
+validation:
+  max_refusal_leakage: 0.01
+  quantized_layers_count: 641
+  mtp_present: false
+
+runtime:
+  kv_dtype: bf16
+  context_length: 131072
+  flash_attention: true
+  # Drafter: the vendor's DFlash2 model, 7 speculative tokens (reported, not gated).
+  spec_decode: dflash2
+  drafter_model: ricursiveAI/Ripple-65B-Preview-DFlash2
+  drafter_tokens: 7
+  vllm_pin: vllm/vllm-openai@sha256:902b49de0568ba5a5c951b0243bc06ef8541f46bc3eb80832961fefb22a19034
+
+performance:
+  prompt_lengths: [1022, 16381]
+  warmup_repeats: 2
+  measure_repeats: 20
+
+outputs:
+  artifact_kind: nvfp4
+  publication:
+    github: HangGlidersRule/model-forge
+    huggingface_nvfp4: HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8

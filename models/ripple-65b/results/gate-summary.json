@@ -1,0 +1,360 @@
+{
+ "family": "ripple-65b",
+ "product": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+ "source": "ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf",
+ "source_license": {
+  "license": "apache-2.0",
+  "license_name": null,
+  "license_link": null,
+  "license_file": "LICENSE",
+  "license_file_sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+  "read_from": "the upstream card's front matter at the pinned revision (HfApi().model_info(repo, revision=sha).card_data)"
+ },
+ "vendor_reference": "ricursiveAI/Ripple-65B-Preview-NVFP4@99eea4477a001a41b86914e41feb4b2ed86105e5",
+ "drafter": "ricursiveAI/Ripple-65B-Preview-DFlash2@35609b3be3dd08a822b3ba1257c1ea5dd6f87632",
+ "image": "vllm/vllm-openai@sha256:902b49de0568ba5a5c951b0243bc06ef8541f46bc3eb80832961fefb22a19034",
+ "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+ "vendor_reported_bf16_gpqa_diamond": {
+  "value": 85.2,
+  "note": "vendor-reported on the upstream card (BF16, the vendor's own harness); not measured by this campaign"
+ },
+ "gate": {
+  "bars_pass": true,
+  "speed_win": true,
+  "quality_win": false,
+  "eligible": true,
+  "ships": "A"
+ },
+ "gpqa": {
+  "runs": {
+   "vendor": [
+    142,
+    139
+   ],
+   "A": [
+    138,
+    139
+   ]
+  },
+  "means": {
+   "vendor": 140.5,
+   "A": 138.5
+  },
+  "bootstrap95_questions": [
+   -11.5,
+   7.5
+  ],
+  "bar_questions": 11.88,
+  "truncated_no_answer": {
+   "vendor": [
+    42,
+    38
+   ],
+   "A": [
+    42,
+    48
+   ]
+  },
+  "hit_max_tokens": {
+   "vendor": [
+    50,
+    49
+   ],
+   "A": [
+    59,
+    57
+   ]
+  },
+  "items_with_reasoning_block": {
+   "vendor": [
+    198,
+    198
+   ],
+   "A": [
+    198,
+    198
+   ]
+  },
+  "pass": true
+ },
+ "proxy": {
+  "A": {
+   "items": 500,
+   "parsed": 498,
+   "success": 461,
+   "errors": 0,
+   "parse_rate": 0.996,
+   "success_rate": 0.922
+  },
+  "vendor": {
+   "items": 500,
+   "parsed": 499,
+   "success": 460,
+   "errors": 0,
+   "parse_rate": 0.998,
+   "success_rate": 0.92
+  },
+  "bfcl_success": {
+   "vendor": 360,
+   "A": 362
+  },
+  "synthetic_success": {
+   "vendor": 100,
+   "A": 99
+  },
+  "pass": true
+ },
+ "kl": {
+  "A": {
+   "positions": 116600,
+   "mean_kl": 0.037084309271527255,
+   "top1_agreement": 0.9431389365351629,
+   "toolcall_span_kl": 0.004323857883468762,
+   "toolcall_span_positions": 1139
+  },
+  "vendor": {
+   "positions": 116600,
+   "mean_kl": 0.02897538120068112,
+   "top1_agreement": 0.9497684391080617,
+   "toolcall_span_kl": 0.0030654998815177023,
+   "toolcall_span_positions": 1139
+  },
+  "ratio": 1.2798557856645392,
+  "bootstrap95_diff": [
+   0.006353467810111468,
+   0.00993370527350094
+  ]
+ },
+ "speed": {
+  "cells": {
+   "decode_b1": {
+    "A": [
+     37.1077503902746,
+     36.84575599393838
+    ],
+    "vendor": [
+     27.410686502870597,
+     29.145631748134726
+    ],
+    "ratio_of_means": 1.3076082155135411
+   },
+   "decode_b8": {
+    "A": [
+     224.25806734745282,
+     226.59385982946276
+    ],
+    "vendor": [
+     182.26955759664943,
+     181.90866127670014
+    ],
+    "ratio_of_means": 1.2379980564782447
+   },
+   "ttft_1k_b1": {
+    "A": [
+     0.2149613040019176,
+     0.21712249849224463
+    ],
+    "vendor": [
+     0.26411549249314703,
+     0.2652178469870705
+    ],
+    "ratio_of_means": 0.8162792143764265
+   },
+   "ttft_16k_b1": {
+    "A": [
+     3.3583467964999727,
+     3.371818981002434
+    ],
+    "vendor": [
+     4.083588479501486,
+     4.093182958997204
+    ],
+    "ratio_of_means": 0.8230835150674225
+   },
+   "ttft_1k_b8": {
+    "A": [
+     1.5650735655071912,
+     1.5713535600079922
+    ],
+    "vendor": [
+     1.9551837370017893,
+     1.9473256820056122
+    ],
+    "ratio_of_means": 0.8036949533648864
+   },
+   "ttft_16k_b8": {
+    "A": [
+     17.104404649493517,
+     17.154279743990628
+    ],
+    "vendor": [
+     20.9766969314951,
+     20.942338721011765
+    ],
+    "ratio_of_means": 0.8172584092219065
+   },
+   "decode_b1_dflash2": {
+    "A": [
+     218.7445983214251,
+     223.26602403240668
+    ],
+    "vendor": [
+     180.54523780603552,
+     179.22327010568284
+    ],
+    "ratio_of_means": 1.2285973136434007
+   },
+   "decode_b8_dflash2": {
+    "A": [
+     833.4440701448027,
+     834.8615940541058
+    ],
+    "vendor": [
+     708.5457476483625,
+     683.169933123499
+    ],
+    "ratio_of_means": 1.1987402939037426
+   },
+   "ttft_1k_b1_dflash2": {
+    "A": [
+     0.21560426799987908,
+     0.21578482899349183
+    ],
+    "vendor": [
+     0.26586478499666555,
+     0.2657344210019801
+    ],
+    "ratio_of_means": 0.8114931176072335
+   },
+   "ttft_16k_b1_dflash2": {
+    "A": [
+     3.387726527507766,
+     3.3897187580005266
+    ],
+    "vendor": [
+     4.120377506995283,
+     4.115892139991047
+    ],
+    "ratio_of_means": 0.822878023182276
+   },
+   "ttft_1k_b8_dflash2": {
+    "A": [
+     1.5696333204978146,
+     1.5705987679975806
+    ],
+    "vendor": [
+     1.9552711745054694,
+     1.9543109715013998
+    ],
+    "ratio_of_means": 0.803214249303531
+   },
+   "ttft_16k_b8_dflash2": {
+    "A": [
+     17.27195135099464,
+     17.26665512850741
+    ],
+    "vendor": [
+     21.108546004994423,
+     21.105366909512668
+    ],
+    "ratio_of_means": 0.81818064460053
+   }
+  },
+  "dflash2_mean_acceptance_length": {
+   "vendor-s1-dflash2": 7.2076313181367695,
+   "vendor-s2-dflash2": 7.156298272714507,
+   "A-s1-dflash2": 7.165469652161668,
+   "A-s2-dflash2": 7.204148085226871
+  },
+  "reconnects": {
+   "vendor-s1": 0,
+   "vendor-s2": 0,
+   "A-s1": 0,
+   "A-s2": 0,
+   "vendor-s1-dflash2": 0,
+   "vendor-s2-dflash2": 0,
+   "A-s1-dflash2": 0,
+   "A-s2-dflash2": 0
+  },
+  "power_limit_w": [
+   450.0
+  ]
+ },
+ "memory": {
+  "kv_cache_tokens": {
+   "A": 419096,
+   "vendor": 280176,
+   "A_dflash2": 272872,
+   "vendor_dflash2": 156629
+  },
+  "weights_loaded_gib": {
+   "A": 40.76,
+   "vendor": 53.86,
+   "A_dflash2": 48.44,
+   "vendor_dflash2": 61.55
+  },
+  "checkpoint_gb": {
+   "A": 43.05,
+   "vendor": 57.21,
+   "bf16": 129.57,
+   "drafter": 8.08
+  }
+ },
+ "artifact_validation": {
+  "verdict": "PASS",
+  "letter": "A",
+  "errors": [],
+  "scales_checked": {
+   "f32_scalars": 1281,
+   "f8_block_scales": 3177840640
+  },
+  "bf16_tensors_byte_identical": 562,
+  "quantized_layers": {
+   "FP8": 400,
+   "NVFP4": 240,
+   "W4A16_NVFP4": 1
+  },
+  "tensors": 2725,
+  "tensor_bytes": 43053276324,
+  "tensor_gb": 43.053,
+  "num_layers": 80
+ },
+ "card_strings": {
+  "gpqa_a": "138 and 139 of 198 (mean 138.5)",
+  "gpqa_vendor": "142 and 139 of 198 (mean 140.5)",
+  "gpqa_bar": "bar: at least the vendor's mean \u2212 11.88",
+  "gpqa_boot": "paired bootstrap 95% CI of (A \u2212 vendor) -11.5 to +7.5 questions",
+  "gpqa_trunc": "42 and 48 of A's, 42 and 38 of the vendor's (59 and 57 / 50 and 49 responses hit the cap)",
+  "gpqa_trunc_row": "Items without an answer at the 65,536-token cap",
+  "gpqa_scoring": "Unparseable items and items without an answer at the token cap count as wrong; a response that hit the cap with an answer is scored",
+  "gpqa_reasoning": "a reasoning block on 198 of 198 items in every run of both checkpoints",
+  "proxy_parse": "0.996 (vendor 0.998)",
+  "proxy_success": "0.922 (vendor 0.920)",
+  "proxy_split": "BFCL v3 AST 362/400 (vendor 360/400); terminal and file-edit tasks 99/100 (vendor 100/100)",
+  "kl": "0.0371 (vendor 0.0290; 1.28x, 95% CI of the difference +0.0064 to +0.0099)",
+  "kl_top1": "94.3% (vendor 95.0%)",
+  "kl_positions": "116,600 positions",
+  "kl_tool": "0.0043 (vendor 0.0031) over 1,139 positions",
+  "decode_b1": "37.11 / 36.85 tok/s (vendor 27.41 / 29.15): 1.31x",
+  "decode_b8": "224.3 / 226.6 tok/s aggregate (vendor 182.3 / 181.9): 1.24x",
+  "ttft_1k": "0.215 / 0.217 s (vendor 0.264 / 0.265): 0.82x",
+  "ttft_16k": "3.36 / 3.37 s (vendor 4.08 / 4.09): 0.82x",
+  "ttft_16k_b8": "17.1 / 17.2 s (vendor 21.0 / 20.9): 0.82x",
+  "dflash_b1": "218.7 / 223.3 tok/s (vendor 180.5 / 179.2): 1.23x",
+  "dflash_b8": "833.4 / 834.9 tok/s aggregate (vendor 708.5 / 683.2): 1.20x",
+  "dflash_accept": "7.17 / 7.20 (vendor 7.21 / 7.16)",
+  "speed_bar": "batch-1 decode 36.98 against the vendor's 28.28 (1.31x; bar 1.05x and above both vendor serves): PASS",
+  "size": "43.05 GB (40.10 GiB) in 5 shards",
+  "size_vendor": "57.21 GB",
+  "size_bf16": "129.57 GB",
+  "kv_pool": "419,096 tokens (vendor 280,176)",
+  "kv_pool_dflash2": "272,872 tokens with DFlash2 (vendor 156,629)",
+  "weights_loaded": "40.76 GiB loaded (vendor 53.86)",
+  "validation": "240 NVFP4 W4A4, 400 FP8 and 1 W4A16 NVFP4 linear",
+  "validation_scales": "3,177,840,640 FP8 block scales and 1,281 per-tensor scales",
+  "validation_bf16": "562 BF16 tensors byte-identical to the source",
+  "build": "512 calibration rows (927,103 tokens)",
+  "power": "450 W",
+  "vllm": "0.34.0rc1.dev206+gf5d93296c"
+ }
+}

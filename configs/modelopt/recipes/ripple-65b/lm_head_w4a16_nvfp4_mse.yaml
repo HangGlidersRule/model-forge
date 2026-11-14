@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Ripple-65B Preview (model-forge #39), ModelOpt 0.48.0 PTQ, stage 2 for every candidate: lm_head NVFP4 weight-only
+# (W4A16, the vendor-standard layout allowed for a W4A4 build from contract 3.1). Static NVFP4 weight scales from the
+# MSE FP8-scale sweep, data-free: the build applies this quant_cfg to the stage-1 model with set_quantizer_by_cfg and
+# calls mtq.calibrate(model.lm_head, algorithm, forward_loop=None), so no full-model forward is needed (a weight-only
+# quantizer needs no activations; local_hessian would need lm_head's inputs, i.e. a forward through all 80 layers).
+# lm_head.input_quantizer stays disabled (W4A16). Embeddings stay BF16.
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+imports:
+  nvfp4_static: configs/numerics/nvfp4_static
+metadata:
+  recipe_type: ptq
+  description: >-
+    Ripple-65B Preview stage 2: lm_head NVFP4 weight-only (W4A16), static MSE weight scales with the FP8 scale sweep,
+    calibrated data-free after the layerwise stage.
+quantize:
+  algorithm:
+    method: mse
+    fp8_scale_sweep: true
+  quant_cfg:
+    - quantizer_name: 'lm_head.weight_quantizer'
+      enable: true
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: 'lm_head.input_quantizer'
+      enable: false

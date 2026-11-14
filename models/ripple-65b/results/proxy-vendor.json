@@ -1,0 +1,154 @@
+{
+ "label": "vendor",
+ "model": "ripple",
+ "max_tokens": 8192,
+ "data_sha256": {
+  "proxy_bfcl.jsonl": "0affe6d9c61645bd690dc204ef119b637de616a0653ddeb6d69f8fc13e0e6d8a",
+  "proxy_synthetic.jsonl": "110ed227112934486648550e1175b0dda35861bb6222d66fa5a71a4452abf17e"
+ },
+ "summary": {
+  "bfcl": {
+   "items": 400,
+   "parsed": 399,
+   "success": 360,
+   "errors": 0,
+   "parse_rate": 0.9975,
+   "success_rate": 0.9
+  },
+  "synthetic": {
+   "items": 100,
+   "parsed": 100,
+   "success": 100,
+   "errors": 0,
+   "parse_rate": 1.0,
+   "success_rate": 1.0
+  },
+  "overall": {
+   "items": 500,
+   "parsed": 499,
+   "success": 460,
+   "errors": 0,
+   "parse_rate": 0.998,
+   "success_rate": 0.92
+  },
+  "bfcl_by_category": {
+   "simple": {
+    "items": 100,
+    "parsed": 100,
+    "success": 93,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 0.93
+   },
+   "multiple": {
+    "items": 100,
+    "parsed": 100,
+    "success": 93,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 0.93
+   },
+   "parallel": {
+    "items": 100,
+    "parsed": 100,
+    "success": 94,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 0.94
+   },
+   "parallel_multiple": {
+    "items": 100,
+    "parsed": 99,
+    "success": 80,
+    "errors": 0,
+    "parse_rate": 0.99,
+    "success_rate": 0.8
+   }
+  },
+  "synthetic_by_kind": {
+   "append_line": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "count_matches": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "create_file": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "delete_file": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "edit_constant": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "insert_import": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "json_field": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "move_file": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "rename_symbol": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   },
+   "sum_column": {
+    "items": 10,
+    "parsed": 10,
+    "success": 10,
+    "errors": 0,
+    "parse_rate": 1.0,
+    "success_rate": 1.0
+   }
+  }
+ },
+ "seconds": 444,
+ "items_scored": 500,
+ "raw_sha256": "05423dc464522339a3b3eb242470bb253f2f284ea70f4d0dc22c60d3aa83d40b"
+}

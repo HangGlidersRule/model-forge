@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Ripple-65B Preview (model-forge #39), ModelOpt 0.48.0 PTQ, candidate B stage 1 (fallback): W4A16 NVFP4 MLP + FP8 W8A8 attention.
+# Source: ricursiveAI/Ripple-65B-Preview @ 240d5966cbe00f0627c699e59ef58560b60303cf (BF16, remote code).
+# Base: NVIDIA's dense recipe in ModelOpt 0.48.0, modelopt_recipes/models/Qwen/Qwen3.8-27B/ptq/
+#   nvfp4_w4a4_mlp_fp8_attn_local_hessian.yaml (+ its nvfp4_w4a4_mlp_fp8_attn_max.yaml quant_cfg), adapted:
+#   - Ripple is text-only: patterns use model.layers.N.{mlp,self_attn}.*_proj (no language_model. infix);
+#   - self_attn.*_proj covers q/k/v/o and Ripple's output-gate projection g_proj (vLLM fuses q/k/g into qkg_proj);
+#   - layerwise.calib_mutates_weights false: local_hessian only sets amax, and ModelOpt keeps a disk-offloaded layer's
+#     written-back weights in the host state dict, which the 40 GB container RAM budget cannot hold;
+#   - lm_head is NOT in this stage: under layerwise calibration a quantizer outside the decoder layers is calibrated by a
+#     full-model forward per batch, which an offloaded 130 GB model cannot afford. Stage 2 (lm_head_w4a16_nvfp4_mse.yaml)
+#     calibrates it data-free after this pass.
+# KV cache: BF16 (no [kv]_bmm quantizer enabled). Embeddings, norms, value_res_lambda: BF16.
+# Rules apply in order; default_disabled_quantizers comes after the enables so its exclusions win.
+# ModelOpt validates metadata with extra="forbid": keep it to recipe_type + description.
+imports:
+  base_disable_all: configs/ptq/units/base_disable_all
+  default_disabled_quantizers: configs/ptq/units/default_disabled_quantizers
+  fp8: configs/numerics/fp8
+  nvfp4: configs/numerics/nvfp4
+  nvfp4_static: configs/numerics/nvfp4_static
+metadata:
+  recipe_type: ptq
+  description: >-
+    Ripple-65B Preview candidate B (W4A16 fallback), stage 1: NVFP4 weight-only MLP gate/up/down and FP8 W8A8 per-
+    tensor attention q/k/v/o/g; Local-Hessian layerwise calibration; lm_head in stage 2; KV BF16.
+quantize:
+  algorithm:
+    method: local_hessian
+    fp8_scale_sweep: true
+    layerwise:
+      enable: true
+      get_qdq_activations_from_prev_layer: true
+      calib_mutates_weights: false
+  quant_cfg:
+    - $import: base_disable_all
+    - quantizer_name: '*layers.*.mlp.*_proj.weight_quantizer'
+      enable: true
+      cfg:
+        $import: nvfp4_static
+    - quantizer_name: '*layers.*.self_attn.*_proj.weight_quantizer'
+      enable: true
+      cfg:
+        $import: fp8
+    - quantizer_name: '*layers.*.self_attn.*_proj.input_quantizer'
+      enable: true
+      cfg:
+        $import: fp8
+    - $import: default_disabled_quantizers
+    - quantizer_name: '*lm_head*'
+      enable: false

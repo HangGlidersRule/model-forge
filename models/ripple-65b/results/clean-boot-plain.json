@@ -1,0 +1,41 @@
+{
+ "known": {
+  "The capital of France is": {
+   "text": " Paris",
+   "top": {
+    " Paris": -0.23216672241687775,
+    " ______": -2.9196667671203613,
+    " ___": -3.6696667671203613,
+    " __": -3.8571667671203613,
+    " the": -4.044666767120361
+   }
+  },
+  "The chemical symbol for gold is": {
+   "text": " Au",
+   "top": {
+    " Au": -0.2500781714916229,
+    ":": -3.5000782012939453,
+    " ______": -4.187578201293945,
+    " **": -4.312578201293945,
+    ":\n\n": -4.562578201293945
+   }
+  }
+ },
+ "tool_call": {
+  "ok": true,
+  "tool_calls": [
+   {
+    "id": "chatcmpl-tool-8b2b9c73fc444843",
+    "type": "function",
+    "function": {
+     "name": "get_weather",
+     "arguments": "{\"city\": \"Paris\"}"
+    }
+   }
+  ],
+  "content": "",
+  "reasoning_chars": 56,
+  "finish_reason": "tool_calls"
+ },
+ "ok": true
+}

@@ -379,7 +379,7 @@
       },
       {
        "type": "string",
-       "pattern": "^(Qwen/Qwen3\\.8-27B|Qwen/Qwen-Image-2\\.1|Qwen/Qwen3-Embedding-8B|Qwen/Qwen3-Reranker-4B|nvidia/NVIDIA-Nemotron-3\\.5-Lightning-30B-A3B-BF16|nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16|nvidia/Nemotron-3\\.5-Rerank-8B-BF16|nvidia/Nemotron-3\\.5-Embed-8B-BF16|[A-Za-z0-9._-]+/Darkstar-[A-Za-z0-9.-]*(BF16|ModelOpt-(W4A16|W4A4)-NVFP4(-Mixed-FP8)?))$",
+       "pattern": "^(Qwen/Qwen3\\.8-27B|Qwen/Qwen-Image-2\\.1|Qwen/Qwen3-Embedding-8B|Qwen/Qwen3-Reranker-4B|nvidia/NVIDIA-Nemotron-3\\.5-Lightning-30B-A3B-BF16|nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16|nvidia/Nemotron-3\\.5-Rerank-8B-BF16|nvidia/Nemotron-3\\.5-Embed-8B-BF16|ricursiveAI/Ripple-65B-Preview|[A-Za-z0-9._-]+/Darkstar-[A-Za-z0-9.-]*(BF16|ModelOpt-(W4A16|W4A4)-NVFP4(-Mixed-FP8)?))$",
        "description": "The actual publication target. Null only while target_repository_status is unresolved_pending_precision_winner. A ModelOpt NVFP4 target must encode ModelOpt plus W4A16 or W4A4 (plus Mixed-FP8 when applicable); a bare NVFP4 target is forbidden. base-bf16 and image-base-bf16 may name an unchanged upstream reference listed in the pattern."
       },
       {

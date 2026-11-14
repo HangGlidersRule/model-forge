@@ -23,6 +23,7 @@ TARGETS = {
     "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4",
     "Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4",
     "Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4",
+    "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
 }
 EXPECTED_METADATA = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -93,6 +94,10 @@ EXPECTED_METADATA = {
         "nvidia/Nemotron-3.5-Embed-8B-BF16",
         "quantized",
     ),
+    "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8": (
+        "ricursiveAI/Ripple-65B-Preview",
+        "quantized",
+    ),
 }
 SOURCE_CARDS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": (
@@ -146,6 +151,9 @@ SOURCE_CARDS = {
     "Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4": (
         REPO_ROOT / "models" / "nemotron-3.5-embed-8b" / "model-card" / "base-nvfp4.md"
     ),
+    "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8": (
+        REPO_ROOT / "models" / "ripple-65b" / "model-card" / "base-nvfp4.md"
+    ),
 }
 EXPECTED_LICENSE = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8": "apache-2.0",
@@ -165,6 +173,7 @@ EXPECTED_LICENSE = {
     "Darkstar-Qwen3-Embedding-8B-Base-ModelOpt-W4A4-NVFP4": "apache-2.0",
     "Darkstar-Nemotron-3.5-Rerank-8B-Base-ModelOpt-W4A4-NVFP4": "other",
     "Darkstar-Nemotron-3.5-Embed-8B-Base-ModelOpt-W4A16-NVFP4": "other",
+    "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8": "apache-2.0",
 }
 EXPECTED_PUBLIC_REVISIONS = {
     "Darkstar-Qwen3.8-27B-Base-ModelOpt-W4A16-NVFP4-Mixed-FP8":
@@ -195,7 +204,7 @@ STALE_UPLOAD_WORDING = (
 def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
     cards = sorted(HF_ROOT.glob("*/README.md"))
     assert {card.parent.name for card in cards} == TARGETS
-    assert len(cards) == 17
+    assert len(cards) == 18
     for card in cards:
         if "Nemotron-3-Nano-Omni" in card.parent.name:
             # The upstream at the pinned revision declares the NVIDIA Open Model Agreement; the older
@@ -237,6 +246,12 @@ def test_huggingface_cards_are_exactly_the_three_owned_targets() -> None:
             assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
             assert "--runner pooling" in text
             assert '"is_matryoshka": true' in text
+        elif "Ripple-65B" in card.parent.name:
+            assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
+            assert "--reasoning-parser ripple" in text
+            assert "--tool-call-parser ripple" in text
+            assert "--max-model-len" in text
+            assert "vendor-reported" in text
         elif "JEV" in card.parent.name:
             assert f"vllm serve HangGlidersRule/{card.parent.name}" in text
             assert "JEV_DECIDE_MERGED=1" in text
@@ -276,6 +291,10 @@ def test_source_cards_match_huggingface_identity_and_uploaded_state() -> None:
             assert "darkstar-jev-27b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text
             assert "JEV_DECIDE_MERGED=1" in text
+        elif "Ripple-65B" in target:
+            assert "darkstar-ripple-65b-v1.0.0" in text
+            assert f"vllm serve HangGlidersRule/{target}" in text
+            assert "--max-model-len" in text
         elif "Nemotron-3.5-Embed" in target:
             assert "darkstar-nemotron-3.5-embed-8b-v1.0.0" in text
             assert f"vllm serve HangGlidersRule/{target}" in text

@@ -1,0 +1,410 @@
+{
+ "quality": {
+  "vendor": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_fp4",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 53.86,
+   "kv_cache_gib": 31.09,
+   "kv_cache_tokens": 280176,
+   "kernels": [
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "none",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": null,
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "a6a1d47e6ea902d1b11e51d3e81ff1bdbec8fa2007a3e0351f5f5685d114299d"
+   }
+  },
+  "A": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_mixed",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 40.76,
+   "kv_cache_gib": 44.08,
+   "kv_cache_tokens": 419096,
+   "kernels": [
+    "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+    "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "none",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": null,
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "ef3c9f29a5c6f3fa0faedd1c867338f04d6a9b4c02f569bca68ffd73604e7ed9"
+   }
+  }
+ },
+ "speed": {
+  "vendor-s1": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_fp4",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 53.86,
+   "kv_cache_gib": 31.09,
+   "kv_cache_tokens": 280176,
+   "kernels": [
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "none",
+   "gpu": {
+    "samples": 886,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 879,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1980.0,
+    "peak_memory_mib": 89210.0
+   },
+   "speed_file_sha256": "150d844ded98192b687b966461661184961b7a7b9f11757dedb35811598167a9",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": null,
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "1a71cbd9e8436aa2e448de7329409d05a54ab87192cf6886f15e8a1aaabf9b7e"
+   }
+  },
+  "vendor-s1-dflash2": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_fp4",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 61.55,
+   "kv_cache_gib": 22.91,
+   "kv_cache_tokens": 156629,
+   "kernels": [
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "dflash",
+   "gpu": {
+    "samples": 534,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 532,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1747.0,
+    "peak_memory_mib": 90413.0
+   },
+   "speed_file_sha256": "181a03625cdf866ec26b73a696e11c0eb79190dd26d64ca0a0ba26b6c4794649",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": {
+     "method": "dflash",
+     "model": "/drafter",
+     "num_speculative_tokens": 7
+    },
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "814dbd770cf86dd94496314f4de0eebafa83b27b10ccef65dfcdd01e19c0f04b"
+   }
+  },
+  "A-s1": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_mixed",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 40.76,
+   "kv_cache_gib": 44.08,
+   "kv_cache_tokens": 419096,
+   "kernels": [
+    "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+    "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "none",
+   "gpu": {
+    "samples": 708,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 698,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1822.0,
+    "peak_memory_mib": 89124.0
+   },
+   "speed_file_sha256": "6fea2891707c00df7d58cf7d8ece7f539895fa9f1dce2ced455946d07741d461",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": null,
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "37ce2c06763ed5c374f66d718e7fc368dc2910b5dbf20e8f04515dd244582592"
+   }
+  },
+  "A-s1-dflash2": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_mixed",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 48.44,
+   "kv_cache_gib": 35.89,
+   "kv_cache_tokens": 272872,
+   "kernels": [
+    "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+    "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "dflash",
+   "gpu": {
+    "samples": 440,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 433,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1755.0,
+    "peak_memory_mib": 89977.0
+   },
+   "speed_file_sha256": "4002a8a96039759cb9fc55f8016392b2948bb3b437cc546d118d265c85969d26",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": {
+     "method": "dflash",
+     "model": "/drafter",
+     "num_speculative_tokens": 7
+    },
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "79eb1ef0b288d930b7179a6e4724848f906c734c64fb86d7bdb9c9f02c017e55"
+   }
+  },
+  "vendor-s2": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_fp4",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 53.86,
+   "kv_cache_gib": 31.09,
+   "kv_cache_tokens": 280176,
+   "kernels": [
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "none",
+   "gpu": {
+    "samples": 873,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 868,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1800.0,
+    "peak_memory_mib": 89137.0
+   },
+   "speed_file_sha256": "1931001aa7d1ab3509db957ffbf546afd47f6a87c2ce02d05a5a3e4752a823df",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": null,
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "0cb5d779a355d1f5fe29f5eb07f5c37ecaa02a6f2092f736fe050817cfc426ec"
+   }
+  },
+  "vendor-s2-dflash2": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_fp4",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 61.55,
+   "kv_cache_gib": 22.91,
+   "kv_cache_tokens": 156629,
+   "kernels": [
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "dflash",
+   "gpu": {
+    "samples": 535,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 531,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1747.0,
+    "peak_memory_mib": 90389.0
+   },
+   "speed_file_sha256": "b9388b370afc4e7100bbdeadcad0551cbb1c2ad79174ee08e932ac707519b7f3",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": {
+     "method": "dflash",
+     "model": "/drafter",
+     "num_speculative_tokens": 7
+    },
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "619dcd9e4462f948a386185684a5e34c9641f8e0768300fd2e1ddc7dbf09a17d"
+   }
+  },
+  "A-s2": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_mixed",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 40.76,
+   "kv_cache_gib": 44.08,
+   "kv_cache_tokens": 419096,
+   "kernels": [
+    "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+    "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "none",
+   "gpu": {
+    "samples": 708,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 698,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1995.0,
+    "peak_memory_mib": 89162.0
+   },
+   "speed_file_sha256": "977c856d9a5a9042dcce2bc0177b56d5088e97d44203518f449d1b6a16fb7d62",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": null,
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "775eae10f87d94540003f2f7943ef33233346b68347a61d45ad88ffac14b6f35"
+   }
+  },
+  "A-s2-dflash2": {
+   "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+   "quantization": "modelopt_mixed",
+   "kv_cache_dtype": "auto",
+   "enable_prefix_caching": true,
+   "max_seq_len": 131072,
+   "weights_gib": 48.44,
+   "kv_cache_gib": 35.89,
+   "kv_cache_tokens": 272872,
+   "kernels": [
+    "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+    "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+    "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+    "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+   ],
+   "speculative_config": "dflash",
+   "gpu": {
+    "samples": 440,
+    "power_limit_w": [
+     450.0
+    ],
+    "busy_samples": 433,
+    "median_power_w_busy": 450.0,
+    "median_sm_clock_mhz_busy": 1755.0,
+    "peak_memory_mib": 89890.0
+   },
+   "speed_file_sha256": "2d207427c6769a159de946f141a8923c36beb0d5b6eb3f1dcb1549b54feee43d",
+   "serve_args": {
+    "max_model_len": 131072,
+    "max_num_seqs": 32,
+    "gpu_memory_utilization": 0.92,
+    "reasoning_parser": "ripple",
+    "tool_call_parser": "ripple",
+    "enable_auto_tool_choice": true,
+    "speculative_config": {
+     "method": "dflash",
+     "model": "/drafter",
+     "num_speculative_tokens": 7
+    },
+    "served_model_name": [
+     "ripple"
+    ],
+    "log_sha256": "14b90e69b2ea51d0db52ba936d7fcf207d66fda7a7f1206f443dbf3992a3d029"
+   }
+  }
+ },
+ "window_gpu": {
+  "samples": 6714,
+  "power_limit_w": [
+   450.0
+  ],
+  "busy_samples": 5215,
+  "median_power_w_busy": 450.0,
+  "median_sm_clock_mhz_busy": 1762.0,
+  "peak_memory_mib": 90413.0
+ }
+}
