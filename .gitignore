@@ -450,6 +450,7 @@ build/
 !/models/ripple-65b/eval/bf16_teacher_cpu.py
 !/models/ripple-65b/eval/build_gate_summary.py
 !/models/ripple-65b/eval/build_ledger.py
+!/models/ripple-65b/eval/build_publication_receipt.py
 !/models/ripple-65b/eval/check_card_numbers.py
 !/models/ripple-65b/eval/checkpoint_files.py
 !/models/ripple-65b/eval/checkpoint_sizes.py
@@ -477,6 +478,8 @@ build/
 !/models/ripple-65b/results/checkpoint-sizes.json
 !/models/ripple-65b/results/clean-boot-dflash2.json
 !/models/ripple-65b/results/clean-boot-plain.json
+!/models/ripple-65b/results/clean-boot-public-dflash2.json
+!/models/ripple-65b/results/clean-boot-public-plain.json
 !/models/ripple-65b/results/gate-summary.json
 !/models/ripple-65b/results/gate.json
 !/models/ripple-65b/results/gpqa-A-r1.json
@@ -487,6 +490,7 @@ build/
 !/models/ripple-65b/results/proxy-record.json
 !/models/ripple-65b/results/proxy-vendor.json
 !/models/ripple-65b/results/publication-readiness-ledger.json
+!/models/ripple-65b/results/publication-receipt.json
 !/models/ripple-65b/results/runtime-check.json
 !/models/ripple-65b/results/serve-runs.json
 !/models/ripple-65b/results/smoke-A-dflash2.json

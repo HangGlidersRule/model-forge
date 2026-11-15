@@ -82,8 +82,8 @@ candidate ids or `null` with status `unresolved_pending_precision_winner`.
 
 - [`ripple-65b/`](ripple-65b/) — dense 65B chat family: unchanged upstream `ricursiveAI/Ripple-65B-Preview` BF16 as
   the external reference (too large for the 96 GB GPU; measured as a CPU teacher), plus one HangGlidersRule-owned
-  artifact (Base ModelOpt W4A4 NVFP4 MLP, FP8 attention, W4A16 NVFP4 `lm_head`), released after its export PR.
-  Abliterated cells are not planned.
+  artifact (Base ModelOpt W4A4 NVFP4 MLP, FP8 attention, W4A16 NVFP4 `lm_head`), published
+  ([collection](https://huggingface.co/collections/HangGlidersRule/darkstar-ripple-65b-preview-6af8c9afa81fe397ad49e822)). Abliterated cells are not planned.
 
 - [`qwen3-embedding-8b/`](qwen3-embedding-8b/) — embedding family: unchanged upstream
   `Qwen/Qwen3-Embedding-8B` BF16 as the external control, plus one HangGlidersRule-owned artifact (Base

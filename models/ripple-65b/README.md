@@ -8,8 +8,11 @@ readout).
 | Cell | Repository | Status |
 |---|---|---|
 | Upstream BF16 control | [`ricursiveAI/Ripple-65B-Preview`](https://huggingface.co/ricursiveAI/Ripple-65B-Preview) @ `240d5966cbe00f0627c699e59ef58560b60303cf` | reference only; too large for the 96 GB GPU, used as a CPU teacher ([card](model-card/base-bf16.md)) |
-| Base ModelOpt (W4A4 NVFP4 MLP, FP8 attention, W4A16 NVFP4 `lm_head`) | [`HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8`](https://huggingface.co/HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8) | selected ([card](model-card/base-nvfp4.md)) |
+| Base ModelOpt (W4A4 NVFP4 MLP, FP8 attention, W4A16 NVFP4 `lm_head`) | [`HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8`](https://huggingface.co/HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8) @ `0cce2e61` | published ([card](model-card/base-nvfp4.md), [receipt](results/publication-receipt.json)) |
 | Abliterated BF16, Abliterated ModelOpt | — | not planned in #39 |
+
+Release: tag [`darkstar-ripple-65b-v1.0.0`](https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-ripple-65b-v1.0.0).
+Family collection: [Darkstar Ripple-65B Preview](https://huggingface.co/collections/HangGlidersRule/darkstar-ripple-65b-preview-6af8c9afa81fe397ad49e822).
 
 The role word `Base` is the release contract's (an unedited cell, as opposed to `Abliterated`). The product quantizes
 the vendor's instruction-tuned model, not the vendor's separate pretrain-only `Ripple-65B-Base-Preview`.
@@ -75,6 +78,10 @@ Every number above and on the cards is generated from these files by
   ([`eval/record_card_commit.py`](eval/record_card_commit.py)), its clean download and the boot smoke of that download
   ([`eval/curate_clean_boot.py`](eval/curate_clean_boot.py));
   `results/clean-boot-<mode>.json`: the boot smoke's checks, plain and with DFlash2.
+- [`results/publication-receipt.json`](results/publication-receipt.json): the public repository, its anonymous reads,
+  card read-back and links, both collections, the release and its files, and the anonymous clean download and boot
+  smoke of the public repository ([`eval/build_publication_receipt.py`](eval/build_publication_receipt.py));
+  `results/clean-boot-public-<mode>.json`: that boot smoke's checks, plain and with DFlash2.
 - [`results/publication-readiness-ledger.json`](results/publication-readiness-ledger.json): the release ledger
   (contract 3.1.0), written by [`eval/build_ledger.py`](eval/build_ledger.py).
 
@@ -117,7 +124,8 @@ Enabled quantizers after both stages: A 1,281, B 1,041, C 481.
   and the bars and selection rule.
 - `eval/curate_gpqa_ripple.py`, `eval/curate_window.py`, `eval/curate_clean_boot.py`, `eval/record_card_commit.py`,
   `eval/checkpoint_sizes.py`, `eval/runtime_check.py`, `eval/build_gate_summary.py`, `eval/check_card_numbers.py`,
-  `eval/build_ledger.py`: the record's curation, evidence, card-number and ledger builders.
+  `eval/build_ledger.py`, `eval/build_publication_receipt.py`: the record's curation, evidence, card-number, ledger and
+  publication-receipt builders.
 - `eval/ripple_layout.py`: candidate layouts and pins shared by every script, tested in
   `tests/test_ripple_65b_kit.py`.
 - The window ran the kit at commit `ca79435`: its build, validator, BF16 teacher, serve checks, tool-call proxy, speed
@@ -159,8 +167,15 @@ restart. `R39_PREFLIGHT_ONLY=1` runs every preflight check on the host and stops
 
 ## Publication
 
-The weights sit in a private staging repository until this record merges and the tag `darkstar-ripple-65b-v1.0.0`
-exists. Its clean download was verified file by file against the export, and that download booted with the card's
-serve command on the measured image, plain and with DFlash2: in both, the known answers, a parsed tool call and a chat
-request passed with no fatal log line ([`results/staging-receipt.json`](results/staging-receipt.json)). The public
-repository is downloaded again after the flip.
+Public at `0cce2e61`, after this record merged (#107) and the tag `darkstar-ripple-65b-v1.0.0` was cut on its merge
+commit. The public head sits two card-only commits above the weights commit `2de54e80` (the shards are byte-identical
+at both). An anonymous clean download of the public repository re-hashed equal to the public commit's manifest on every
+entry, and that download booted with the card's serve command on the measured image, plain and with DFlash2: in both,
+the known answers, a parsed tool call and a chat request passed with no fatal log line
+([`results/publication-receipt.json`](results/publication-receipt.json)). Before the flip, the private staging
+repository's clean download had booted the same way ([`results/staging-receipt.json`](results/staging-receipt.json)).
+The release carries the BF16 teacher's output and the held-out prompts behind the KL numbers, with their SHA256SUMS.
+The repository is in the
+[Darkstar Ripple-65B Preview](https://huggingface.co/collections/HangGlidersRule/darkstar-ripple-65b-preview-6af8c9afa81fe397ad49e822)
+collection and in
+[Darkstar Releases](https://huggingface.co/collections/HangGlidersRule/darkstar-releases-6a8dfe8c2340f19e4f3e24c1).
