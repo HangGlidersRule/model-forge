@@ -1,0 +1,366 @@
+{
+ "repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
+ "hf_commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+ "verified_commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+ "hf_commit_note": "The public head is the commit the anonymous clean download fetched and the boot smoke booted (so it is also the verified commit). It sits 2 card-only commits above the weights commit 2de54e80, the private upload whose clean download the staging receipt records: the head and every commit between differ from the weights commit only in README.md and manifest.sha256, and the 5 shards' LFS sha256s are identical at the head and the weights commit and equal to the uploaded export's and the ledger's immutable hashes.",
+ "weights_commit": "2de54e807ee5881489f29be6a6807e56d77f247f",
+ "commits_on_main_since_weights_commit": [
+  {
+   "commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+   "title": "Model card: GPQA items without an answer at the token cap (model-forge #39 review round 1); weights unchanged"
+  },
+  {
+   "commit": "891ff96ffb402210c20bef38a93ac2632635dcdd",
+   "title": "Model card (model-forge #39); weights unchanged"
+  },
+  {
+   "commit": "2de54e807ee5881489f29be6a6807e56d77f247f",
+   "title": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8: weights, configs, remote code, tokenizer, license (model-forge #39)"
+  }
+ ],
+ "public": true,
+ "file_count": 19,
+ "files": [
+  ".gitattributes",
+  "LICENSE",
+  "README.md",
+  "chat_template.jinja",
+  "config.json",
+  "configuration_ricursive.py",
+  "generation_config.json",
+  "hf_quant_config.json",
+  "manifest.sha256",
+  "model-00001-of-00005.safetensors",
+  "model-00002-of-00005.safetensors",
+  "model-00003-of-00005.safetensors",
+  "model-00004-of-00005.safetensors",
+  "model-00005-of-00005.safetensors",
+  "model.safetensors.index.json",
+  "modeling_ricursive.py",
+  "special_tokens_map.json",
+  "tokenizer.json",
+  "tokenizer_config.json"
+ ],
+ "shard_lfs_sha256": {
+  "model-00001-of-00005.safetensors": "7fdc78103415bf65d2e81963d0f0ce66cd35d775b750b5c63721c524c1a40a14",
+  "model-00002-of-00005.safetensors": "5ff99c813eadd9c9fc627fa31b625094633f8d112807ccd414ae4b1cfd0e686f",
+  "model-00003-of-00005.safetensors": "fd920c204bc78e5439631a5f620a295e2d8255bfef0271686b33c0b1aa3ef8bc",
+  "model-00004-of-00005.safetensors": "433cd7d2360177e50a81c5f6c5fa64bf3abdf3b1c19a84c6f5add16c15f4c5b3",
+  "model-00005-of-00005.safetensors": "b1b664fc14d3122e53d4ef1dfe1db9befddc7fe43767b85c82c6fed7795e487b"
+ },
+ "manifest": {
+  "sha256": "939f9c3f2e538ada71c349f30e78f5fd34a78278447c1b3515dedf1718878d9b",
+  "entries": 18,
+  "sha256_at_weights_commit": "6ffc77fa8d2fbca2804cfae04c21bf27a988f310fae8197f3dadebdb6d888fd7",
+  "entries_at_weights_commit": 17,
+  "note": "manifest.sha256 at the public head is the upload's manifest (the one at the weights commit, the staging receipt's and the ledger's immutable hash) plus one README.md line for the card, byte for byte: removing that line gives the upload's manifest. Every file of the head but the manifest itself has a line, and each shard's line is its LFS sha256.",
+  "checks": {
+   "the head's manifest is the upload's plus the card line": true,
+   "the weights commit's manifest is the upload's": true,
+   "the head's manifest is the card commit's the staging receipt verified": true,
+   "the manifest covers every file but itself": true,
+   "the manifest's card line is the publication card": true,
+   "the manifest's shard lines are the LFS sha256s": true
+  }
+ },
+ "anonymous_http": {
+  "card_page": 200,
+  ".gitattributes": 200,
+  "LICENSE": 200,
+  "README.md": 200,
+  "chat_template.jinja": 200,
+  "config.json": 200,
+  "configuration_ricursive.py": 200,
+  "generation_config.json": 200,
+  "hf_quant_config.json": 200,
+  "manifest.sha256": 200,
+  "model-00001-of-00005.safetensors": 200,
+  "model-00002-of-00005.safetensors": 200,
+  "model-00003-of-00005.safetensors": 200,
+  "model-00004-of-00005.safetensors": 200,
+  "model-00005-of-00005.safetensors": 200,
+  "model.safetensors.index.json": 200,
+  "modeling_ricursive.py": 200,
+  "special_tokens_map.json": 200,
+  "tokenizer.json": 200,
+  "tokenizer_config.json": 200
+ },
+ "anonymous_http_non_200": [],
+ "anonymous_http_method": "HEAD on resolve/<public head>/<file>, redirects followed (no weight download); GET for the card page",
+ "card_read_back_identical": true,
+ "card_read_back_sha256": "44dd0bb01079bbff513d4e50ac96d14718be38d581990068affdf085c5aaa76f",
+ "card_read_back_note": "README.md at the public head is byte-identical to publication/huggingface/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8/README.md and to models/ripple-65b/model-card/base-nvfp4.md in this commit.",
+ "card_links": {
+  "markdown_links": 10,
+  "relative_links": 0,
+  "unique_urls": 9,
+  "front_matter_urls": 0,
+  "front_matter_license": "apache-2.0",
+  "anonymous_http": {
+   "https://github.com/HangGlidersRule/model-forge/blob/main/models/ripple-65b/README.md": 200,
+   "https://github.com/HangGlidersRule/model-forge/blob/main/models/ripple-65b/model-card/base-nvfp4.md": 200,
+   "https://github.com/HangGlidersRule/model-forge/blob/main/models/ripple-65b/results/gate-summary.json": 200,
+   "https://github.com/HangGlidersRule/model-forge/blob/main/recipes/ripple-65b/darkstar-ripple-65b-preview-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml": 200,
+   "https://github.com/HangGlidersRule/model-forge/issues/39": 200,
+   "https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-ripple-65b-v1.0.0": 200,
+   "https://huggingface.co/ricursiveAI/Ripple-65B-Preview": 200,
+   "https://huggingface.co/ricursiveAI/Ripple-65B-Preview-DFlash2": 200,
+   "https://huggingface.co/ricursiveAI/Ripple-65B-Preview-NVFP4": 200
+  },
+  "note": "Counted on the card at the public head: 10 markdown links, 9 unique URLs (an upstream link appears twice). The front matter names a license the hub lists, so it carries no license URL. Every unique URL answered 200 to an anonymous GET."
+ },
+ "made_public_after": {
+  "record_pr": 107,
+  "merge_commit": "ad4f472be5e083ccafab584d4835ea9e272c1284",
+  "merged_at": "2026-11-14T20:50:23Z",
+  "release_tag": "darkstar-ripple-65b-v1.0.0",
+  "tag_commit": "ad4f472be5e083ccafab584d4835ea9e272c1284",
+  "release_published_at": "2026-11-14T20:50:37Z",
+  "family_collection_created_utc": "2026-11-14T20:50:55Z",
+  "note": "The hub records no time for a visibility change. The flip came after the merge and the tag: the tag is lightweight (no date of its own) and was created with its release, the flip step refuses while any GitHub link on the card (the release tag page among them) does not answer 200, and the family collection, which the step right after the flip created, dates from after the release was published."
+ },
+ "family_collection": {
+  "slug": "HangGlidersRule/darkstar-ripple-65b-preview-6af8c9afa81fe397ad49e822",
+  "title": "Darkstar Ripple-65B Preview",
+  "url": "https://huggingface.co/collections/HangGlidersRule/darkstar-ripple-65b-preview-6af8c9afa81fe397ad49e822",
+  "public": true,
+  "lists_repository": true,
+  "items": 1,
+  "created_utc": "2026-11-14T20:50:55Z",
+  "last_updated": "2026-11-14T20:50:56.132Z"
+ },
+ "releases_collection": {
+  "slug": "HangGlidersRule/darkstar-releases-6a8dfe8c2340f19e4f3e24c1",
+  "title": "Darkstar Releases",
+  "url": "https://huggingface.co/collections/HangGlidersRule/darkstar-releases-6a8dfe8c2340f19e4f3e24c1",
+  "public": true,
+  "lists_repository": true,
+  "items": 10,
+  "created_utc": "2026-08-25T20:43:56Z",
+  "last_updated": "2026-11-14T20:50:56.063Z",
+  "repository_note": "Ripple-65B Preview: W4A4 NVFP4 MLP + FP8 attention, 1.31x vendor NVFP4 decode"
+ },
+ "github_release": {
+  "tag": "darkstar-ripple-65b-v1.0.0",
+  "url": "https://github.com/HangGlidersRule/model-forge/releases/tag/darkstar-ripple-65b-v1.0.0",
+  "tag_commit": "ad4f472be5e083ccafab584d4835ea9e272c1284",
+  "tag_object": "commit (a lightweight tag)",
+  "record_pr": {
+   "number": 107,
+   "merged_at": "2026-11-14T20:50:23Z",
+   "merge_commit": "ad4f472be5e083ccafab584d4835ea9e272c1284"
+  },
+  "release_published_at": "2026-11-14T20:50:37Z",
+  "draft": false,
+  "prerelease": false,
+  "immutable": false,
+  "assets": [
+   {
+    "name": "SHA256SUMS",
+    "size": 179,
+    "sha256": "44ec135476f29e0132f9bef8b4e2574625d6690692a0a442f44d1b75f12db601"
+   },
+   {
+    "name": "bf16_teacher_64.json",
+    "size": 66614045,
+    "sha256": "333710db6e3c4e6911bf1cc9dc24e42c78ad7d5927eb920b44b59b7ab075299f"
+   },
+   {
+    "name": "ripple39_heldout_64.jsonl",
+    "size": 1176668,
+    "sha256": "c258051a0a8fa7bb281fc54c55452b68f8e5e0b8eb904505bb59cc0c307b3adc"
+   }
+  ],
+  "checks": {
+   "every asset downloaded anonymously, its size and sha256 equal to what GitHub reports": true,
+   "every other asset equal to its SHA256SUMS line": true,
+   "ripple39_heldout_64.jsonl equal to the held-out file results/calibration-record.json pins": true
+  },
+  "note": "The tag points at the merge commit of the record PR. GitHub reports the release as not immutable (the immutable field above); #104 tracks enforcing release immutability."
+ },
+ "clean_download": {
+  "commit": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+  "anonymous": true,
+  "verdict": "PASS",
+  "started_utc": "2026-11-14T23:12:20Z",
+  "fetch_seconds": 327,
+  "files_downloaded": 19,
+  "lfs_files_checked_during_fetch": 5,
+  "manifest_entries": 18,
+  "manifest_sha256": "939f9c3f2e538ada71c349f30e78f5fd34a78278447c1b3515dedf1718878d9b",
+  "entries_matching_hub_manifest": 18,
+  "mismatches": [],
+  "missing": [],
+  "extra": [],
+  "entries_differing_from_export_manifest": [
+   "README.md"
+  ],
+  "readme_sha256": "44dd0bb01079bbff513d4e50ac96d14718be38d581990068affdf085c5aaa76f",
+  "readme_equals_publication_card": true,
+  "bytes": 43061153825,
+  "method": "fetch_to_store.py of the public head with no token (the hub client logged its warning about unauthenticated requests) and an empty HF_HOME, into a fresh store directory; every LFS file checked against the hub's sha256 during the fetch, then every manifest.sha256 entry re-hashed and compared with the public commit's manifest and with the export's manifest",
+  "checks": {
+   "the log's verdict line is this result": true,
+   "the public head, fetched anonymously": true,
+   "the hub client logged its unauthenticated-request warning": true,
+   "every LFS file checked against the hub during the fetch": true,
+   "every manifest entry re-hashed equal": true,
+   "the manifest is the public head's": true,
+   "only the card differs from the export's manifest": true,
+   "the shards are the public head's": true,
+   "verdict": true
+  }
+ },
+ "boot_smoke": {
+  "status": "passed",
+  "commit_booted": "0cce2e6148d0451d4f2c4ff79cd7e2982759ebb6",
+  "booted_from": "the anonymous clean download above (the store copy fetched at the public head), read through a network mount",
+  "run_utc": {
+   "launched": "2026-11-14T23:31:20Z",
+   "plain_up": "2026-11-14T23:45:56Z",
+   "plain_checks_passed": "2026-11-14T23:45:59Z",
+   "dflash2_up": "2026-11-14T23:51:41Z",
+   "dflash2_checks_passed": "2026-11-14T23:51:43Z"
+  },
+  "image": "vllm/vllm-openai@sha256:902b49de0568ba5a5c951b0243bc06ef8541f46bc3eb80832961fefb22a19034",
+  "serve": "the card's serve command, flags unchanged, with the downloaded directory as the model; DFlash2 adds the card's speculative config with the drafter at its pinned revision as a local copy. serve_args are the arguments the engine logged at startup: every flag equal to the window serve's but the served name, which is the card's ledger alias here and was a short name in the window",
+  "drafter": "ricursiveAI/Ripple-65B-Preview-DFlash2@35609b3be3dd08a822b3ba1257c1ea5dd6f87632",
+  "chat_request": {
+   "user_turn": "Write a bash one-liner that counts the lines of every .py file under src/.",
+   "max_tokens": 1024
+  },
+  "fatal_markers": [
+   "CUDA error",
+   "EngineDeadError",
+   "Traceback"
+  ],
+  "client": "eval/serve_checks.py smoke (top-1 known answers, one parsed tool call), this commit's file by sha256",
+  "client_sha256": "e989d71dd89470abe3a0503c32a58d01394eaca4bb35e3240a519e21d3a46498",
+  "launcher_checks": {
+   "the pinned image is the measured one": true,
+   "the store copy is the public head's download": true,
+   "the drafter is the pinned revision": true,
+   "the client is this commit's serve_checks.py": true,
+   "the chat request is the staging smoke's": true
+  },
+  "modes": {
+   "plain": {
+    "boot_seconds": 341,
+    "boot_seconds_basis": "container start to the first healthy /health poll (polled every 10 s)",
+    "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+    "quantization": "modelopt_mixed",
+    "kv_cache_dtype": "auto",
+    "enable_prefix_caching": true,
+    "max_seq_len": 131072,
+    "weights_gib": 40.76,
+    "kv_cache_gib": 44.08,
+    "kv_cache_tokens": 419096,
+    "kernels": [
+     "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+     "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+     "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+    ],
+    "speculative_config": "none",
+    "serve_args": {
+     "max_model_len": 131072,
+     "max_num_seqs": 32,
+     "gpu_memory_utilization": 0.92,
+     "reasoning_parser": "ripple",
+     "tool_call_parser": "ripple",
+     "enable_auto_tool_choice": true,
+     "speculative_config": null,
+     "served_model_name": [
+      "darkstar-ripple65b-base-nvfp4"
+     ],
+     "log_sha256": "5f6cb86d2a15e0c350ad176e9c86d3fac6096f1cebc50cc28de72a64c1d027b2"
+    },
+    "window_serve": "serve-runs.json quality.A",
+    "differs_from_window_serve": [],
+    "kv_pool_of_window_serve": {
+     "kv_cache_tokens": 419096,
+     "kv_cache_gib": 44.08
+    },
+    "serve_args_differ_from_window_serve": [
+     "served_model_name"
+    ],
+    "known_answers": {
+     "The capital of France is": " Paris",
+     "The chemical symbol for gold is": " Au"
+    },
+    "tool_call": {
+     "name": "get_weather",
+     "arguments": "{\"city\": \"Paris\"}"
+    },
+    "chat_request_finish_reason": "stop",
+    "fatal_log_markers": 0,
+    "result_file": "models/ripple-65b/results/clean-boot-public-plain.json",
+    "result_sha256": "a4532029783fb1a643a96bba99e107d9c6c0b85fd4d65bcabd1d2cf9e1d733c1"
+   },
+   "dflash2": {
+    "boot_seconds": 341,
+    "boot_seconds_basis": "container start to the first healthy /health poll (polled every 10 s)",
+    "vllm_version": "0.34.0rc1.dev206+gf5d93296c",
+    "quantization": "modelopt_mixed",
+    "kv_cache_dtype": "auto",
+    "enable_prefix_caching": true,
+    "max_seq_len": 131072,
+    "weights_gib": 48.44,
+    "kv_cache_gib": 35.89,
+    "kv_cache_tokens": 272943,
+    "kernels": [
+     "Selected FlashInferFP8ScaledMMLinearKernel for ColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for MergedColumnParallelLinear",
+     "Selected FlashInferFP8ScaledMMLinearKernel for RowParallelLinear",
+     "Using FlashInferCutlassNvFp4LinearKernel for NVFP4 GEMM",
+     "Using MarlinNvFp4LinearKernel for NVFP4 GEMM"
+    ],
+    "speculative_config": "dflash",
+    "serve_args": {
+     "max_model_len": 131072,
+     "max_num_seqs": 32,
+     "gpu_memory_utilization": 0.92,
+     "reasoning_parser": "ripple",
+     "tool_call_parser": "ripple",
+     "enable_auto_tool_choice": true,
+     "speculative_config": {
+      "method": "dflash",
+      "model": "/drafter",
+      "num_speculative_tokens": 7
+     },
+     "served_model_name": [
+      "darkstar-ripple65b-base-nvfp4"
+     ],
+     "log_sha256": "1f6af01ded00d5b297257032b77af5296b4028867febf1333d90bf8b50ff83e9"
+    },
+    "draft_tokens": 7,
+    "window_serve": "serve-runs.json speed.A-s1-dflash2",
+    "differs_from_window_serve": [
+     "kv_cache_tokens"
+    ],
+    "kv_pool_of_window_serve": {
+     "kv_cache_tokens": 272872,
+     "kv_cache_gib": 35.89
+    },
+    "serve_args_differ_from_window_serve": [
+     "served_model_name"
+    ],
+    "known_answers": {
+     "The capital of France is": " Paris",
+     "The chemical symbol for gold is": " Au"
+    },
+    "tool_call": {
+     "name": "get_weather",
+     "arguments": "{\"city\": \"Paris\"}"
+    },
+    "chat_request_finish_reason": "stop",
+    "fatal_log_markers": 0,
+    "result_file": "models/ripple-65b/results/clean-boot-public-dflash2.json",
+    "result_sha256": "8d7895d5d7fd6178d808664facf74c785f177e49f8bfc42f85946226ef1d45dc"
+   }
+  }
+ },
+ "checked_utc": "2026-11-15T02:30Z",
+ "built_by": "eval/build_publication_receipt.py"
+}

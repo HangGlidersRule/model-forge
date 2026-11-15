@@ -6,7 +6,7 @@
  "family_display": "Darkstar Ripple-65B Preview",
  "source_revision": "ricursiveAI/Ripple-65B-Preview@240d5966cbe00f0627c699e59ef58560b60303cf",
  "note": "Dense 65B chat model (80 layers, gated sliding-window and global attention, value residuals). One quantized cell (#39): W4A4 NVFP4 MLP, FP8 attention, W4A16 NVFP4 lm_head, measured against the vendor's own NVFP4 checkpoint on one 96 GB GPU and a vLLM nightly. The BF16 control is too large for that GPU; closeness to BF16 is next-token KL against a CPU teacher. No abliteration cells are planned in #39.",
- "any_publication_claim": false,
+ "any_publication_claim": true,
  "products": [
   {
    "product_id": "Darkstar-Ripple-65B-Preview-Base-BF16",
@@ -49,14 +49,14 @@
    "product_id": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
    "role": "base-modelopt-nvfp4",
    "task": "chat",
-   "lifecycle": "locally_complete_unpublished",
+   "lifecycle": "published",
    "target_repository": "HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
    "target_repository_status": "resolved",
    "served_model_alias": "darkstar-ripple65b-base-nvfp4",
    "runtime_container_name": "vllm-darkstar-ripple65b-base-modelopt",
    "model_card": "models/ripple-65b/model-card/base-nvfp4.md",
    "recipe": "recipes/ripple-65b/darkstar-ripple-65b-preview-base-modelopt-w4a4-nvfp4-mixed-fp8.yaml",
-   "publication_claim": false,
+   "publication_claim": true,
    "candidates": [
     {
      "candidate_id": "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8",
@@ -133,8 +133,8 @@
     {
      "id": "artifact_manifest",
      "status": "verified",
-     "evidence": "manifest.sha256 over 17 files (sha256 6ffc77fa8d2f...), written at upload; every LFS sha256 on the hub equal to it",
-     "evidence_path": "models/ripple-65b/results/staging-receipt.json",
+     "evidence": "manifest.sha256 at the public head 0cce2e6148d0: 18 entries (sha256 939f9c3f2e53...), the upload's manifest (17 entries, 6ffc77fa8d2f...) plus the card's line; every shard's line equal to its LFS sha256 on the hub",
+     "evidence_path": "models/ripple-65b/results/publication-receipt.json",
      "next_missing_proof": "none - gate satisfied"
     },
     {
@@ -209,24 +209,24 @@
     },
     {
      "id": "publication_targets_hf_ghcr",
-     "status": "in_progress",
-     "evidence": "Private staging at HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8: weights @ 2de54e807ee5 (18 files, every LFS sha256 equal to the export's manifest), card @ 0cce2e6148d0 (weights unchanged, all 18 manifest entries verified on the hub); public flip after the export PR merges and the tag exists",
-     "evidence_path": "models/ripple-65b/results/staging-receipt.json",
-     "next_missing_proof": "merge the export PR, tag, flip public"
+     "status": "verified",
+     "evidence": "Public at HangGlidersRule/Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8 @ 0cce2e6148d0, card-only commits above the weights commit 2de54e807ee5 (the shards' LFS sha256s identical at both); all 19 files and the card page answer 200 anonymously, the card reads back identical to the publication card, and the repository is listed in its public family collection and in Darkstar Releases; GHCR not required (pinned upstream vLLM image)",
+     "evidence_path": "models/ripple-65b/results/publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "clean_download_boot_smoke",
-     "status": "in_progress",
-     "evidence": "Clean download of the private repository @ 2de54e807ee5 verified (17/17 manifest entries byte-identical to the export, the validator passes on the downloaded bytes) and booted with the card's serve command on the measured image (2026-11-13): plain up in 318 s (KV pool 419,096 tokens), with DFlash2 in 316 s (272,872 tokens); in both, the known answers, a parsed tool call and the chat request (finish stop), 0 fatal log markers. The card commit 0cce2e6148d0 has the same weights. Open until the public repository is downloaded after the flip: the gate attests the published artifact",
-     "evidence_path": "models/ripple-65b/results/staging-receipt.json",
-     "next_missing_proof": "the clean download of the public repository after the flip"
+     "status": "verified",
+     "evidence": "Anonymous clean download of the public repository @ 0cce2e6148d0: 18/18 manifest entries re-hashed equal to the public commit's manifest (only README.md differs from the export's manifest, and it is the publication card); booted with the card's serve command on the measured image (2026-11-14): plain up in 341 s (40.76 GiB of weights, KV pool 419,096 tokens), with DFlash2 in 341 s (48.44 GiB, 272,943 tokens); in both, the known answers, a parsed tool call and the chat request (finish stop), 0 fatal log markers",
+     "evidence_path": "models/ripple-65b/results/publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "release_tag",
-     "status": "in_progress",
-     "evidence": "Tag darkstar-ripple-65b-v1.0.0 follows the export PR merge",
-     "evidence_path": null,
-     "next_missing_proof": "tag the merge commit"
+     "status": "verified",
+     "evidence": "darkstar-ripple-65b-v1.0.0 on the record PR's merge commit ad4f472be5e0 (#107); its release carries SHA256SUMS, bf16_teacher_64.json, ripple39_heldout_64.jsonl, each equal to its SHA256SUMS line",
+     "evidence_path": "models/ripple-65b/results/publication-receipt.json",
+     "next_missing_proof": "none - gate satisfied"
     },
     {
      "id": "no_inherited_unverified_results",

@@ -5,7 +5,9 @@ Every number is built from results/gate-summary.json (its card_strings and figur
 eval/build_gate_summary.py from the window's result files), results/runtime-check.json, results/checkpoint-sizes.json
 and results/serve-runs.json (the serve block's flags, as every measured serve of A logged them); none is typed here.
 The README's boot-smoke sentence is required, and accepted, only while results/staging-receipt.json records the passed
-smoke it states (both modes, the measured image, no fatal log line). Each document must contain each of its strings
+smoke it states (both modes, the measured image, no fatal log line) and, once the ledger declares the product
+published, results/publication-receipt.json records the same for the public repository, whose public head and weights
+commit the README must name. Each document must contain each of its strings
 verbatim after whitespace runs (line wraps included) are collapsed to one space. The staged Hugging Face card must equal
 the source card apart from its absolute links.
 Run from the repository root. Usage: check_card_numbers.py
@@ -99,11 +101,21 @@ readme_expect = [cs[k] for k in ("gpqa_a", "gpqa_vendor", "proxy_parse", "proxy_
     f"The `{rt['release_tag']}` git tag (`{rt['release_tag_commit'][:7]}`) contains it",
     f"The vendor reports GPQA Diamond {g['vendor_reported_bf16_gpqa_diamond']['value']} for BF16 (vendor-reported",
 ]
-# The README's boot-smoke sentence holds only while the receipt says the clean download booted and passed in both modes.
-bs = json.loads((R / "staging-receipt.json").read_text())["boot_smoke"]
-assert bs["status"] == "passed" and bs["image"] == g["image"] and sorted(bs["modes"]) == ["dflash2", "plain"]
-assert all(m["fatal_log_markers"] == 0 and m["chat_request_finish_reason"] == "stop" and m["tool_call"]["name"]
-           for m in bs["modes"].values())
+# The README's boot-smoke sentence holds only while the receipts say the clean download booted and passed in both modes:
+# the private staging repository's (results/staging-receipt.json) and, once the ledger declares the product published,
+# the public repository's (results/publication-receipt.json, whose public head and weights commit the README names).
+smokes = [json.loads((R / "staging-receipt.json").read_text())["boot_smoke"]]
+ledger = json.loads((R / "publication-readiness-ledger.json").read_text())
+if next(p for p in ledger["products"] if p["product_id"] == PID)["lifecycle"] == "published":
+    rc = json.loads((R / "publication-receipt.json").read_text())
+    smokes.append(rc["boot_smoke"])
+    assert rc["clean_download"]["verdict"] == "PASS" and rc["clean_download"]["commit"] == rc["hf_commit"]
+    readme_expect += [f"@ `{rc['hf_commit'][:8]}` | published", f"Public at `{rc['hf_commit'][:8]}`",
+                      f"weights commit `{rc['weights_commit'][:8]}`"]
+for bs in smokes:
+    assert bs["status"] == "passed" and bs["image"] == g["image"] and sorted(bs["modes"]) == ["dflash2", "plain"]
+    assert all(m["fatal_log_markers"] == 0 and m["chat_request_finish_reason"] == "stop" and m["tool_call"]["name"]
+               for m in bs["modes"].values())
 readme_expect.append("booted with the card's serve command on the measured image, plain and with DFlash2: in both, the "
                      "known answers, a parsed tool call and a chat request passed with no fatal log line")
 bf16_expect = [f"The checkpoint ({gb['bf16']:.2f} GB) does not fit", f"{g['kl']['A']['positions']:,} positions",

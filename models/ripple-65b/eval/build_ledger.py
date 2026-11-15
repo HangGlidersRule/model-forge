@@ -5,9 +5,12 @@ Mid-release (default): the shipped product is locally_complete_unpublished and p
 publication gates, model_card_final is verified (the contract asks the card for the exact planned tag reference and
 verifies the tag's existence separately, under release_tag); the HF target, the clean download plus boot smoke (it
 attests the public repository, so the private staging repository's passed smoke is its evidence so far) and the release
-tag are in_progress. --published sets them verified and needs results/publication-receipt.json. Every figure is read
-from results/gate-summary.json (built by eval/build_gate_summary.py) or results/staging-receipt.json (its boot_smoke
-block written by eval/curate_clean_boot.py). Run from the repository root.
+tag are in_progress. --published sets them verified and needs results/publication-receipt.json (built by
+eval/build_publication_receipt.py): the public head, its manifest, the anonymous clean download and boot smoke of the
+public repository and the release tag are quoted from it, and artifact_manifest then cites the manifest at the public
+head. Every figure is read from results/gate-summary.json (built by eval/build_gate_summary.py),
+results/staging-receipt.json (its boot_smoke block written by eval/curate_clean_boot.py) or the publication receipt.
+Run from the repository root.
 Usage: build_ledger.py [--published]
 """
 
@@ -26,6 +29,7 @@ published = "--published" in sys.argv
 receipt: dict = json.loads((R / "publication-receipt.json").read_text()) if published else {}
 PID = "Darkstar-Ripple-65B-Preview-Base-ModelOpt-W4A4-NVFP4-Mixed-FP8"
 TARGET = f"HangGlidersRule/{PID}"
+TAG = "darkstar-ripple-65b-v1.0.0"
 SRC_REPO, SRC_REV = "ricursiveAI/Ripple-65B-Preview", "240d5966cbe00f0627c699e59ef58560b60303cf"
 GS = f"models/{F}/results/gate-summary.json"
 VAL = f"models/{F}/results/validation-A.json"
@@ -86,27 +90,63 @@ boot = (f"booted with the card's serve command on the measured image ({bs['run_u
         f"({bd['kv_cache_tokens']:,} tokens); in both, the known answers, a parsed tool call and the chat request (finish "
         f"{bp['chat_request_finish_reason']}), {bp['fatal_log_markers'] + bd['fatal_log_markers']} fatal log markers. "
         f"The card commit {card_commit[:12]} has the same weights")
-pub_gates = [
-    gate("publication_targets_hf_ghcr", "verified" if published else "in_progress",
-         (f"Public at {TARGET} @ {receipt.get('public_commit', '')[:12]}; GHCR not required (pinned upstream vLLM image)"
-          if published else
-          f"Private staging at {TARGET}: weights @ {st['uploaded_commit'][:12]} ({up['files_on_hub']} files, every LFS sha256 "
-          f"equal to the export's manifest), card @ {st['card_commit']['commit'][:12]} (weights unchanged, all "
-          f"{st['card_commit']['manifest_entries_verified_on_hub']} manifest entries verified on the hub); public flip after "
-          "the export PR merges and the tag exists"),
-         f"models/{F}/results/publication-receipt.json" if published else STG, next="merge the export PR, tag, flip public"),
-    gate("clean_download_boot_smoke", "verified" if published else "in_progress",
-         ("Clean download of the public repository plus a boot with the card's command" if published else
-          f"Clean download of the private repository @ {cd['commit'][:12]} verified ({cd['entries_matching_export']}/"
-          f"{cd['manifest_entries']} manifest entries byte-identical to the export, the validator passes on the downloaded "
-          f"bytes) and {boot}. Open until the public repository is downloaded after the flip: the gate attests the "
-          "published artifact"),
-         f"models/{F}/results/publication-receipt.json" if published else STG,
-         next="the clean download of the public repository after the flip"),
-    gate("release_tag", "verified" if published else "in_progress",
-         "darkstar-ripple-65b-v1.0.0" if published else "Tag darkstar-ripple-65b-v1.0.0 follows the export PR merge",
-         f"models/{F}/README.md" if published else None, next="tag the merge commit"),
-]
+RCP = f"models/{F}/results/publication-receipt.json"
+manifest_gate = gate("artifact_manifest", "verified",
+                     f"manifest.sha256 over {up['manifest_entries']} files (sha256 {up['manifest_sha256'][:12]}...), "
+                     "written at upload; every LFS sha256 on the hub equal to it", STG)
+if published:
+    # The public repository's own evidence, every figure from the publication receipt.
+    head, rcd, rbs, rel, rm = (receipt["hf_commit"], receipt["clean_download"], receipt["boot_smoke"],
+                               receipt["github_release"], receipt["manifest"])
+    rp_, rd_ = rbs["modes"]["plain"], rbs["modes"]["dflash2"]
+    if not (receipt["public"] is True and receipt["card_read_back_identical"] is True and rcd["verdict"] == "PASS"
+            and rcd["commit"] == rbs["commit_booted"] == head and rcd["entries_differing_from_export_manifest"] == [
+                "README.md"] and rcd["readme_equals_publication_card"] is True and rbs["status"] == "passed"
+            and rbs["image"] == g["image"] and rm["sha256"] == rcd["manifest_sha256"] and rel["tag"] == TAG):
+        raise SystemExit("publication-receipt.json: not a passed anonymous download and boot of the public head")
+    manifest_gate = gate("artifact_manifest", "verified",
+                         f"manifest.sha256 at the public head {head[:12]}: {rm['entries']} entries (sha256 "
+                         f"{rm['sha256'][:12]}...), the upload's manifest ({rm['entries_at_weights_commit']} entries, "
+                         f"{rm['sha256_at_weights_commit'][:12]}...) plus the card's line; every shard's line equal to its "
+                         "LFS sha256 on the hub", RCP)
+    pub_gates = [
+        gate("publication_targets_hf_ghcr", "verified",
+             f"Public at {TARGET} @ {head[:12]}, card-only commits above the weights commit "
+             f"{receipt['weights_commit'][:12]} (the shards' LFS sha256s identical at both); all {receipt['file_count']} "
+             "files and the card page answer 200 "
+             "anonymously, the card reads back identical to the publication card, and the repository is listed in its "
+             f"public family collection and in {receipt['releases_collection']['title']}; GHCR not required (pinned "
+             "upstream vLLM image)", RCP),
+        gate("clean_download_boot_smoke", "verified",
+             f"Anonymous clean download of the public repository @ {head[:12]}: {rcd['entries_matching_hub_manifest']}/"
+             f"{rcd['manifest_entries']} manifest entries re-hashed equal to the public commit's manifest (only README.md "
+             "differs from the export's manifest, and it is the publication card); booted with the card's serve command "
+             f"on the measured image ({rbs['run_utc']['launched'][:10]}): plain up in {rp_['boot_seconds']} s "
+             f"({rp_['weights_gib']} GiB of weights, KV pool {rp_['kv_cache_tokens']:,} tokens), with DFlash2 in "
+             f"{rd_['boot_seconds']} s ({rd_['weights_gib']} GiB, {rd_['kv_cache_tokens']:,} tokens); in both, the known "
+             f"answers, a parsed tool call and the chat request (finish {rp_['chat_request_finish_reason']}), "
+             f"{rp_['fatal_log_markers'] + rd_['fatal_log_markers']} fatal log markers", RCP),
+        gate("release_tag", "verified",
+             f"{rel['tag']} on the record PR's merge commit {rel['tag_commit'][:12]} (#{rel['record_pr']['number']}); its "
+             f"release carries {', '.join(a['name'] for a in rel['assets'])}, each equal to its SHA256SUMS line", RCP),
+    ]
+else:
+    pub_gates = [
+        gate("publication_targets_hf_ghcr", "in_progress",
+             f"Private staging at {TARGET}: weights @ {st['uploaded_commit'][:12]} ({up['files_on_hub']} files, every LFS "
+             f"sha256 equal to the export's manifest), card @ {st['card_commit']['commit'][:12]} (weights unchanged, all "
+             f"{st['card_commit']['manifest_entries_verified_on_hub']} manifest entries verified on the hub); public flip "
+             "after the export PR merges and the tag exists",
+             STG, next="merge the export PR, tag, flip public"),
+        gate("clean_download_boot_smoke", "in_progress",
+             f"Clean download of the private repository @ {cd['commit'][:12]} verified ({cd['entries_matching_export']}/"
+             f"{cd['manifest_entries']} manifest entries byte-identical to the export, the validator passes on the "
+             f"downloaded bytes) and {boot}. Open until the public repository is downloaded after the flip: the gate "
+             "attests the published artifact",
+             STG, next="the clean download of the public repository after the flip"),
+        gate("release_tag", "in_progress", f"Tag {TAG} follows the export PR merge", None,
+             next="tag the merge commit"),
+    ]
 quality = (f"GPQA Diamond (198, 65,536-token cap; {cs['gpqa_reasoning']}), two runs: {cs['gpqa_a']} against the vendor "
            f"NVFP4's {cs['gpqa_vendor']}; {cs['gpqa_bar']}: PASS; {cs['gpqa_boot']}. Full denominator; items without an "
            f"answer at the cap, {cs['gpqa_trunc']}, count as wrong; a response that hit the cap with an answer is scored. "
@@ -171,9 +211,7 @@ products = [
                  f"Built from {g['source']} BF16 ({lic}: the license its card declares at that revision; the product "
                  "ships its LICENSE byte-identical); the vendor NVFP4 scored as the reference only, never a build input",
                  GS),
-            gate("artifact_manifest", "verified",
-                 f"manifest.sha256 over {up['manifest_entries']} files (sha256 {up['manifest_sha256'][:12]}...), written at "
-                 "upload; every LFS sha256 on the hub equal to it", STG),
+            manifest_gate,
             gate("recipe_edit_manifest", "verified",
                  f"Schema-{rp['schema_version'].split('.')[0]} recipe; operator recipes sha256 "
                  f"{rp['operator_recipe_sha256'][:8]}... (decoder) and {lm_pin.group(1)[:8]}... (lm_head); ModelOpt "
